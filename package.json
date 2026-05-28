@@ -1,8 +1,8 @@
 {
   "name": "crm_app_Backend",
   "version": "0.0.1",
-  "description": "",
-  "author": "",
+  "description": "CRM App Backend developed by Phian Infotech",
+  "author": "Phian Infotech",
   "private": true,
   "license": "UNLICENSED",
   "scripts": {

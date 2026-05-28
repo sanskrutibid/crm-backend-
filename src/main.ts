@@ -60,7 +60,7 @@ async function bootstrap() {
   const config = new DocumentBuilder()
     .setTitle('CRM Premium REST API')
     .setDescription(
-      'Industry-standard CRM backend services equipped with high-speed performance under Fastify.',
+      'Industry-standard CRM backend services developed & maintained by Phian Infotech, equipped with high-speed performance under Fastify.',
     )
     .setVersion('1.0')
     .addBearerAuth(
