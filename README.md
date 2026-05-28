@@ -1,6 +1,6 @@
 # CRM APP Backend 🚀
 
-### 🏢 Developed & Maintained by **[Phian Infotech](https://github.com/phianinfotec)**
+### 🏢 Developed & Maintained by **[Phian Infotech](https://phianinfotec.com/)**
 
 An industry-standard, high-performance CRM (Customer Relationship Management) backend application built with **NestJS v11** and the **Fastify** adapter for ultra-fast, low-latency API response times. 
 
@@ -169,6 +169,6 @@ Once the backend starts, visit the interactive interface:
 
 ## 🏢 About Phian Infotech
 
-This CRM Backend repository is engineered and maintained by **[Phian Infotech](https://github.com/phianinfotec)**. We build scalable, high-performance web applications, API services, and enterprise-grade solutions tailored for modern businesses.
+This CRM Backend repository is engineered and maintained by **[Phian Infotech](https://phianinfotec.com/)**. We build scalable, high-performance web applications, API services, and enterprise-grade solutions tailored for modern businesses.
 
-For inquiries, support, or custom software development, feel free to reach out or visit our official GitHub organization.
+For inquiries, support, or custom software development, feel free to reach out or visit our official website.
