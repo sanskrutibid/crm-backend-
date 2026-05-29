@@ -506,6 +506,195 @@ export class LeadsService implements OnModuleInit {
     );
   }
 
+  /**
+   * Shared sort helper — maps UI Sort By label → MongoDB field + direction.
+   * Supported labels: 'Assigned Date' | 'Create Date' | 'FollowUp Date' | 'Updated Date' | 'Name'
+   */
+  private buildSortObject(sortBy: string, orderBy: 'Asc' | 'Desc'): Record<string, 1 | -1> {
+    const dir: 1 | -1 = orderBy === 'Asc' ? 1 : -1;
+    const fieldMap: Record<string, string> = {
+      'Assigned Date': 'assignDate',
+      'Create Date':   'createdAt',
+      'FollowUp Date': 'scheduleDate',
+      'Updated Date':  'updatedAt',
+      'Name':          'contactId',   // in-memory sort applied after populate
+    };
+    const field = fieldMap[sortBy] ?? 'createdAt';
+    return { [field]: dir };
+  }
+
+  /**
+   * GET /leads/today-followup
+   * Returns leads scheduled for TODAY + overdue leads (past scheduleDate, still In Progress).
+   * Also returns summary counts split by temperature (Hot / Warm / Cold).
+   * Optionally scoped to a single agent via `assignedTo`.
+   */
+  async getTodayFollowup(
+    assignedTo?: string,
+    sortBy = 'FollowUp Date',
+    orderBy: 'Asc' | 'Desc' = 'Asc',
+    page = 1,
+    limit = 20,
+  ): Promise<{
+    summary: {
+      totalToday: number;
+      hot: number;
+      warm: number;
+      cold: number;
+      overdue: number;
+    };
+    todayLeads: any[];
+    overdueLeads: any[];
+  }> {
+    const now = new Date();
+
+    // Build two date string formats to match stored scheduleDate values
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const todayISO  = now.toISOString().split('T')[0];                          // "2026-05-29"
+    const todayLong = `${now.getDate()}-${months[now.getMonth()]}-${now.getFullYear()}`; // "29-May-2026"
+
+    // Base filter: only In Progress leads (Won/Lost don't need followup)
+    const baseFilter: any = { status: LeadStatus.IN_PROGRESS };
+    if (assignedTo) baseFilter.assignedTo = assignedTo;
+
+    // ── TODAY filter ─────────────────────────────────────────────────
+    const todayFilter = {
+      ...baseFilter,
+      scheduleDate: { $in: [todayISO, todayLong] },
+    };
+
+    // ── OVERDUE filter (scheduleDate is in the past, not today) ──────
+    // Since scheduleDate is stored as string in two possible formats,
+    // we use $lt on ISO format and also exclude today's entries
+    const overdueFilter = {
+      ...baseFilter,
+      scheduleDate: {
+        $lt: todayISO,
+        $nin: [todayISO, todayLong],
+      },
+    };
+
+    const sortObj = this.buildSortObject(sortBy, orderBy);
+    const isNameSort = sortBy === 'Name';
+
+    // Run all queries in parallel for performance
+    const [todayLeads, overdueLeads, hotCount, warmCount, coldCount, overdueCount] =
+      await Promise.all([
+        // Paginated today leads
+        this.leadModel
+          .find(todayFilter)
+          .populate(['contactId', 'assignedTo'])
+          .sort(isNameSort ? { createdAt: -1 } : sortObj)
+          .skip((page - 1) * limit)
+          .limit(limit)
+          .exec(),
+
+        // Paginated overdue leads — always sorted oldest-first (most urgent)
+        this.leadModel
+          .find(overdueFilter)
+          .populate(['contactId', 'assignedTo'])
+          .sort({ scheduleDate: 1 })
+          .skip((page - 1) * limit)
+          .limit(limit)
+          .exec(),
+
+        // Summary counts — temperature breakdown for TODAY's leads
+        this.leadModel.countDocuments({ ...todayFilter, temperature: LeadTemperature.HOT }).exec(),
+        this.leadModel.countDocuments({ ...todayFilter, temperature: LeadTemperature.WARM }).exec(),
+        this.leadModel.countDocuments({ ...todayFilter, temperature: LeadTemperature.COLD }).exec(),
+
+        // Total overdue count
+        this.leadModel.countDocuments(overdueFilter).exec(),
+      ]);
+
+    // In-memory name sort for today leads (populated field)
+    let finalTodayLeads: any[] = todayLeads;
+    if (isNameSort) {
+      const dir = orderBy === 'Asc' ? 1 : -1;
+      finalTodayLeads = [...todayLeads].sort((a, b) => {
+        const nameA = (a.contactId as any)?.firstName || '';
+        const nameB = (b.contactId as any)?.firstName || '';
+        return dir === 1 ? nameA.localeCompare(nameB) : nameB.localeCompare(nameA);
+      });
+    }
+
+    return {
+      summary: {
+        totalToday: hotCount + warmCount + coldCount,
+        hot: hotCount,
+        warm: warmCount,
+        cold: coldCount,
+        overdue: overdueCount,
+      },
+      todayLeads: finalTodayLeads,
+      overdueLeads,
+    };
+  }
+
+  /**
+   * GET /leads/open-leads
+   * Full active pipeline — all In Progress leads.
+   * Summary: total, hot, warm, cold counts + won/lost closed totals for pipeline context.
+   */
+  async getOpenLeads(
+    assignedTo?: string,
+    branch?: string,
+    sortBy = 'Create Date',
+    orderBy: 'Asc' | 'Desc' = 'Desc',
+    page = 1,
+    limit = 20,
+  ) {
+    const baseFilter: any = { status: LeadStatus.IN_PROGRESS };
+    if (assignedTo) baseFilter.assignedTo = assignedTo;
+    if (branch) baseFilter.branch = new RegExp(branch, 'i');
+
+    const sortObj = this.buildSortObject(sortBy, orderBy);
+    const isNameSort = sortBy === 'Name';
+
+    const [leads, total, hot, warm, cold, won, lost] = await Promise.all([
+      this.leadModel
+        .find(baseFilter)
+        .populate(['contactId', 'assignedTo'])
+        .sort(isNameSort ? { createdAt: -1 } : sortObj)
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .exec(),
+
+      this.leadModel.countDocuments(baseFilter).exec(),
+      this.leadModel.countDocuments({ ...baseFilter, temperature: LeadTemperature.HOT }).exec(),
+      this.leadModel.countDocuments({ ...baseFilter, temperature: LeadTemperature.WARM }).exec(),
+      this.leadModel.countDocuments({ ...baseFilter, temperature: LeadTemperature.COLD }).exec(),
+
+      // Won/Lost counts scoped to same agent/branch for context
+      this.leadModel.countDocuments({
+        ...(assignedTo ? { assignedTo } : {}),
+        ...(branch ? { branch: new RegExp(branch, 'i') } : {}),
+        status: LeadStatus.WON,
+      } as any).exec(),
+      this.leadModel.countDocuments({
+        ...(assignedTo ? { assignedTo } : {}),
+        ...(branch ? { branch: new RegExp(branch, 'i') } : {}),
+        status: LeadStatus.LOST,
+      } as any).exec(),
+    ]);
+
+    // In-memory name sort for open leads (populated field)
+    let finalLeads: any[] = leads;
+    if (isNameSort) {
+      const dir = orderBy === 'Asc' ? 1 : -1;
+      finalLeads = [...leads].sort((a, b) => {
+        const nameA = (a.contactId as any)?.firstName || '';
+        const nameB = (b.contactId as any)?.firstName || '';
+        return dir === 1 ? nameA.localeCompare(nameB) : nameB.localeCompare(nameA);
+      });
+    }
+
+    return {
+      summary: { total, hot, warm, cold, won, lost },
+      leads: finalLeads,
+    };
+  }
+
   async changeStatus(id: string, dto: ChangeLeadStatusDto, defaultUserId: string) {
     const lead = await this.leadModel.findById(id).populate('contactId').exec();
     if (!lead) {

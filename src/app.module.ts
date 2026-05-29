@@ -11,6 +11,7 @@ import { PropertiesModule } from './modules/properties/properties.module';
 import { TasksModule } from './modules/tasks/tasks.module';
 import { ActivitiesModule } from './modules/activities/activities.module';
 import { ContactsModule } from './modules/contacts/contacts.module';
+import { OpportunitiesModule } from './modules/opportunities/opportunities.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { ContactsModule } from './modules/contacts/contacts.module';
     TasksModule,
     ActivitiesModule,
     ContactsModule,
+    OpportunitiesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -8,6 +8,7 @@ export enum ActivityType {
   LEAD = 'lead',
   PROPERTY = 'property',
   TASK = 'task',
+  OPPORTUNITY = 'opportunity',
   SYSTEM = 'system',
 }
 
