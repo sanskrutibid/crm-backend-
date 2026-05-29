@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Contact, ContactSchema } from './schemas/contact.schema';
+import { Audience, AudienceSchema } from './schemas/audience.schema';
 import { User, UserSchema } from '../users/schemas/user.schema';
 import { ContactsService } from './contacts.service';
 import { ContactsController } from './contacts.controller';
@@ -10,6 +11,7 @@ import { ActivitiesModule } from '../activities/activities.module';
   imports: [
     MongooseModule.forFeature([
       { name: Contact.name, schema: ContactSchema },
+      { name: Audience.name, schema: AudienceSchema },
       { name: User.name, schema: UserSchema },
     ]),
     ActivitiesModule,

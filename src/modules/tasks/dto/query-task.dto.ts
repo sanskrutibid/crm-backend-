@@ -57,6 +57,30 @@ export class QueryTaskDto {
   updatedSince?: string;
 
   @ApiPropertyOptional({
+    example: 'Global Team',
+    description: 'Filter tasks by branch name',
+  })
+  @IsString()
+  @IsOptional()
+  branch?: string;
+
+  @ApiPropertyOptional({
+    example: '2026-05-26',
+    description: 'Filter tasks starting from this scheduled date (YYYY-MM-DD)',
+  })
+  @IsString()
+  @IsOptional()
+  startDate?: string;
+
+  @ApiPropertyOptional({
+    example: '2026-05-30',
+    description: 'Filter tasks up to this scheduled date (YYYY-MM-DD)',
+  })
+  @IsString()
+  @IsOptional()
+  endDate?: string;
+
+  @ApiPropertyOptional({
     example: 1,
     description: 'Page index for pagination',
     default: 1,
@@ -65,7 +89,7 @@ export class QueryTaskDto {
   @IsInt()
   @Min(1)
   @IsOptional()
-  page?: number = 1;
+  page?: number;
 
   @ApiPropertyOptional({
     example: 10,
@@ -76,5 +100,5 @@ export class QueryTaskDto {
   @IsInt()
   @Min(1)
   @IsOptional()
-  limit?: number = 10;
+  limit?: number;
 }

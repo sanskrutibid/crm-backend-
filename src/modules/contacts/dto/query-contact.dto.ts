@@ -79,7 +79,7 @@ export class QueryContactDto {
   @IsInt()
   @Min(1)
   @IsOptional()
-  page?: number = 1;
+  page?: number;
 
   @ApiPropertyOptional({
     example: 10,
@@ -90,5 +90,5 @@ export class QueryContactDto {
   @IsInt()
   @Min(1)
   @IsOptional()
-  limit?: number = 10;
+  limit?: number;
 }

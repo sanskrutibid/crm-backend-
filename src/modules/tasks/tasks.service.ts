@@ -91,7 +91,7 @@ export class TasksService implements OnModuleInit {
   }
 
   async findAll(query: QueryTaskDto): Promise<{ tasks: TaskDocument[]; total: number }> {
-    const { status, search, assignedTo, sortBy = 'createdAt', sortOrder = 'desc', updatedSince, page = 1, limit = 10 } = query;
+    const { status, search, assignedTo, branch, startDate, endDate, sortBy = 'createdAt', sortOrder = 'desc', updatedSince, page, limit } = query;
     const filter: any = {};
 
     if (status) {
@@ -100,6 +100,20 @@ export class TasksService implements OnModuleInit {
 
     if (assignedTo) {
       filter.assignedTo = assignedTo;
+    }
+
+    if (branch) {
+      filter.branch = branch;
+    }
+
+    if (startDate || endDate) {
+      filter.scheduledDate = {};
+      if (startDate) {
+        filter.scheduledDate.$gte = startDate;
+      }
+      if (endDate) {
+        filter.scheduledDate.$lte = endDate;
+      }
     }
 
     if (search) {
@@ -122,11 +136,13 @@ export class TasksService implements OnModuleInit {
 
     const total = await this.taskModel.countDocuments(filter).exec();
     
-    // Pagination bypass logic: If limit is >= 99999, return all matching records at once
+    // Pagination bypass logic: If limit is not specified, return all matching records at once.
+    // If limit is specified and is >= 99999, return all matching records.
     const queryChain = this.taskModel.find(filter).populate('assignedTo').sort(sortOption);
 
-    if (limit > 0 && limit < 99999) {
-      queryChain.skip((page - 1) * limit).limit(limit);
+    if (limit && limit > 0 && limit < 99999) {
+      const pageNum = page && page > 0 ? page : 1;
+      queryChain.skip((pageNum - 1) * limit).limit(limit);
     }
 
     const tasks = await queryChain.exec();

@@ -107,4 +107,21 @@ export class ActivitiesService implements OnModuleInit {
 
     return { activities, total };
   }
+
+  async findLogsForContact(contactName: string, id: string, uniqueNumber?: string): Promise<ActivityDocument[]> {
+    const orConditions: any[] = [
+      { description: new RegExp(contactName, 'i') },
+      { description: new RegExp(id, 'i') },
+    ];
+
+    if (uniqueNumber) {
+      orConditions.push({ description: new RegExp(uniqueNumber, 'i') });
+    }
+
+    return this.activityModel
+      .find({ $or: orConditions })
+      .populate('performedBy')
+      .sort({ timestamp: -1 })
+      .exec();
+  }
 }

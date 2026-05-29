@@ -27,6 +27,13 @@ async function bootstrap() {
   await app.register(helmet);
   await app.register(compress);
 
+  // Enable CORS for frontend API calls (essential for localhost port cross-talk)
+  app.enableCors({
+    origin: '*',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    credentials: true,
+  });
+
   // Rate Limiting
   await app.register(rateLimit, {
     max: 100,

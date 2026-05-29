@@ -9,6 +9,7 @@ import { UpdateLeadDto } from './dto/update-lead.dto';
 import { QueryLeadDto } from './dto/query-lead.dto';
 import { ActivitiesService } from '../activities/activities.service';
 import { ActivityType } from '../activities/schemas/activity.schema';
+import { LeadsAIService } from './leads-ai.service';
 
 @Injectable()
 export class LeadsService implements OnModuleInit {
@@ -17,6 +18,7 @@ export class LeadsService implements OnModuleInit {
     @InjectModel(Contact.name) private readonly contactModel: Model<ContactDocument>,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     private readonly activitiesService: ActivitiesService,
+    private readonly leadsAiService: LeadsAIService,
   ) {}
 
   /**
@@ -63,8 +65,25 @@ export class LeadsService implements OnModuleInit {
 
   async create(createLeadDto: CreateLeadDto, defaultUserId: string): Promise<LeadDocument> {
     const assignedTo = createLeadDto.assignedTo || defaultUserId;
+
+    // Call Google Gemini AI to analyze raw text customer requirement and followup notes
+    const aiAnalysis = await this.leadsAiService.analyzeLead(
+      createLeadDto.requirement,
+      createLeadDto.followupNote,
+    );
+
+    // Merge AI predictions only if the user didn't explicitly override them with manual values
+    const score = createLeadDto.score !== undefined ? createLeadDto.score : aiAnalysis.score;
+    const temperature = createLeadDto.temperature !== undefined ? createLeadDto.temperature : aiAnalysis.temperature;
+    const keywords = createLeadDto.keywords !== undefined && createLeadDto.keywords !== '' ? createLeadDto.keywords : aiAnalysis.keywords;
+    const nextRemark = createLeadDto.nextRemark !== undefined && createLeadDto.nextRemark !== 'no response' ? createLeadDto.nextRemark : aiAnalysis.nextRemark;
+
     const newLead = new this.leadModel({
       ...createLeadDto,
+      score,
+      temperature,
+      keywords,
+      nextRemark,
       assignedTo,
       createdBy: defaultUserId,
       updatedBy: defaultUserId,

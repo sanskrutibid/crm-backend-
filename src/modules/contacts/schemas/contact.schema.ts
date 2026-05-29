@@ -185,6 +185,42 @@ export class Contact {
 
   @Prop({ type: Boolean, default: true })
   subscribePromotions: boolean;
+
+  @Prop({ trim: true })
+  status?: string; // e.g. Active, Inactive, DND
+
+  @Prop({ trim: true })
+  statusRemark?: string; // Remark explaining status update
+
+  @Prop({ type: Boolean, default: false, index: true })
+  isDeleted: boolean;
+
+  @Prop({ type: Date })
+  deletedAt?: Date;
+
+  @Prop({
+    type: [
+      {
+        type: { type: String, required: true },
+        name: { type: String, required: true },
+        branch: { type: String, required: true },
+        assignee: { type: String, required: true },
+        isPublic: { type: Boolean, default: true },
+        url: { type: String },
+        uploadedAt: { type: Date, default: Date.now },
+      },
+    ],
+    default: [],
+  })
+  documents: {
+    type: string;
+    name: string;
+    branch: string;
+    assignee: string;
+    isPublic: boolean;
+    url?: string;
+    uploadedAt: Date;
+  }[];
 }
 
 export const ContactSchema = SchemaFactory.createForClass(Contact);
