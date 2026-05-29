@@ -120,6 +120,36 @@ export class Lead {
 
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: false })
   updatedBy?: User;
+
+  @Prop({
+    type: [
+      {
+        visitor: { type: String, required: true },
+        visitType: { type: String, required: true },
+        module: { type: String, required: true },
+        siteName: { type: String, required: true },
+        otherName: { type: String },
+        visitDate: { type: String, required: true },
+        timeIn: { type: String, required: true },
+        timeOut: { type: String, required: true },
+        remark: { type: String },
+        siteManager: { type: String, required: true },
+        sourcingManager: { type: String },
+        closingManager: { type: String },
+        source: { type: String, required: true },
+        branch: { type: String, required: true },
+        assignee: { type: String, required: true },
+        visitStatus: { type: String, required: true },
+        sendSmsNotification: { type: Boolean, default: false },
+        sendEmailNotification: { type: Boolean, default: false },
+        visibility: { type: String, default: 'Private' },
+        photograph: { type: String },
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
+    default: [],
+  })
+  siteVisits: any[];
 }
 
 export const LeadSchema = SchemaFactory.createForClass(Lead);

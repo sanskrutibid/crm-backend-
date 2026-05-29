@@ -6,13 +6,54 @@ export class CreateLeadDto {
   // ==========================================
   // 1. Lead Information (Step 1)
   // ==========================================
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: '60d5ed7ab394142e88a38c29',
-    description: 'Target Contact ID registered in the CRM Contacts directory',
+    description: 'Target Contact ID registered in the CRM Contacts directory. Required if addNewContact is false/omitted.',
   })
   @IsString()
-  @IsNotEmpty({ message: 'Contact reference ID is required' })
-  contactId: string;
+  @IsOptional()
+  contactId?: string;
+
+  @ApiPropertyOptional({
+    example: true,
+    description: 'Whether to add a new contact on-the-fly when creating the lead',
+    default: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  addNewContact?: boolean;
+
+  @ApiPropertyOptional({
+    example: 'Mrs Dayamati Chirawali',
+    description: 'Target customer contact name when adding on-the-fly',
+  })
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @ApiPropertyOptional({
+    example: '+91 9876543210',
+    description: 'Target customer contact mobile when adding on-the-fly',
+  })
+  @IsString()
+  @IsOptional()
+  mobile?: string;
+
+  @ApiPropertyOptional({
+    example: 'dayamati@gmail.com',
+    description: 'Target customer contact email when adding on-the-fly',
+  })
+  @IsString()
+  @IsOptional()
+  email?: string;
+
+  @ApiPropertyOptional({
+    example: 'Chirawali Group LLC',
+    description: 'Target customer company name when adding on-the-fly',
+  })
+  @IsString()
+  @IsOptional()
+  company?: string;
 
   @ApiProperty({
     example: 'Rs. 1.38 Crore, 3 Bed, for Sale in Riddhi Siddhi, Pande Layout',
