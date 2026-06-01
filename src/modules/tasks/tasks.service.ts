@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
+﻿import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Task, TaskDocument, TaskStatus } from './schemas/task.schema';
@@ -84,7 +84,7 @@ export class TasksService implements OnModuleInit {
 
   async create(
     createTaskDto: CreateTaskDto,
-    defaultUserId: string,
+    defaultUserId?: string,
   ): Promise<TaskDocument> {
     const assignedTo = createTaskDto.assignedTo || defaultUserId;
     const newTask = new this.taskModel({

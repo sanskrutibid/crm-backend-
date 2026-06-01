@@ -30,7 +30,6 @@ import {
 } from './dto/lead-actions.dto';
 import { ActivitiesService } from '../activities/activities.service';
 import { ActivityType } from '../activities/schemas/activity.schema';
-import { LeadsAIService } from './leads-ai.service';
 
 @Injectable()
 export class LeadsService implements OnModuleInit {
@@ -40,7 +39,6 @@ export class LeadsService implements OnModuleInit {
     private readonly contactModel: Model<ContactDocument>,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     private readonly activitiesService: ActivitiesService,
-    private readonly leadsAiService: LeadsAIService,
   ) {}
 
   /**
@@ -95,7 +93,7 @@ export class LeadsService implements OnModuleInit {
 
   async create(
     createLeadDto: CreateLeadDto,
-    defaultUserId: string,
+    defaultUserId?: string,
   ): Promise<LeadDocument> {
     const assignedTo = createLeadDto.assignedTo || defaultUserId;
 
@@ -162,30 +160,24 @@ export class LeadsService implements OnModuleInit {
       }
     }
 
-    // Call Google Gemini AI to analyze raw text customer requirement and followup notes
-    const aiAnalysis = await this.leadsAiService.analyzeLead(
-      createLeadDto.requirement,
-      createLeadDto.followupNote,
-    );
-
-    // Merge AI predictions only if the user didn't explicitly override them with manual values
+    // Setup default fallback values without Gemini AI analysis
     const score =
       createLeadDto.score !== undefined
         ? createLeadDto.score
-        : aiAnalysis.score;
+        : 1.0;
     const temperature =
       createLeadDto.temperature !== undefined
         ? createLeadDto.temperature
-        : aiAnalysis.temperature;
+        : LeadTemperature.COLD;
     const keywords =
       createLeadDto.keywords !== undefined && createLeadDto.keywords !== ''
         ? createLeadDto.keywords
-        : aiAnalysis.keywords;
+        : '';
     const nextRemark =
       createLeadDto.nextRemark !== undefined &&
       createLeadDto.nextRemark !== 'no response'
         ? createLeadDto.nextRemark
-        : aiAnalysis.nextRemark;
+        : 'no response';
 
     const newLead = new this.leadModel({
       ...createLeadDto,
@@ -817,7 +809,7 @@ export class LeadsService implements OnModuleInit {
   async changeStatus(
     id: string,
     dto: ChangeLeadStatusDto,
-    defaultUserId: string,
+    defaultUserId?: string,
   ) {
     const lead = await this.leadModel.findById(id).populate('contactId').exec();
     if (!lead) {
@@ -843,7 +835,7 @@ export class LeadsService implements OnModuleInit {
   async updateRequirement(
     id: string,
     dto: UpdateRequirementDto,
-    defaultUserId: string,
+    defaultUserId?: string,
   ) {
     const lead = await this.leadModel.findById(id).populate('contactId').exec();
     if (!lead) {
@@ -865,7 +857,7 @@ export class LeadsService implements OnModuleInit {
     return saved.populate(['contactId', 'assignedTo']);
   }
 
-  async sendSms(id: string, dto: SendLeadSmsDto, defaultUserId: string) {
+  async sendSms(id: string, dto: SendLeadSmsDto, defaultUserId?: string) {
     const lead = await this.leadModel.findById(id).populate('contactId').exec();
     if (!lead) {
       throw new NotFoundException(`Lead with ID "${id}" not found`);
@@ -885,7 +877,7 @@ export class LeadsService implements OnModuleInit {
     return { success: true };
   }
 
-  async sendEmail(id: string, dto: SendLeadEmailDto, defaultUserId: string) {
+  async sendEmail(id: string, dto: SendLeadEmailDto, defaultUserId?: string) {
     const lead = await this.leadModel.findById(id).populate('contactId').exec();
     if (!lead) {
       throw new NotFoundException(`Lead with ID "${id}" not found`);
@@ -904,7 +896,7 @@ export class LeadsService implements OnModuleInit {
     return { success: true };
   }
 
-  async addQuickNote(id: string, dto: LeadQuickNoteDto, defaultUserId: string) {
+  async addQuickNote(id: string, dto: LeadQuickNoteDto, defaultUserId?: string) {
     const lead = await this.leadModel.findById(id).populate('contactId').exec();
     if (!lead) {
       throw new NotFoundException(`Lead with ID "${id}" not found`);
@@ -922,7 +914,7 @@ export class LeadsService implements OnModuleInit {
     return { success: true };
   }
 
-  async sendProposal(id: string, dto: SendProposalDto, defaultUserId: string) {
+  async sendProposal(id: string, dto: SendProposalDto, defaultUserId?: string) {
     const lead = await this.leadModel.findById(id).populate('contactId').exec();
     if (!lead) {
       throw new NotFoundException(`Lead with ID "${id}" not found`);
@@ -961,7 +953,7 @@ export class LeadsService implements OnModuleInit {
   async sendTermsConditions(
     id: string,
     dto: LeadTermsConditionsDto,
-    defaultUserId: string,
+    defaultUserId?: string,
   ) {
     const lead = await this.leadModel.findById(id).populate('contactId').exec();
     if (!lead) {
@@ -997,7 +989,7 @@ export class LeadsService implements OnModuleInit {
   async createSiteVisit(
     id: string,
     dto: CreateSiteVisitDto,
-    defaultUserId: string,
+    defaultUserId?: string,
   ) {
     const lead = await this.leadModel.findById(id).populate('contactId').exec();
     if (!lead) {

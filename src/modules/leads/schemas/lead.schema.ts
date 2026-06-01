@@ -78,10 +78,10 @@ export class Lead {
   @Prop({
     type: MongooseSchema.Types.ObjectId,
     ref: 'User',
-    required: true,
+    required: false,
     index: true,
   })
-  assignedTo: User; // Labeled "Assignee*"
+  assignedTo?: User; // Labeled "Assignee*"
 
   @Prop({ type: Boolean, default: false })
   sendWhatsAppToAssignee: boolean;

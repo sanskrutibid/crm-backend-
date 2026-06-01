@@ -7,11 +7,8 @@ import {
   Param,
   Post,
   Query,
-  Req,
-  UseGuards,
 } from '@nestjs/common';
 import {
-  ApiBearerAuth,
   ApiTags,
   ApiOperation,
   ApiCreatedResponse,
@@ -22,12 +19,9 @@ import { PunchInDto } from './dto/punch-in.dto';
 import { PunchOutDto } from './dto/punch-out.dto';
 import { TrackLocationDto } from './dto/track-location.dto';
 import { AgentMovementTimelineDto } from './dto/attendance-response.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
 
 @ApiTags('Attendance & Location Tracking')
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller('attendance')
 export class AttendanceController {
   constructor(private readonly attendanceService: AttendanceService) {}
@@ -40,8 +34,8 @@ export class AttendanceController {
       'Shift punched in and initial coordinates registered successfully.',
   })
   @ResponseMessage('Punch-in completed successfully')
-  async punchIn(@Body() punchInDto: PunchInDto, @Req() req: any) {
-    const activeUserId = req.user.id;
+  async punchIn(@Body() punchInDto: PunchInDto) {
+    const activeUserId = null;
     return this.attendanceService.punchIn(activeUserId, punchInDto);
   }
 
@@ -52,8 +46,8 @@ export class AttendanceController {
     description: 'Shift closed and final coordinates registered successfully.',
   })
   @ResponseMessage('Punch-out completed successfully')
-  async punchOut(@Body() punchOutDto: PunchOutDto, @Req() req: any) {
-    const activeUserId = req.user.id;
+  async punchOut(@Body() punchOutDto: PunchOutDto) {
+    const activeUserId = null;
     return this.attendanceService.punchOut(activeUserId, punchOutDto);
   }
 
@@ -66,9 +60,8 @@ export class AttendanceController {
   @ResponseMessage('Location tracking point registered successfully')
   async trackLocation(
     @Body() trackLocationDto: TrackLocationDto,
-    @Req() req: any,
   ) {
-    const activeUserId = req.user.id;
+    const activeUserId = null;
     return this.attendanceService.trackLocation(activeUserId, trackLocationDto);
   }
 

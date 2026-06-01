@@ -166,7 +166,7 @@ describe('PropertiesService', () => {
         orderBy: 'Asc' as const,
       };
 
-      await service.getMyProperties('mock-user-id', query);
+      await service.getMyProperties(query, 'mock-user-id');
 
       expect(mockPropertyModel.find).toHaveBeenCalledWith(
         expect.objectContaining({

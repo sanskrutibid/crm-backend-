@@ -1,4 +1,4 @@
-import {
+﻿import {
   Body,
   Controller,
   Delete,
@@ -7,11 +7,8 @@ import {
   Patch,
   Post,
   Query,
-  Req,
-  UseGuards,
 } from '@nestjs/common';
 import {
-  ApiBearerAuth,
   ApiTags,
   ApiOperation,
   ApiCreatedResponse,
@@ -33,12 +30,9 @@ import {
   LeadTermsConditionsDto,
   CreateSiteVisitDto,
 } from './dto/lead-actions.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
 
 @ApiTags('Leads')
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller('leads')
 export class LeadsController {
   constructor(private readonly leadsService: LeadsService) {}
@@ -50,9 +44,8 @@ export class LeadsController {
     type: LeadResponseDto,
   })
   @ResponseMessage('Lead created successfully')
-  async create(@Body() createLeadDto: CreateLeadDto, @Req() req: any) {
-    const requestUserId = req.user.id;
-    return this.leadsService.create(createLeadDto, requestUserId);
+  async create(@Body() createLeadDto: CreateLeadDto) {
+    return this.leadsService.create(createLeadDto);
   }
 
   @Get()
@@ -220,13 +213,10 @@ export class LeadsController {
   async changeStatus(
     @Param('id') id: string,
     @Body() changeLeadStatusDto: ChangeLeadStatusDto,
-    @Req() req: any,
   ) {
-    const requestUserId = req.user.id;
     return this.leadsService.changeStatus(
       id,
       changeLeadStatusDto,
-      requestUserId,
     );
   }
 
@@ -236,10 +226,8 @@ export class LeadsController {
   async updateRequirement(
     @Param('id') id: string,
     @Body() dto: UpdateRequirementDto,
-    @Req() req: any,
   ) {
-    const requestUserId = req.user.id;
-    return this.leadsService.updateRequirement(id, dto, requestUserId);
+    return this.leadsService.updateRequirement(id, dto);
   }
 
   @Post(':id/actions/send-sms')
@@ -250,10 +238,8 @@ export class LeadsController {
   async sendSms(
     @Param('id') id: string,
     @Body() dto: SendLeadSmsDto,
-    @Req() req: any,
   ) {
-    const requestUserId = req.user.id;
-    return this.leadsService.sendSms(id, dto, requestUserId);
+    return this.leadsService.sendSms(id, dto);
   }
 
   @Post(':id/actions/send-email')
@@ -264,10 +250,8 @@ export class LeadsController {
   async sendEmail(
     @Param('id') id: string,
     @Body() dto: SendLeadEmailDto,
-    @Req() req: any,
   ) {
-    const requestUserId = req.user.id;
-    return this.leadsService.sendEmail(id, dto, requestUserId);
+    return this.leadsService.sendEmail(id, dto);
   }
 
   @Post(':id/actions/quick-note')
@@ -276,10 +260,8 @@ export class LeadsController {
   async addQuickNote(
     @Param('id') id: string,
     @Body() dto: LeadQuickNoteDto,
-    @Req() req: any,
   ) {
-    const requestUserId = req.user.id;
-    return this.leadsService.addQuickNote(id, dto, requestUserId);
+    return this.leadsService.addQuickNote(id, dto);
   }
 
   @Post(':id/actions/send-proposal')
@@ -290,10 +272,8 @@ export class LeadsController {
   async sendProposal(
     @Param('id') id: string,
     @Body() dto: SendProposalDto,
-    @Req() req: any,
   ) {
-    const requestUserId = req.user.id;
-    return this.leadsService.sendProposal(id, dto, requestUserId);
+    return this.leadsService.sendProposal(id, dto);
   }
 
   @Get(':id/actions/history')
@@ -309,10 +289,8 @@ export class LeadsController {
   async sendTermsConditions(
     @Param('id') id: string,
     @Body() dto: LeadTermsConditionsDto,
-    @Req() req: any,
   ) {
-    const requestUserId = req.user.id;
-    return this.leadsService.sendTermsConditions(id, dto, requestUserId);
+    return this.leadsService.sendTermsConditions(id, dto);
   }
 
   @Get(':id/actions/site-visits')
@@ -332,10 +310,8 @@ export class LeadsController {
   async createSiteVisit(
     @Param('id') id: string,
     @Body() dto: CreateSiteVisitDto,
-    @Req() req: any,
   ) {
-    const requestUserId = req.user.id;
-    return this.leadsService.createSiteVisit(id, dto, requestUserId);
+    return this.leadsService.createSiteVisit(id, dto);
   }
 
   @Get(':id')

@@ -7,11 +7,8 @@ import {
   Patch,
   Post,
   Query,
-  Req,
-  UseGuards,
 } from '@nestjs/common';
 import {
-  ApiBearerAuth,
   ApiTags,
   ApiOperation,
   ApiCreatedResponse,
@@ -22,12 +19,9 @@ import { CreatePropertyDto } from './dto/create-property.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
 import { QueryPropertyDto } from './dto/query-property.dto';
 import { PropertyResponseDto } from './dto/property-response.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
 
 @ApiTags('Properties')
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller('properties')
 export class PropertiesController {
   constructor(private readonly propertiesService: PropertiesService) {}
@@ -39,9 +33,8 @@ export class PropertiesController {
     type: PropertyResponseDto,
   })
   @ResponseMessage('Property created successfully')
-  async create(@Body() createPropertyDto: CreatePropertyDto, @Req() req: any) {
-    const requestUserId = req.user.id;
-    return this.propertiesService.create(createPropertyDto, requestUserId);
+  async create(@Body() createPropertyDto: CreatePropertyDto) {
+    return this.propertiesService.create(createPropertyDto);
   }
 
   @Get('my-properties')
@@ -57,11 +50,8 @@ export class PropertiesController {
   @ResponseMessage('My Properties retrieved successfully')
   async getMyProperties(
     @Query() queryPropertyDto: QueryPropertyDto,
-    @Req() req: any,
   ) {
-    const requestUserId = req.user.id;
     return this.propertiesService.getMyProperties(
-      requestUserId,
       queryPropertyDto,
     );
   }

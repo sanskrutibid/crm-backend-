@@ -1,4 +1,4 @@
-import {
+﻿import {
   Injectable,
   ConflictException,
   NotFoundException,
@@ -21,7 +21,7 @@ export class AttendanceService {
    * Registers user shift punch-in, checking for existing active shifts on the current date.
    */
   async punchIn(
-    userId: string,
+    userId: string | null,
     punchInDto: PunchInDto,
   ): Promise<AttendanceDocument> {
     const todayStr = new Date().toISOString().split('T')[0];
@@ -67,7 +67,7 @@ export class AttendanceService {
    * Registers user shift punch-out, closing and finalizing the shift.
    */
   async punchOut(
-    userId: string,
+    userId: string | null,
     punchOutDto: PunchOutDto,
   ): Promise<AttendanceDocument> {
     const activeShift = await this.attendanceModel
@@ -105,7 +105,7 @@ export class AttendanceService {
    * Periodically tracks and appends coordinate logs to the active shift.
    */
   async trackLocation(
-    userId: string,
+    userId: string | null,
     trackLocationDto: TrackLocationDto,
   ): Promise<AttendanceDocument> {
     const activeShift = await this.attendanceModel

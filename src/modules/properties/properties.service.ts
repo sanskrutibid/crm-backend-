@@ -201,8 +201,8 @@ export class PropertiesService implements OnModuleInit {
   }
 
   async getMyProperties(
-    userId: string,
     query: QueryPropertyDto,
+    userId?: string | null,
   ): Promise<{ properties: PropertyDocument[]; total: number }> {
     const {
       status,

@@ -184,10 +184,10 @@ export class Opportunity {
   @Prop({
     type: MongooseSchema.Types.ObjectId,
     ref: 'User',
-    required: true,
+    required: false,
     index: true,
   })
-  assignedTo: User; // Labeled "Assignee*"
+  assignedTo?: User; // Labeled "Assignee*"
 
   @Prop({ type: Number, default: 0 })
   estRevenue: number; // Labeled "Est. Revenue"

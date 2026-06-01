@@ -1,4 +1,4 @@
-import {
+﻿import {
   Body,
   Controller,
   Delete,
@@ -7,11 +7,8 @@ import {
   Patch,
   Post,
   Query,
-  Req,
-  UseGuards,
 } from '@nestjs/common';
 import {
-  ApiBearerAuth,
   ApiTags,
   ApiOperation,
   ApiCreatedResponse,
@@ -22,12 +19,9 @@ import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { QueryTaskDto } from './dto/query-task.dto';
 import { TaskResponseDto } from './dto/task-response.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
 
 @ApiTags('Tasks')
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller('tasks')
 export class TasksController {
   constructor(private readonly tasksService: TasksService) {}
@@ -39,9 +33,8 @@ export class TasksController {
     type: TaskResponseDto,
   })
   @ResponseMessage('Task created successfully')
-  async create(@Body() createTaskDto: CreateTaskDto, @Req() req: any) {
-    const requestUserId = req.user.id;
-    return this.tasksService.create(createTaskDto, requestUserId);
+  async create(@Body() createTaskDto: CreateTaskDto) {
+    return this.tasksService.create(createTaskDto);
   }
 
   @Get()

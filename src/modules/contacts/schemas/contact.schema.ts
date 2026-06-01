@@ -174,10 +174,9 @@ export class Contact {
   @Prop({
     type: MongooseSchema.Types.ObjectId,
     ref: 'User',
-    required: true,
     index: true,
   })
-  assignedTo: User; // Dropdown label "Assignee"
+  assignedTo?: User; // Dropdown label "Assignee"
 
   @Prop({ trim: true })
   photograph?: string; // URL path of profile image upload

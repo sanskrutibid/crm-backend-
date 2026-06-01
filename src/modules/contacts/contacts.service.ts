@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
+﻿import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import {
@@ -124,7 +124,7 @@ export class ContactsService implements OnModuleInit {
 
   async create(
     createContactDto: CreateContactDto,
-    defaultUserId: string,
+    defaultUserId?: string,
   ): Promise<ContactDocument> {
     const assignedTo = createContactDto.assignedTo || defaultUserId;
     const uniqueNumber =
@@ -336,7 +336,7 @@ export class ContactsService implements OnModuleInit {
     return filter;
   }
 
-  async createAudience(dto: CreateAudienceDto, defaultUserId: string) {
+  async createAudience(dto: CreateAudienceDto, defaultUserId?: string) {
     let contactIds = dto.contactIds;
 
     // If no specific contact IDs are provided, select all contacts by default!
@@ -375,7 +375,7 @@ export class ContactsService implements OnModuleInit {
     return this.audienceModel.find().populate('contacts').exec();
   }
 
-  async sendGroupSms(dto: SendSmsDto, defaultUserId: string) {
+  async sendGroupSms(dto: SendSmsDto, defaultUserId?: string) {
     const filter =
       dto.contactIds && dto.contactIds.length > 0
         ? { _id: { $in: dto.contactIds } }
@@ -392,7 +392,7 @@ export class ContactsService implements OnModuleInit {
     return { success: true, count };
   }
 
-  async sendGroupEmail(dto: SendEmailDto, defaultUserId: string) {
+  async sendGroupEmail(dto: SendEmailDto, defaultUserId?: string) {
     const filter =
       dto.contactIds && dto.contactIds.length > 0
         ? { _id: { $in: dto.contactIds } }
@@ -409,7 +409,7 @@ export class ContactsService implements OnModuleInit {
     return { success: true, count };
   }
 
-  async groupDelete(dto: GroupDeleteDto, defaultUserId: string) {
+  async groupDelete(dto: GroupDeleteDto, defaultUserId?: string) {
     const filter =
       dto.contactIds && dto.contactIds.length > 0
         ? { _id: { $in: dto.contactIds }, isDeleted: { $ne: true } }
@@ -429,7 +429,7 @@ export class ContactsService implements OnModuleInit {
     return { success: true, count };
   }
 
-  async markDnd(dto: MarkDndDto, defaultUserId: string) {
+  async markDnd(dto: MarkDndDto, defaultUserId?: string) {
     const filter =
       dto.contactIds && dto.contactIds.length > 0
         ? { _id: { $in: dto.contactIds } }
@@ -449,7 +449,7 @@ export class ContactsService implements OnModuleInit {
     return { success: true, count };
   }
 
-  async verifyEmails(dto: VerifyEmailsDto, defaultUserId: string) {
+  async verifyEmails(dto: VerifyEmailsDto, defaultUserId?: string) {
     const filter =
       dto.contactIds && dto.contactIds.length > 0
         ? { _id: { $in: dto.contactIds } }
@@ -476,7 +476,7 @@ export class ContactsService implements OnModuleInit {
     return { success: true, count };
   }
 
-  async mergeContacts(dto: MergeContactsDto, defaultUserId: string) {
+  async mergeContacts(dto: MergeContactsDto, defaultUserId?: string) {
     const primary = await this.contactModel
       .findById(dto.primaryContactId)
       .exec();
@@ -600,7 +600,7 @@ export class ContactsService implements OnModuleInit {
     return csvContent;
   }
 
-  async importContacts(contacts: any[], defaultUserId: string) {
+  async importContacts(contacts: any[], defaultUserId?: string) {
     const limit = 2000; // Kindly limit the upload to 2000 records per Excel sheet
     const slice = contacts.slice(0, limit);
     const createdContacts: any[] = [];
@@ -628,7 +628,7 @@ export class ContactsService implements OnModuleInit {
     return { success: true, count: createdContacts.length };
   }
 
-  async markDndComma(dto: UpdateDndCommaDto, defaultUserId: string) {
+  async markDndComma(dto: UpdateDndCommaDto, defaultUserId?: string) {
     const mobileList = dto.mobiles
       .split(',')
       .map((m) => m.trim())
@@ -651,7 +651,7 @@ export class ContactsService implements OnModuleInit {
     return { success: true, count: result.modifiedCount };
   }
 
-  async autoMergeDuplicates(defaultUserId: string) {
+  async autoMergeDuplicates(defaultUserId?: string) {
     const activeContacts = await this.contactModel
       .find({ isDeleted: { $ne: true } })
       .sort({ createdAt: 1 })
@@ -732,7 +732,7 @@ export class ContactsService implements OnModuleInit {
     return { success: true, count: totalMerged };
   }
 
-  async changeStatus(id: string, dto: ChangeStatusDto, defaultUserId: string) {
+  async changeStatus(id: string, dto: ChangeStatusDto, defaultUserId?: string) {
     const contact = await this.contactModel
       .findOne({ _id: id, isDeleted: { $ne: true } })
       .exec();
@@ -757,7 +757,7 @@ export class ContactsService implements OnModuleInit {
   async sendSmsSingle(
     id: string,
     dto: SendSmsSingleDto,
-    defaultUserId: string,
+    defaultUserId?: string,
   ) {
     const contact = await this.contactModel
       .findOne({ _id: id, isDeleted: { $ne: true } })
@@ -779,7 +779,7 @@ export class ContactsService implements OnModuleInit {
   async sendEmailSingle(
     id: string,
     dto: SendEmailSingleDto,
-    defaultUserId: string,
+    defaultUserId?: string,
   ) {
     const contact = await this.contactModel
       .findOne({ _id: id, isDeleted: { $ne: true } })
@@ -798,7 +798,7 @@ export class ContactsService implements OnModuleInit {
     return { success: true };
   }
 
-  async addQuickNote(id: string, dto: QuickNoteDto, defaultUserId: string) {
+  async addQuickNote(id: string, dto: QuickNoteDto, defaultUserId?: string) {
     const contact = await this.contactModel
       .findOne({ _id: id, isDeleted: { $ne: true } })
       .exec();
@@ -819,7 +819,7 @@ export class ContactsService implements OnModuleInit {
   async transferContact(
     id: string,
     dto: TransferContactDto,
-    defaultUserId: string,
+    defaultUserId?: string,
   ) {
     const contact = await this.contactModel
       .findOne({ _id: id, isDeleted: { $ne: true } })
@@ -892,7 +892,7 @@ export class ContactsService implements OnModuleInit {
   async attachDocument(
     id: string,
     dto: AttachDocumentDto,
-    defaultUserId: string,
+    defaultUserId?: string,
   ) {
     const contact = await this.contactModel
       .findOne({ _id: id, isDeleted: { $ne: true } })
@@ -930,7 +930,7 @@ export class ContactsService implements OnModuleInit {
   async sendTermsConditions(
     id: string,
     dto: TermsConditionsDto,
-    defaultUserId: string,
+    defaultUserId?: string,
   ) {
     const contact = await this.contactModel
       .findOne({ _id: id, isDeleted: { $ne: true } })

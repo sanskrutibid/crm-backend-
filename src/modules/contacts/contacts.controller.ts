@@ -7,12 +7,9 @@ import {
   Patch,
   Post,
   Query,
-  Req,
-  UseGuards,
   Header,
 } from '@nestjs/common';
 import {
-  ApiBearerAuth,
   ApiTags,
   ApiOperation,
   ApiCreatedResponse,
@@ -42,12 +39,9 @@ import {
   AttachDocumentDto,
   TermsConditionsDto,
 } from './dto/single-actions.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
 
 @ApiTags('Contacts')
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller('contacts')
 export class ContactsController {
   constructor(private readonly contactsService: ContactsService) {}
@@ -62,9 +56,8 @@ export class ContactsController {
     type: ContactResponseDto,
   })
   @ResponseMessage('Contact created successfully')
-  async create(@Body() createContactDto: CreateContactDto, @Req() req: any) {
-    const requestUserId = req.user.id;
-    return this.contactsService.create(createContactDto, requestUserId);
+  async create(@Body() createContactDto: CreateContactDto) {
+    return this.contactsService.create(createContactDto);
   }
 
   @Get()
@@ -88,12 +81,9 @@ export class ContactsController {
   @ResponseMessage('Audience created successfully')
   async createAudience(
     @Body() createAudienceDto: CreateAudienceDto,
-    @Req() req: any,
   ) {
-    const requestUserId = req.user.id;
     return this.contactsService.createAudience(
       createAudienceDto,
-      requestUserId,
     );
   }
 
@@ -107,17 +97,15 @@ export class ContactsController {
   @Post('actions/send-sms')
   @ApiOperation({ summary: 'Send group SMS to selected/all contacts' })
   @ResponseMessage('Group SMS sent successfully')
-  async sendGroupSms(@Body() sendSmsDto: SendSmsDto, @Req() req: any) {
-    const requestUserId = req.user.id;
-    return this.contactsService.sendGroupSms(sendSmsDto, requestUserId);
+  async sendGroupSms(@Body() sendSmsDto: SendSmsDto) {
+    return this.contactsService.sendGroupSms(sendSmsDto);
   }
 
   @Post('actions/send-email')
   @ApiOperation({ summary: 'Send group Email to selected/all contacts' })
   @ResponseMessage('Group email sent successfully')
-  async sendGroupEmail(@Body() sendEmailDto: SendEmailDto, @Req() req: any) {
-    const requestUserId = req.user.id;
-    return this.contactsService.sendGroupEmail(sendEmailDto, requestUserId);
+  async sendGroupEmail(@Body() sendEmailDto: SendEmailDto) {
+    return this.contactsService.sendGroupEmail(sendEmailDto);
   }
 
   @Post('actions/group-delete')
@@ -125,9 +113,8 @@ export class ContactsController {
     summary: 'Bulk delete contacts matching selection or filters',
   })
   @ResponseMessage('Contacts bulk deleted successfully')
-  async groupDelete(@Body() groupDeleteDto: GroupDeleteDto, @Req() req: any) {
-    const requestUserId = req.user.id;
-    return this.contactsService.groupDelete(groupDeleteDto, requestUserId);
+  async groupDelete(@Body() groupDeleteDto: GroupDeleteDto) {
+    return this.contactsService.groupDelete(groupDeleteDto);
   }
 
   @Get('actions/download')
@@ -141,17 +128,15 @@ export class ContactsController {
   @Post('actions/import')
   @ApiOperation({ summary: 'Import contacts in bulk from spreadsheet data' })
   @ResponseMessage('Contacts imported successfully')
-  async importContacts(@Body() contacts: any[], @Req() req: any) {
-    const requestUserId = req.user.id;
-    return this.contactsService.importContacts(contacts, requestUserId);
+  async importContacts(@Body() contacts: any[]) {
+    return this.contactsService.importContacts(contacts);
   }
 
   @Post('actions/mark-dnd')
   @ApiOperation({ summary: 'Bulk update DND status for selected/all contacts' })
   @ResponseMessage('DND status updated successfully')
-  async markDnd(@Body() markDndDto: MarkDndDto, @Req() req: any) {
-    const requestUserId = req.user.id;
-    return this.contactsService.markDnd(markDndDto, requestUserId);
+  async markDnd(@Body() markDndDto: MarkDndDto) {
+    return this.contactsService.markDnd(markDndDto);
   }
 
   @Post('actions/verify-emails')
@@ -159,10 +144,8 @@ export class ContactsController {
   @ResponseMessage('Email verification completed successfully')
   async verifyEmails(
     @Body() verifyEmailsDto: VerifyEmailsDto,
-    @Req() req: any,
   ) {
-    const requestUserId = req.user.id;
-    return this.contactsService.verifyEmails(verifyEmailsDto, requestUserId);
+    return this.contactsService.verifyEmails(verifyEmailsDto);
   }
 
   @Post('actions/merge')
@@ -172,10 +155,8 @@ export class ContactsController {
   @ResponseMessage('Contacts merged successfully')
   async mergeContacts(
     @Body() mergeContactsDto: MergeContactsDto,
-    @Req() req: any,
   ) {
-    const requestUserId = req.user.id;
-    return this.contactsService.mergeContacts(mergeContactsDto, requestUserId);
+    return this.contactsService.mergeContacts(mergeContactsDto);
   }
 
   @Post('actions/mark-dnd-comma')
@@ -185,10 +166,8 @@ export class ContactsController {
   @ResponseMessage('DND numbers updated successfully')
   async markDndComma(
     @Body() updateDndCommaDto: UpdateDndCommaDto,
-    @Req() req: any,
   ) {
-    const requestUserId = req.user.id;
-    return this.contactsService.markDndComma(updateDndCommaDto, requestUserId);
+    return this.contactsService.markDndComma(updateDndCommaDto);
   }
 
   @Post('actions/auto-merge')
@@ -196,9 +175,8 @@ export class ContactsController {
     summary: 'Auto merge all duplicate contacts sharing same mobile numbers',
   })
   @ResponseMessage('Duplicate contacts auto merged successfully')
-  async autoMergeDuplicates(@Req() req: any) {
-    const requestUserId = req.user.id;
-    return this.contactsService.autoMergeDuplicates(requestUserId);
+  async autoMergeDuplicates() {
+    return this.contactsService.autoMergeDuplicates();
   }
 
   @Post(':id/actions/change-status')
@@ -209,13 +187,10 @@ export class ContactsController {
   async changeStatus(
     @Param('id') id: string,
     @Body() changeStatusDto: ChangeStatusDto,
-    @Req() req: any,
   ) {
-    const requestUserId = req.user.id;
     return this.contactsService.changeStatus(
       id,
       changeStatusDto,
-      requestUserId,
     );
   }
 
@@ -227,13 +202,10 @@ export class ContactsController {
   async sendSmsSingle(
     @Param('id') id: string,
     @Body() sendSmsSingleDto: SendSmsSingleDto,
-    @Req() req: any,
   ) {
-    const requestUserId = req.user.id;
     return this.contactsService.sendSmsSingle(
       id,
       sendSmsSingleDto,
-      requestUserId,
     );
   }
 
@@ -245,13 +217,10 @@ export class ContactsController {
   async sendEmailSingle(
     @Param('id') id: string,
     @Body() sendEmailSingleDto: SendEmailSingleDto,
-    @Req() req: any,
   ) {
-    const requestUserId = req.user.id;
     return this.contactsService.sendEmailSingle(
       id,
       sendEmailSingleDto,
-      requestUserId,
     );
   }
 
@@ -263,10 +232,8 @@ export class ContactsController {
   async addQuickNote(
     @Param('id') id: string,
     @Body() quickNoteDto: QuickNoteDto,
-    @Req() req: any,
   ) {
-    const requestUserId = req.user.id;
-    return this.contactsService.addQuickNote(id, quickNoteDto, requestUserId);
+    return this.contactsService.addQuickNote(id, quickNoteDto);
   }
 
   @Post(':id/actions/transfer')
@@ -278,13 +245,10 @@ export class ContactsController {
   async transferContact(
     @Param('id') id: string,
     @Body() transferContactDto: TransferContactDto,
-    @Req() req: any,
   ) {
-    const requestUserId = req.user.id;
     return this.contactsService.transferContact(
       id,
       transferContactDto,
-      requestUserId,
     );
   }
 
@@ -305,13 +269,10 @@ export class ContactsController {
   async attachDocument(
     @Param('id') id: string,
     @Body() attachDocumentDto: AttachDocumentDto,
-    @Req() req: any,
   ) {
-    const requestUserId = req.user.id;
     return this.contactsService.attachDocument(
       id,
       attachDocumentDto,
-      requestUserId,
     );
   }
 
@@ -323,13 +284,10 @@ export class ContactsController {
   async sendTermsConditions(
     @Param('id') id: string,
     @Body() termsConditionsDto: TermsConditionsDto,
-    @Req() req: any,
   ) {
-    const requestUserId = req.user.id;
     return this.contactsService.sendTermsConditions(
       id,
       termsConditionsDto,
-      requestUserId,
     );
   }
 

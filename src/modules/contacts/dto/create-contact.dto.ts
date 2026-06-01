@@ -306,13 +306,13 @@ export class CreateContactDto {
   preferredLanguage?: string;
 
   @ApiPropertyOptional({
-    example: 4.5,
-    description: 'Customer priority rating ratio',
+    example: 25.5,
+    description: 'Commission range / customer priority rating (0-100%)',
     default: 1.0,
   })
   @IsNumber()
-  @Min(1.0)
-  @Max(5.0)
+  @Min(0)
+  @Max(100)
   @IsOptional()
   rating?: number;
 
