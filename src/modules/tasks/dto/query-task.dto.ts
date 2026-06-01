@@ -31,7 +31,8 @@ export class QueryTaskDto {
 
   @ApiPropertyOptional({
     example: 'createdAt',
-    description: "Field name to sort tasks by: 'createdAt' (Created Date) or 'scheduledDate' (Event execution date).",
+    description:
+      "Field name to sort tasks by: 'createdAt' (Created Date) or 'scheduledDate' (Event execution date).",
     default: 'createdAt',
   })
   @IsString()
@@ -41,7 +42,8 @@ export class QueryTaskDto {
   @ApiPropertyOptional({
     example: 'desc',
     enum: ['asc', 'desc'],
-    description: 'Sorting direction order: asc (ascending) or desc (descending).',
+    description:
+      'Sorting direction order: asc (ascending) or desc (descending).',
     default: 'desc',
   })
   @IsEnum(['asc', 'desc'], { message: "Sort order must be 'asc' or 'desc'" })
@@ -50,7 +52,8 @@ export class QueryTaskDto {
 
   @ApiPropertyOptional({
     example: '2026-05-26T12:00:00.000Z',
-    description: 'Sync Parameter: Fetch only task records added or modified since this timestamp.',
+    description:
+      'Sync Parameter: Fetch only task records added or modified since this timestamp.',
   })
   @IsString()
   @IsOptional()
@@ -93,7 +96,8 @@ export class QueryTaskDto {
 
   @ApiPropertyOptional({
     example: 10,
-    description: 'Number of results to retrieve per page. Set to 99999 to bypass pagination and sync all.',
+    description:
+      'Number of results to retrieve per page. Set to 99999 to bypass pagination and sync all.',
     default: 10,
   })
   @Type(() => Number)

@@ -8,7 +8,9 @@ import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: Attendance.name, schema: AttendanceSchema }]),
+    MongooseModule.forFeature([
+      { name: Attendance.name, schema: AttendanceSchema },
+    ]),
     AuthModule,
     ConfigModule,
   ],

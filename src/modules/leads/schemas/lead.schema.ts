@@ -37,7 +37,12 @@ export class Lead {
   // ==========================================
   // 1. Lead Information (Step 1)
   // ==========================================
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Contact', required: true, index: true })
+  @Prop({
+    type: MongooseSchema.Types.ObjectId,
+    ref: 'Contact',
+    required: true,
+    index: true,
+  })
   contactId: Contact; // Labeled "Contact*" (links to registered contact profiles)
 
   @Prop({ required: true, trim: true })
@@ -52,7 +57,7 @@ export class Lead {
   @Prop({ required: true, trim: true })
   scheduleTime: string; // e.g. "4:34pm"
 
-  @Prop({ type: Number, default: 1.00 })
+  @Prop({ type: Number, default: 1.0 })
   score: number; // Labeled Score(%)[1.00]
 
   // ==========================================
@@ -70,7 +75,12 @@ export class Lead {
   @Prop({ required: true, trim: true, index: true })
   branch: string; // Labeled "Branch*"
 
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true, index: true })
+  @Prop({
+    type: MongooseSchema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+    index: true,
+  })
   assignedTo: User; // Labeled "Assignee*"
 
   @Prop({ type: Boolean, default: false })
@@ -85,7 +95,11 @@ export class Lead {
   @Prop({ type: Boolean, default: false })
   sendEmailToCustomer: boolean;
 
-  @Prop({ required: true, enum: LeadVisibility, default: LeadVisibility.PRIVATE })
+  @Prop({
+    required: true,
+    enum: LeadVisibility,
+    default: LeadVisibility.PRIVATE,
+  })
   visibility: LeadVisibility;
 
   @Prop({ type: Boolean, default: false })
@@ -94,10 +108,20 @@ export class Lead {
   // ==========================================
   // 3. Status Badges & Details (Screenshot 3 & 4)
   // ==========================================
-  @Prop({ required: true, enum: LeadTemperature, default: LeadTemperature.COLD, index: true })
+  @Prop({
+    required: true,
+    enum: LeadTemperature,
+    default: LeadTemperature.COLD,
+    index: true,
+  })
   temperature: LeadTemperature; // Labeled 'Cold', 'Warm', 'Hot'
 
-  @Prop({ required: true, enum: LeadStatus, default: LeadStatus.IN_PROGRESS, index: true })
+  @Prop({
+    required: true,
+    enum: LeadStatus,
+    default: LeadStatus.IN_PROGRESS,
+    index: true,
+  })
   status: LeadStatus; // Labeled 'In Progress', 'Won', 'Lost'
 
   @Prop({ trim: true, default: 'no response' })

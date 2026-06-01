@@ -40,10 +40,20 @@ export class Task {
   @Prop({ trim: true })
   branch?: string;
 
-  @Prop({ required: true, enum: TaskStatus, default: TaskStatus.OPEN, index: true })
+  @Prop({
+    required: true,
+    enum: TaskStatus,
+    default: TaskStatus.OPEN,
+    index: true,
+  })
   status: TaskStatus;
 
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true, index: true })
+  @Prop({
+    type: MongooseSchema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+    index: true,
+  })
   assignedTo: User;
 }
 

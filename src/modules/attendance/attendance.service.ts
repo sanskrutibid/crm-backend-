@@ -1,4 +1,8 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Attendance, AttendanceDocument } from './schemas/attendance.schema';
@@ -16,7 +20,10 @@ export class AttendanceService {
   /**
    * Registers user shift punch-in, checking for existing active shifts on the current date.
    */
-  async punchIn(userId: string, punchInDto: PunchInDto): Promise<AttendanceDocument> {
+  async punchIn(
+    userId: string,
+    punchInDto: PunchInDto,
+  ): Promise<AttendanceDocument> {
     const todayStr = new Date().toISOString().split('T')[0];
 
     // Check for an active shift on the same day
@@ -29,7 +36,9 @@ export class AttendanceService {
       .exec();
 
     if (existingActiveShift) {
-      throw new ConflictException('You have already punched in and have an active shift today.');
+      throw new ConflictException(
+        'You have already punched in and have an active shift today.',
+      );
     }
 
     const newAttendance = new this.attendanceModel({
@@ -57,7 +66,10 @@ export class AttendanceService {
   /**
    * Registers user shift punch-out, closing and finalizing the shift.
    */
-  async punchOut(userId: string, punchOutDto: PunchOutDto): Promise<AttendanceDocument> {
+  async punchOut(
+    userId: string,
+    punchOutDto: PunchOutDto,
+  ): Promise<AttendanceDocument> {
     const activeShift = await this.attendanceModel
       .findOne({
         userId,
@@ -66,7 +78,9 @@ export class AttendanceService {
       .exec();
 
     if (!activeShift) {
-      throw new NotFoundException('No active punched-in shift found. Please punch in first.');
+      throw new NotFoundException(
+        'No active punched-in shift found. Please punch in first.',
+      );
     }
 
     activeShift.punchOutTime = new Date();
@@ -90,7 +104,10 @@ export class AttendanceService {
   /**
    * Periodically tracks and appends coordinate logs to the active shift.
    */
-  async trackLocation(userId: string, trackLocationDto: TrackLocationDto): Promise<AttendanceDocument> {
+  async trackLocation(
+    userId: string,
+    trackLocationDto: TrackLocationDto,
+  ): Promise<AttendanceDocument> {
     const activeShift = await this.attendanceModel
       .findOne({
         userId,
@@ -99,7 +116,9 @@ export class AttendanceService {
       .exec();
 
     if (!activeShift) {
-      throw new NotFoundException('No active shift found. Location tracking requires a punched-in shift.');
+      throw new NotFoundException(
+        'No active shift found. Location tracking requires a punched-in shift.',
+      );
     }
 
     activeShift.path.push({
@@ -123,7 +142,9 @@ export class AttendanceService {
       .exec();
 
     if (!shift) {
-      throw new NotFoundException(`No attendance record found for user on date ${date}`);
+      throw new NotFoundException(
+        `No attendance record found for user on date ${date}`,
+      );
     }
 
     const totalDistanceKm = this.calculateTotalDistance(shift.path);
@@ -150,7 +171,12 @@ export class AttendanceService {
   /**
    * Calculates the distance between two coordinates in Kilometers using the Haversine formula.
    */
-  private getDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  private getDistance(
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number,
+  ): number {
     const R = 6371; // Earth radius in Kilometers
     const dLat = ((lat2 - lat1) * Math.PI) / 180;
     const dLon = ((lon2 - lon1) * Math.PI) / 180;
@@ -219,7 +245,9 @@ export class AttendanceService {
       // Check if cluster duration satisfies our holding threshold (>= 5 minutes)
       if (clusterPoints.length >= 2) {
         const startTime = new Date(clusterPoints[0].timestamp);
-        const endTime = new Date(clusterPoints[clusterPoints.length - 1].timestamp);
+        const endTime = new Date(
+          clusterPoints[clusterPoints.length - 1].timestamp,
+        );
         const durationMs = endTime.getTime() - startTime.getTime();
 
         if (durationMs >= MIN_HALT_DURATION_MS) {
@@ -232,7 +260,8 @@ export class AttendanceService {
           });
           const centroidLat = sumLat / clusterPoints.length;
           const centroidLng = sumLng / clusterPoints.length;
-          const durationMinutes = Math.round((durationMs / (60 * 1000)) * 10) / 10;
+          const durationMinutes =
+            Math.round((durationMs / (60 * 1000)) * 10) / 10;
 
           holdingPoints.push({
             latitude: centroidLat,

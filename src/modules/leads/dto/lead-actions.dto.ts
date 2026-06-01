@@ -12,8 +12,10 @@ export class ChangeLeadStatusDto {
   status: LeadStatus;
 
   @ApiProperty({
-    example: 'Client agreed to proceed with row villa purchase at Rs. 1.35 Crore.',
-    description: 'Final outcome remark detail explaining the status update context.',
+    example:
+      'Client agreed to proceed with row villa purchase at Rs. 1.35 Crore.',
+    description:
+      'Final outcome remark detail explaining the status update context.',
   })
   @IsString()
   outcome: string;
@@ -21,7 +23,8 @@ export class ChangeLeadStatusDto {
 
 export class UpdateRequirementDto {
   @ApiProperty({
-    example: 'Rs. 1.38 Crore, 3 Bed, for Sale in Riddhi Siddhi, Pande Layout, Nagpur',
+    example:
+      'Rs. 1.38 Crore, 3 Bed, for Sale in Riddhi Siddhi, Pande Layout, Nagpur',
     description: 'Modified raw text customer basic requirements description',
   })
   @IsString()
@@ -104,7 +107,8 @@ export class SendLeadEmailDto {
   subject: string;
 
   @ApiProperty({
-    example: '<p>Dear customer, please find the proposal document details...</p>',
+    example:
+      '<p>Dear customer, please find the proposal document details...</p>',
     description: 'HTML rich text email message body',
   })
   @IsString()
@@ -128,7 +132,8 @@ export class SendLeadEmailDto {
 export class LeadQuickNoteDto {
   @ApiProperty({
     example: 'Call Summary',
-    description: 'Category/type of quick note comment (e.g. Call Summary, Site Visit, Meeting Minutes).',
+    description:
+      'Category/type of quick note comment (e.g. Call Summary, Site Visit, Meeting Minutes).',
   })
   @IsString()
   commentType: string;
@@ -150,11 +155,17 @@ export class SendProposalDto {
   @IsString()
   module: string;
 
-  @ApiProperty({ example: 'Solitaire Residency', description: 'Target Project Property' })
+  @ApiProperty({
+    example: 'Solitaire Residency',
+    description: 'Target Project Property',
+  })
   @IsString()
   propertyProject: string;
 
-  @ApiProperty({ example: 'Standard Proposal Template', description: 'Quotation Proposal Template' })
+  @ApiProperty({
+    example: 'Standard Proposal Template',
+    description: 'Quotation Proposal Template',
+  })
   @IsString()
   template: string;
 }
@@ -168,31 +179,48 @@ export class LeadTermsConditionsDto {
   subject: string;
 
   @ApiProperty({
-    example: '<p>Dear Customer, please view our standard terms and conditions details below...</p>',
-    description: 'Rich text/HTML email message body containing terms and conditions',
+    example:
+      '<p>Dear Customer, please view our standard terms and conditions details below...</p>',
+    description:
+      'Rich text/HTML email message body containing terms and conditions',
   })
   @IsString()
   message: string;
 }
 
 export class CreateSiteVisitDto {
-  @ApiProperty({ example: 'Chirag Ashtankar', description: 'Visitor full name' })
+  @ApiProperty({
+    example: 'Chirag Ashtankar',
+    description: 'Visitor full name',
+  })
   @IsString()
   visitor: string;
 
-  @ApiProperty({ example: 'First Visit', description: 'Type of visit (e.g. First Visit, Re-visit)' })
+  @ApiProperty({
+    example: 'First Visit',
+    description: 'Type of visit (e.g. First Visit, Re-visit)',
+  })
   @IsString()
   visitType: string;
 
-  @ApiProperty({ example: 'Lead', description: 'Target CRM module (e.g. Lead, Contact)' })
+  @ApiProperty({
+    example: 'Lead',
+    description: 'Target CRM module (e.g. Lead, Contact)',
+  })
   @IsString()
   module: string;
 
-  @ApiProperty({ example: 'Solitaire Residency', description: 'Target property site name selected' })
+  @ApiProperty({
+    example: 'Solitaire Residency',
+    description: 'Target property site name selected',
+  })
   @IsString()
   siteName: string;
 
-  @ApiPropertyOptional({ example: 'Phase 2 Block B', description: 'Alternative or custom name description' })
+  @ApiPropertyOptional({
+    example: 'Phase 2 Block B',
+    description: 'Alternative or custom name description',
+  })
   @IsString()
   @IsOptional()
   otherName?: string;
@@ -209,22 +237,34 @@ export class CreateSiteVisitDto {
   @IsString()
   timeOut: string;
 
-  @ApiPropertyOptional({ example: 'Highly interested in the 3BHK penthouse configuration.', description: 'Visit remark details' })
+  @ApiPropertyOptional({
+    example: 'Highly interested in the 3BHK penthouse configuration.',
+    description: 'Visit remark details',
+  })
   @IsString()
   @IsOptional()
   remark?: string;
 
   // Step 2 Internal Information
-  @ApiProperty({ example: 'Gourav Raut', description: 'Site Manager full name' })
+  @ApiProperty({
+    example: 'Gourav Raut',
+    description: 'Site Manager full name',
+  })
   @IsString()
   siteManager: string;
 
-  @ApiPropertyOptional({ example: 'Sourcing Associate', description: 'Sourcing Manager name' })
+  @ApiPropertyOptional({
+    example: 'Sourcing Associate',
+    description: 'Sourcing Manager name',
+  })
   @IsString()
   @IsOptional()
   sourcingManager?: string;
 
-  @ApiPropertyOptional({ example: 'Closing Specialist', description: 'Closing Manager name' })
+  @ApiPropertyOptional({
+    example: 'Closing Specialist',
+    description: 'Closing Manager name',
+  })
   @IsString()
   @IsOptional()
   closingManager?: string;
@@ -237,30 +277,48 @@ export class CreateSiteVisitDto {
   @IsString()
   branch: string;
 
-  @ApiProperty({ example: 'Gourav Raut', description: 'Assigned CRM executive agent' })
+  @ApiProperty({
+    example: 'Gourav Raut',
+    description: 'Assigned CRM executive agent',
+  })
   @IsString()
   assignee: string;
 
-  @ApiProperty({ example: 'Scheduled', description: 'Lifecycle status of visit' })
+  @ApiProperty({
+    example: 'Scheduled',
+    description: 'Lifecycle status of visit',
+  })
   @IsString()
   visitStatus: string;
 
-  @ApiPropertyOptional({ example: false, description: 'Send confirmation SMS alert notification' })
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Send confirmation SMS alert notification',
+  })
   @IsBoolean()
   @IsOptional()
   sendSmsNotification?: boolean;
 
-  @ApiPropertyOptional({ example: true, description: 'Send confirmation Email alert notification' })
+  @ApiPropertyOptional({
+    example: true,
+    description: 'Send confirmation Email alert notification',
+  })
   @IsBoolean()
   @IsOptional()
   sendEmailNotification?: boolean;
 
-  @ApiPropertyOptional({ example: 'Private', description: 'Visibility scope permissions' })
+  @ApiPropertyOptional({
+    example: 'Private',
+    description: 'Visibility scope permissions',
+  })
   @IsString()
   @IsOptional()
   visibility?: string;
 
-  @ApiPropertyOptional({ example: 'https://cdn.b2bbricks.com/uploads/photo.jpg', description: 'Upload path URL path' })
+  @ApiPropertyOptional({
+    example: 'https://cdn.b2bbricks.com/uploads/photo.jpg',
+    description: 'Upload path URL path',
+  })
   @IsString()
   @IsOptional()
   photograph?: string;

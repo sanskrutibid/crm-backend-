@@ -10,7 +10,14 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags, ApiOperation, ApiCreatedResponse, ApiOkResponse, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiTags,
+  ApiOperation,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { LeadsService } from './leads.service';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
@@ -75,12 +82,22 @@ export class LeadsController {
       },
     },
   })
-  @ApiQuery({ name: 'assignedTo', required: false, description: 'Filter by agent/user MongoDB ID' })
+  @ApiQuery({
+    name: 'assignedTo',
+    required: false,
+    description: 'Filter by agent/user MongoDB ID',
+  })
   @ApiQuery({
     name: 'sortBy',
     required: false,
     description: 'Field to sort leads by (default: FollowUp Date)',
-    enum: ['Assigned Date', 'Create Date', 'FollowUp Date', 'Updated Date', 'Name'],
+    enum: [
+      'Assigned Date',
+      'Create Date',
+      'FollowUp Date',
+      'Updated Date',
+      'Name',
+    ],
     example: 'FollowUp Date',
   })
   @ApiQuery({
@@ -90,8 +107,18 @@ export class LeadsController {
     enum: ['Asc', 'Desc'],
     example: 'Asc',
   })
-  @ApiQuery({ name: 'page', required: false, description: 'Page number (default: 1)', example: 1 })
-  @ApiQuery({ name: 'limit', required: false, description: 'Records per page (default: 20)', example: 20 })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Page number (default: 1)',
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Records per page (default: 20)',
+    example: 20,
+  })
   @ResponseMessage("Today's follow-up leads retrieved successfully")
   async getTodayFollowup(
     @Query('assignedTo') assignedTo?: string,
@@ -100,7 +127,13 @@ export class LeadsController {
     @Query('page') page = 1,
     @Query('limit') limit = 20,
   ) {
-    return this.leadsService.getTodayFollowup(assignedTo, sortBy, orderBy, Number(page), Number(limit));
+    return this.leadsService.getTodayFollowup(
+      assignedTo,
+      sortBy,
+      orderBy,
+      Number(page),
+      Number(limit),
+    );
   }
 
   @Get('open-leads')
@@ -118,13 +151,27 @@ export class LeadsController {
       },
     },
   })
-  @ApiQuery({ name: 'assignedTo', required: false, description: 'Filter by agent/user MongoDB ID' })
-  @ApiQuery({ name: 'branch', required: false, description: 'Filter by branch name (partial match)' })
+  @ApiQuery({
+    name: 'assignedTo',
+    required: false,
+    description: 'Filter by agent/user MongoDB ID',
+  })
+  @ApiQuery({
+    name: 'branch',
+    required: false,
+    description: 'Filter by branch name (partial match)',
+  })
   @ApiQuery({
     name: 'sortBy',
     required: false,
     description: 'Field to sort leads by (default: Create Date)',
-    enum: ['Assigned Date', 'Create Date', 'FollowUp Date', 'Updated Date', 'Name'],
+    enum: [
+      'Assigned Date',
+      'Create Date',
+      'FollowUp Date',
+      'Updated Date',
+      'Name',
+    ],
     example: 'Create Date',
   })
   @ApiQuery({
@@ -134,8 +181,18 @@ export class LeadsController {
     enum: ['Asc', 'Desc'],
     example: 'Desc',
   })
-  @ApiQuery({ name: 'page', required: false, description: 'Page number (default: 1)', example: 1 })
-  @ApiQuery({ name: 'limit', required: false, description: 'Records per page (default: 20)', example: 20 })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Page number (default: 1)',
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Records per page (default: 20)',
+    example: 20,
+  })
   @ResponseMessage('Open leads retrieved successfully')
   async getOpenLeads(
     @Query('assignedTo') assignedTo?: string,
@@ -145,11 +202,20 @@ export class LeadsController {
     @Query('page') page = 1,
     @Query('limit') limit = 20,
   ) {
-    return this.leadsService.getOpenLeads(assignedTo, branch, sortBy, orderBy, Number(page), Number(limit));
+    return this.leadsService.getOpenLeads(
+      assignedTo,
+      branch,
+      sortBy,
+      orderBy,
+      Number(page),
+      Number(limit),
+    );
   }
 
   @Post(':id/actions/change-status')
-  @ApiOperation({ summary: 'Change lead status (In Progress, Won, Lost) with final outcome' })
+  @ApiOperation({
+    summary: 'Change lead status (In Progress, Won, Lost) with final outcome',
+  })
   @ResponseMessage('Lead status updated successfully')
   async changeStatus(
     @Param('id') id: string,
@@ -157,7 +223,11 @@ export class LeadsController {
     @Req() req: any,
   ) {
     const requestUserId = req.user.id;
-    return this.leadsService.changeStatus(id, changeLeadStatusDto, requestUserId);
+    return this.leadsService.changeStatus(
+      id,
+      changeLeadStatusDto,
+      requestUserId,
+    );
   }
 
   @Post(':id/actions/update-requirement')
@@ -173,7 +243,9 @@ export class LeadsController {
   }
 
   @Post(':id/actions/send-sms')
-  @ApiOperation({ summary: 'Send scheduled or immediate SMS to a lead contact' })
+  @ApiOperation({
+    summary: 'Send scheduled or immediate SMS to a lead contact',
+  })
   @ResponseMessage('SMS queued/sent successfully')
   async sendSms(
     @Param('id') id: string,
@@ -185,7 +257,9 @@ export class LeadsController {
   }
 
   @Post(':id/actions/send-email')
-  @ApiOperation({ summary: 'Send scheduled or immediate Email to a lead contact' })
+  @ApiOperation({
+    summary: 'Send scheduled or immediate Email to a lead contact',
+  })
   @ResponseMessage('Email queued/sent successfully')
   async sendEmail(
     @Param('id') id: string,
@@ -209,7 +283,9 @@ export class LeadsController {
   }
 
   @Post(':id/actions/send-proposal')
-  @ApiOperation({ summary: 'Send rich proposal document to lead contact email' })
+  @ApiOperation({
+    summary: 'Send rich proposal document to lead contact email',
+  })
   @ResponseMessage('Proposal successfully sent')
   async sendProposal(
     @Param('id') id: string,
@@ -240,14 +316,18 @@ export class LeadsController {
   }
 
   @Get(':id/actions/site-visits')
-  @ApiOperation({ summary: 'Retrieve scheduled property site visits for a single lead' })
+  @ApiOperation({
+    summary: 'Retrieve scheduled property site visits for a single lead',
+  })
   @ResponseMessage('Site visits retrieved successfully')
   async getSiteVisits(@Param('id') id: string) {
     return this.leadsService.getSiteVisits(id);
   }
 
   @Post(':id/actions/site-visits')
-  @ApiOperation({ summary: 'Schedule a new property site visit for a single lead' })
+  @ApiOperation({
+    summary: 'Schedule a new property site visit for a single lead',
+  })
   @ResponseMessage('Site visit scheduled successfully')
   async createSiteVisit(
     @Param('id') id: string,

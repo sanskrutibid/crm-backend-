@@ -23,7 +23,8 @@ export class QueryPropertyDto {
 
   @ApiPropertyOptional({
     example: '2026-05-26T12:00:00.000Z',
-    description: 'Sync Parameter: Fetch only property listings added or modified since this timestamp.',
+    description:
+      'Sync Parameter: Fetch only property listings added or modified since this timestamp.',
   })
   @IsString()
   @IsOptional()
@@ -42,7 +43,8 @@ export class QueryPropertyDto {
 
   @ApiPropertyOptional({
     example: 10,
-    description: 'Number of results to retrieve per page. Set to 99999 to bypass pagination and sync all.',
+    description:
+      'Number of results to retrieve per page. Set to 99999 to bypass pagination and sync all.',
     default: 10,
   })
   @Type(() => Number)
@@ -50,4 +52,34 @@ export class QueryPropertyDto {
   @Min(1)
   @IsOptional()
   limit?: number = 10;
+
+  @ApiPropertyOptional({
+    example: 'Create Date',
+    enum: [
+      'Create Date',
+      'Requested Date',
+      'Customer Name',
+      'Building',
+      'Updated Date',
+      'Price',
+      'Area',
+      'Location',
+      'Property Type',
+    ],
+    description: 'Field to sort query records by',
+    default: 'Create Date',
+  })
+  @IsString()
+  @IsOptional()
+  sortBy?: string = 'Create Date';
+
+  @ApiPropertyOptional({
+    example: 'Desc',
+    enum: ['Asc', 'Desc'],
+    description: 'Sorting sort direction order: Ascending or Descending',
+    default: 'Desc',
+  })
+  @IsString()
+  @IsOptional()
+  orderBy?: 'Asc' | 'Desc' = 'Desc';
 }

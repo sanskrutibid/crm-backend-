@@ -77,7 +77,12 @@ export class Opportunity {
   // ==========================================
   // 1. Contact Information (Step 1)
   // ==========================================
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Contact', required: true, index: true })
+  @Prop({
+    type: MongooseSchema.Types.ObjectId,
+    ref: 'Contact',
+    required: true,
+    index: true,
+  })
   contactId: Contact; // Labeled "Customer*"
 
   // ==========================================
@@ -176,7 +181,12 @@ export class Opportunity {
   @Prop({ required: true, trim: true, index: true })
   branch: string; // Labeled "Branch*"
 
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true, index: true })
+  @Prop({
+    type: MongooseSchema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+    index: true,
+  })
   assignedTo: User; // Labeled "Assignee*"
 
   @Prop({ type: Number, default: 0 })
@@ -194,7 +204,11 @@ export class Opportunity {
   @Prop({ type: Boolean, default: false })
   sendEmailToCustomer: boolean;
 
-  @Prop({ required: true, enum: OpportunityVisibility, default: OpportunityVisibility.PRIVATE })
+  @Prop({
+    required: true,
+    enum: OpportunityVisibility,
+    default: OpportunityVisibility.PRIVATE,
+  })
   visibility: OpportunityVisibility;
 
   @Prop({ type: Boolean, default: false })
@@ -206,7 +220,12 @@ export class Opportunity {
   // ==========================================
   // 5. System/Status Fields
   // ==========================================
-  @Prop({ required: true, enum: OpportunityStatus, default: OpportunityStatus.IN_PROGRESS, index: true })
+  @Prop({
+    required: true,
+    enum: OpportunityStatus,
+    default: OpportunityStatus.IN_PROGRESS,
+    index: true,
+  })
   status: OpportunityStatus;
 
   @Prop({ type: Date, default: Date.now, index: true })

@@ -1,5 +1,22 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags, ApiOperation, ApiCreatedResponse, ApiOkResponse } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiTags,
+  ApiOperation,
+  ApiCreatedResponse,
+  ApiOkResponse,
+} from '@nestjs/swagger';
 import { AttendanceService } from './attendance.service';
 import { PunchInDto } from './dto/punch-in.dto';
 import { PunchOutDto } from './dto/punch-out.dto';
@@ -19,7 +36,8 @@ export class AttendanceController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Punch-In shift startup' })
   @ApiCreatedResponse({
-    description: 'Shift punched in and initial coordinates registered successfully.',
+    description:
+      'Shift punched in and initial coordinates registered successfully.',
   })
   @ResponseMessage('Punch-in completed successfully')
   async punchIn(@Body() punchInDto: PunchInDto, @Req() req: any) {
@@ -46,15 +64,21 @@ export class AttendanceController {
     description: 'GPS tracking point added to shift path logs.',
   })
   @ResponseMessage('Location tracking point registered successfully')
-  async trackLocation(@Body() trackLocationDto: TrackLocationDto, @Req() req: any) {
+  async trackLocation(
+    @Body() trackLocationDto: TrackLocationDto,
+    @Req() req: any,
+  ) {
     const activeUserId = req.user.id;
     return this.attendanceService.trackLocation(activeUserId, trackLocationDto);
   }
 
   @Get('agent/:userId/timeline')
-  @ApiOperation({ summary: 'Retrieve comprehensive agent route timeline and stops' })
+  @ApiOperation({
+    summary: 'Retrieve comprehensive agent route timeline and stops',
+  })
   @ApiOkResponse({
-    description: 'Calculated metrics, geodetic coordinates list, and holding points generated successfully.',
+    description:
+      'Calculated metrics, geodetic coordinates list, and holding points generated successfully.',
     type: AgentMovementTimelineDto,
   })
   @ResponseMessage('Agent movement timeline retrieved successfully')
@@ -62,7 +86,9 @@ export class AttendanceController {
     @Param('userId') userId: string,
     @Query('date') date: string,
   ) {
-    const cleanUserId = userId ? userId.trim().replace(/^["']|["']$/g, '') : userId;
+    const cleanUserId = userId
+      ? userId.trim().replace(/^["']|["']$/g, '')
+      : userId;
     const queryDate = date || new Date().toISOString().split('T')[0];
     return this.attendanceService.getAgentTimeline(cleanUserId, queryDate);
   }

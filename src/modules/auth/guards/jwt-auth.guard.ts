@@ -14,15 +14,16 @@ export class JwtAuthGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const token = this.extractTokenFromHeader(request);
-    
+
     if (!token) {
       throw new UnauthorizedException('Authentication token is missing');
     }
 
     try {
-      const secret = this.configService.get<string>('JWT_SECRET') || 'your_secret_key';
+      const secret =
+        this.configService.get<string>('JWT_SECRET') || 'your_secret_key';
       const payload = jwt.verify(token, secret) as any;
-      
+
       // Attach user credentials to the request
       request['user'] = {
         id: payload.sub,
@@ -30,7 +31,9 @@ export class JwtAuthGuard implements CanActivate {
         role: payload.role,
       };
     } catch (err) {
-      throw new UnauthorizedException('Invalid or expired authentication token');
+      throw new UnauthorizedException(
+        'Invalid or expired authentication token',
+      );
     }
 
     return true;

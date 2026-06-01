@@ -1,7 +1,12 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return */
 import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Property, PropertyDocument, PropertyStatus } from './schemas/property.schema';
+import {
+  Property,
+  PropertyDocument,
+  PropertyStatus,
+} from './schemas/property.schema';
 import { CreatePropertyDto } from './dto/create-property.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
 import { QueryPropertyDto } from './dto/query-property.dto';
@@ -11,7 +16,8 @@ import { ActivityType } from '../activities/schemas/activity.schema';
 @Injectable()
 export class PropertiesService implements OnModuleInit {
   constructor(
-    @InjectModel(Property.name) private readonly propertyModel: Model<PropertyDocument>,
+    @InjectModel(Property.name)
+    private readonly propertyModel: Model<PropertyDocument>,
     private readonly activitiesService: ActivitiesService,
   ) {}
 
@@ -60,12 +66,109 @@ export class PropertiesService implements OnModuleInit {
         },
       ];
       await this.propertyModel.insertMany(initialProperties);
-      console.log('🌱 Successfully seeded initial Properties directory database collection.');
+      console.log(
+        '🌱 Successfully seeded initial Properties directory database collection.',
+      );
     }
   }
 
-  async create(createPropertyDto: CreatePropertyDto): Promise<PropertyDocument> {
-    const newProperty = new this.propertyModel(createPropertyDto);
+  /**
+   * Safe auto-mapping from new multi-step wizard fields to legacy base properties.
+   * This maintains database integrity and ensures that widgets/cards relying on name, location,
+   * type, price, sqft, or builder properties continue to display data correctly.
+   */
+  private mapLegacyFields(dto: any, isCreate = false): any {
+    const mapped = { ...dto };
+
+    if (isCreate) {
+      if (!mapped.name) {
+        mapped.name =
+          mapped.projectDeveloperName ||
+          mapped.buildingTowerProject ||
+          'Unnamed Property';
+      }
+      if (!mapped.location) {
+        mapped.location =
+          mapped.address ||
+          mapped.locality ||
+          mapped.city ||
+          'Unknown Location';
+      }
+      if (!mapped.type) {
+        mapped.type = mapped.propertyType || 'Flat';
+      }
+      if (!mapped.price) {
+        if (
+          mapped.expectedPrice !== undefined &&
+          mapped.expectedPrice !== null
+        ) {
+          const mode = mapped.priceMode ? ` (${mapped.priceMode})` : '';
+          mapped.price = `₹${(mapped.expectedPrice / 10000000).toFixed(2)} Cr${mode}`;
+        } else {
+          mapped.price = '₹0';
+        }
+      }
+      if (mapped.sqft === undefined || mapped.sqft === null) {
+        mapped.sqft =
+          mapped.area || mapped.builtUpArea || mapped.carpetArea || 0;
+      }
+      if (!mapped.builder) {
+        mapped.builder = mapped.projectDeveloperName || 'Unknown Builder';
+      }
+    } else {
+      // For updates, we dynamically compute base fields if the corresponding wizard field was modified
+      if (mapped.projectDeveloperName || mapped.buildingTowerProject) {
+        mapped.name =
+          mapped.projectDeveloperName || mapped.buildingTowerProject;
+      }
+      if (mapped.address || mapped.locality || mapped.city) {
+        mapped.location = mapped.address || mapped.locality || mapped.city;
+      }
+      if (mapped.propertyType) {
+        mapped.type = mapped.propertyType;
+      }
+      if (mapped.expectedPrice !== undefined && mapped.expectedPrice !== null) {
+        const mode = mapped.priceMode ? ` (${mapped.priceMode})` : '';
+        mapped.price = `₹${(mapped.expectedPrice / 10000000).toFixed(2)} Cr${mode}`;
+      }
+      if (mapped.area !== undefined && mapped.area !== null) {
+        mapped.sqft = mapped.area;
+      } else if (
+        mapped.builtUpArea !== undefined &&
+        mapped.builtUpArea !== null
+      ) {
+        mapped.sqft = mapped.builtUpArea;
+      } else if (
+        mapped.carpetArea !== undefined &&
+        mapped.carpetArea !== null
+      ) {
+        mapped.sqft = mapped.carpetArea;
+      }
+      if (mapped.projectDeveloperName) {
+        mapped.builder = mapped.projectDeveloperName;
+      }
+    }
+
+    return mapped;
+  }
+
+  async create(
+    createPropertyDto: CreatePropertyDto,
+    defaultUserId?: string,
+  ): Promise<PropertyDocument> {
+    const mappedDto = this.mapLegacyFields(createPropertyDto, true);
+
+    // Populate createdBy and assignedTo if defaultUserId is available and they are not already set
+    if (defaultUserId) {
+      if (!mappedDto.createdBy) {
+        mappedDto.createdBy = defaultUserId;
+      }
+      if (!mappedDto.assignedTo) {
+        mappedDto.assignedTo = defaultUserId;
+      }
+    }
+
+    const newProperty = new this.propertyModel(mappedDto);
     const savedProperty = await newProperty.save();
 
     // Log the addition in activity stream
@@ -74,11 +177,144 @@ export class PropertiesService implements OnModuleInit {
       ActivityType.PROPERTY,
     );
 
-    return savedProperty;
+    return savedProperty.populate(['createdBy', 'assignedTo']);
   }
 
-  async findAll(query: QueryPropertyDto): Promise<{ properties: PropertyDocument[]; total: number }> {
-    const { status, search, updatedSince, page = 1, limit = 10 } = query;
+  private buildSortObject(
+    sortBy: string = 'Create Date',
+    orderBy: 'Asc' | 'Desc' = 'Desc',
+  ): Record<string, 1 | -1> {
+    const dir: 1 | -1 = orderBy === 'Asc' ? 1 : -1;
+    const fieldMap: Record<string, string> = {
+      'Create Date': 'createdAt',
+      'Requested Date': 'requestDate',
+      'Customer Name': 'ownerLandlord',
+      Building: 'buildingTowerProject',
+      'Updated Date': 'updatedAt',
+      Price: 'expectedPrice',
+      Area: 'area',
+      Location: 'address',
+      'Property Type': 'propertyType',
+    };
+    const field = fieldMap[sortBy] ?? 'createdAt';
+    return { [field]: dir };
+  }
+
+  async getMyProperties(
+    userId: string,
+    query: QueryPropertyDto,
+  ): Promise<{ properties: PropertyDocument[]; total: number }> {
+    const {
+      status,
+      search,
+      updatedSince,
+      page = 1,
+      limit = 10,
+      sortBy = 'Create Date',
+      orderBy = 'Desc',
+    } = query;
+
+    // Filter properties owned by or assigned to the logged-in user
+    // Included legacy 'assignee' string match check for maximum resilience
+    const filter: any = {
+      $or: [
+        { createdBy: userId },
+        { assignedTo: userId },
+        { assignee: userId },
+      ],
+    };
+
+    if (status) {
+      filter.status = status;
+    }
+
+    if (search) {
+      filter.$and = filter.$and || [];
+      filter.$and.push({
+        $or: [
+          { name: new RegExp(search, 'i') },
+          { location: new RegExp(search, 'i') },
+          { builder: new RegExp(search, 'i') },
+          { type: new RegExp(search, 'i') },
+        ],
+      });
+    }
+
+    if (updatedSince) {
+      filter.updatedAt = { $gte: new Date(updatedSince) };
+    }
+
+    const total = await this.propertyModel.countDocuments(filter).exec();
+    const sortObj = this.buildSortObject(sortBy, orderBy);
+    let queryChain = this.propertyModel.find(filter).sort(sortObj);
+
+    if (limit > 0 && limit < 99999) {
+      queryChain = queryChain.skip((page - 1) * limit).limit(limit);
+    }
+
+    const properties = await queryChain
+      .populate(['createdBy', 'assignedTo'])
+      .exec();
+    return { properties, total };
+  }
+
+  async getAvailableProperties(
+    query: QueryPropertyDto,
+  ): Promise<{ properties: PropertyDocument[]; total: number }> {
+    const {
+      search,
+      updatedSince,
+      page = 1,
+      limit = 10,
+      sortBy = 'Create Date',
+      orderBy = 'Desc',
+    } = query;
+
+    // Filter strictly for properties with status = 'Available'
+    const filter: any = { status: PropertyStatus.AVAILABLE };
+
+    if (search) {
+      filter.$and = filter.$and || [];
+      filter.$and.push({
+        $or: [
+          { name: new RegExp(search, 'i') },
+          { location: new RegExp(search, 'i') },
+          { builder: new RegExp(search, 'i') },
+          { type: new RegExp(search, 'i') },
+        ],
+      });
+    }
+
+    if (updatedSince) {
+      filter.updatedAt = { $gte: new Date(updatedSince) };
+    }
+
+    const total = await this.propertyModel.countDocuments(filter).exec();
+    const sortObj = this.buildSortObject(sortBy, orderBy);
+    let queryChain = this.propertyModel.find(filter).sort(sortObj);
+
+    if (limit > 0 && limit < 99999) {
+      queryChain = queryChain.skip((page - 1) * limit).limit(limit);
+    }
+
+    const properties = await queryChain
+      .populate(['createdBy', 'assignedTo'])
+      .exec();
+    return { properties, total };
+  }
+
+  async findAll(
+    query: QueryPropertyDto,
+  ): Promise<{ properties: PropertyDocument[]; total: number }> {
+    const {
+      status,
+      search,
+      updatedSince,
+      page = 1,
+      limit = 10,
+      sortBy = 'Create Date',
+      orderBy = 'Desc',
+    } = query;
     const filter: any = {};
 
     if (status) {
@@ -102,27 +338,38 @@ export class PropertiesService implements OnModuleInit {
     const total = await this.propertyModel.countDocuments(filter).exec();
 
     // Pagination bypass logic: If limit is >= 99999, return all matching records at once
-    const queryChain = this.propertyModel.find(filter).sort({ createdAt: -1 });
+    const sortObj = this.buildSortObject(sortBy, orderBy);
+    let queryChain = this.propertyModel.find(filter).sort(sortObj);
 
     if (limit > 0 && limit < 99999) {
-      queryChain.skip((page - 1) * limit).limit(limit);
+      queryChain = queryChain.skip((page - 1) * limit).limit(limit);
     }
 
-    const properties = await queryChain.exec();
+    const properties = await queryChain
+      .populate(['createdBy', 'assignedTo'])
+      .exec();
     return { properties, total };
   }
 
   async findOne(id: string): Promise<PropertyDocument> {
-    const property = await this.propertyModel.findById(id).exec();
+    const property = await this.propertyModel
+      .findById(id)
+      .populate(['createdBy', 'assignedTo'])
+      .exec();
     if (!property) {
       throw new NotFoundException(`Property listing with ID "${id}" not found`);
     }
     return property;
   }
 
-  async update(id: string, updatePropertyDto: UpdatePropertyDto): Promise<PropertyDocument> {
+  async update(
+    id: string,
+    updatePropertyDto: UpdatePropertyDto,
+  ): Promise<PropertyDocument> {
+    const mappedDto = this.mapLegacyFields(updatePropertyDto, false);
     const updatedProperty = await this.propertyModel
-      .findByIdAndUpdate(id, updatePropertyDto, { new: true })
+      .findByIdAndUpdate(id, mappedDto, { new: true })
+      .populate(['createdBy', 'assignedTo'])
       .exec();
 
     if (!updatedProperty) {

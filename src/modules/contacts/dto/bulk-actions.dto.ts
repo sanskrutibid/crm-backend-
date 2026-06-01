@@ -9,7 +9,9 @@ export class CreateAudienceDto {
   name: string;
 
   @ApiProperty({ example: AudienceType.EMAIL, enum: AudienceType })
-  @IsEnum(AudienceType, { message: 'Invalid audience type. Options: Email, SMS, IVR, WhatsApp' })
+  @IsEnum(AudienceType, {
+    message: 'Invalid audience type. Options: Email, SMS, IVR, WhatsApp',
+  })
   type: AudienceType;
 
   @ApiProperty({ example: 'Festival Greeting Template' })
@@ -17,7 +19,10 @@ export class CreateAudienceDto {
   template: string;
 
   @ApiProperty({ example: ScheduleType.ON_DEMAND, enum: ScheduleType })
-  @IsEnum(ScheduleType, { message: 'Invalid schedule type. Options: On Demand, Daily, Weekly, Monthly' })
+  @IsEnum(ScheduleType, {
+    message:
+      'Invalid schedule type. Options: On Demand, Daily, Weekly, Monthly',
+  })
   schedule: ScheduleType;
 
   @ApiPropertyOptional({ example: '11:57am' })

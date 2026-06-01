@@ -150,7 +150,7 @@ export class Contact {
   @Prop({ trim: true, default: 'English' })
   preferredLanguage?: string;
 
-  @Prop({ type: Number, default: 1.00 })
+  @Prop({ type: Number, default: 1.0 })
   rating?: number; // Labeled Rating(%)[1.00]
 
   @Prop({ trim: true })
@@ -171,13 +171,22 @@ export class Contact {
   @Prop({ required: true, trim: true, index: true })
   branch: string; // e.g. "Global Team"
 
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true, index: true })
+  @Prop({
+    type: MongooseSchema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+    index: true,
+  })
   assignedTo: User; // Dropdown label "Assignee"
 
   @Prop({ trim: true })
   photograph?: string; // URL path of profile image upload
 
-  @Prop({ required: true, enum: ContactVisibility, default: ContactVisibility.PRIVATE })
+  @Prop({
+    required: true,
+    enum: ContactVisibility,
+    default: ContactVisibility.PRIVATE,
+  })
   visibility: ContactVisibility;
 
   @Prop({ type: Boolean, default: false })

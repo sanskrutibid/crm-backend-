@@ -1,6 +1,19 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsEnum, IsBoolean, IsOptional, IsString, IsNumber, Min, Max } from 'class-validator';
-import { LeadTemperature, LeadStatus, LeadVisibility } from '../schemas/lead.schema';
+import {
+  IsNotEmpty,
+  IsEnum,
+  IsBoolean,
+  IsOptional,
+  IsString,
+  IsNumber,
+  Min,
+  Max,
+} from 'class-validator';
+import {
+  LeadTemperature,
+  LeadStatus,
+  LeadVisibility,
+} from '../schemas/lead.schema';
 
 export class CreateLeadDto {
   // ==========================================
@@ -8,7 +21,8 @@ export class CreateLeadDto {
   // ==========================================
   @ApiPropertyOptional({
     example: '60d5ed7ab394142e88a38c29',
-    description: 'Target Contact ID registered in the CRM Contacts directory. Required if addNewContact is false/omitted.',
+    description:
+      'Target Contact ID registered in the CRM Contacts directory. Required if addNewContact is false/omitted.',
   })
   @IsString()
   @IsOptional()
@@ -16,7 +30,8 @@ export class CreateLeadDto {
 
   @ApiPropertyOptional({
     example: true,
-    description: 'Whether to add a new contact on-the-fly when creating the lead',
+    description:
+      'Whether to add a new contact on-the-fly when creating the lead',
     default: false,
   })
   @IsBoolean()
@@ -90,11 +105,11 @@ export class CreateLeadDto {
   @ApiPropertyOptional({
     example: 4.5,
     description: 'Lead requirement score ratio',
-    default: 1.00,
+    default: 1.0,
   })
   @IsNumber()
-  @Min(1.00)
-  @Max(5.00)
+  @Min(1.0)
+  @Max(5.0)
   @IsOptional()
   score?: number;
 
@@ -141,22 +156,38 @@ export class CreateLeadDto {
   @IsOptional()
   assignedTo?: string;
 
-  @ApiPropertyOptional({ example: false, description: 'Send alert WhatsApp message to assignee executive', default: false })
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Send alert WhatsApp message to assignee executive',
+    default: false,
+  })
   @IsBoolean()
   @IsOptional()
   sendWhatsAppToAssignee?: boolean;
 
-  @ApiPropertyOptional({ example: false, description: 'Send alert Email message to assignee executive', default: false })
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Send alert Email message to assignee executive',
+    default: false,
+  })
   @IsBoolean()
   @IsOptional()
   sendEmailToAssignee?: boolean;
 
-  @ApiPropertyOptional({ example: false, description: 'Send confirmation WhatsApp message to customer contact', default: false })
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Send confirmation WhatsApp message to customer contact',
+    default: false,
+  })
   @IsBoolean()
   @IsOptional()
   sendWhatsAppToCustomer?: boolean;
 
-  @ApiPropertyOptional({ example: false, description: 'Send confirmation Email message to customer contact', default: false })
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Send confirmation Email message to customer contact',
+    default: false,
+  })
   @IsBoolean()
   @IsOptional()
   sendEmailToCustomer?: boolean;
@@ -171,7 +202,11 @@ export class CreateLeadDto {
   @IsOptional()
   visibility?: LeadVisibility;
 
-  @ApiPropertyOptional({ example: false, description: 'Confirms terms and conditions have been shared', default: false })
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Confirms terms and conditions have been shared',
+    default: false,
+  })
   @IsBoolean()
   @IsOptional()
   termsShared?: boolean;
@@ -199,22 +234,36 @@ export class CreateLeadDto {
   @IsOptional()
   status?: LeadStatus;
 
-  @ApiPropertyOptional({ example: 'no response', description: 'Next follow-up operational remark', default: 'no response' })
+  @ApiPropertyOptional({
+    example: 'no response',
+    description: 'Next follow-up operational remark',
+    default: 'no response',
+  })
   @IsString()
   @IsOptional()
   nextRemark?: string;
 
-  @ApiPropertyOptional({ example: 'Said Not Looking Any Property Now', description: 'Follow-up outcome remarks' })
+  @ApiPropertyOptional({
+    example: 'Said Not Looking Any Property Now',
+    description: 'Follow-up outcome remarks',
+  })
   @IsString()
   @IsOptional()
   outcome?: string;
 
-  @ApiPropertyOptional({ example: 'Rs. 1.38 Crore, 3 Bed, for Sale in Riddhi Siddhi, Pande Layout', description: 'Target interested property description' })
+  @ApiPropertyOptional({
+    example: 'Rs. 1.38 Crore, 3 Bed, for Sale in Riddhi Siddhi, Pande Layout',
+    description: 'Target interested property description',
+  })
   @IsString()
   @IsOptional()
   interestedIn?: string;
 
-  @ApiPropertyOptional({ example: 'Follow-Up Scheduled', description: 'Schedule execution purpose classification', default: 'Follow-Up Scheduled' })
+  @ApiPropertyOptional({
+    example: 'Follow-Up Scheduled',
+    description: 'Schedule execution purpose classification',
+    default: 'Follow-Up Scheduled',
+  })
   @IsString()
   @IsOptional()
   purpose?: string;

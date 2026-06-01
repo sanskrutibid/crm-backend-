@@ -5,7 +5,8 @@ import { Type } from 'class-transformer';
 export class QueryContactDto {
   @ApiPropertyOptional({
     example: 'Customer',
-    description: "Filter by customer category classification (e.g. 'Customer', 'Landlord', 'Shared', 'Broker')",
+    description:
+      "Filter by customer category classification (e.g. 'Customer', 'Landlord', 'Shared', 'Broker')",
   })
   @IsString()
   @IsOptional()
@@ -13,7 +14,8 @@ export class QueryContactDto {
 
   @ApiPropertyOptional({
     example: 'Employee',
-    description: "Filter by contact category classification (e.g. 'Employee', 'Broker')",
+    description:
+      "Filter by contact category classification (e.g. 'Employee', 'Broker')",
   })
   @IsString()
   @IsOptional()
@@ -37,7 +39,8 @@ export class QueryContactDto {
 
   @ApiPropertyOptional({
     example: 'Dayamati',
-    description: 'Search string matching firstName, lastName, mobile, email, uniqueNumber, or keywords',
+    description:
+      'Search string matching firstName, lastName, mobile, email, uniqueNumber, or keywords',
   })
   @IsString()
   @IsOptional()
@@ -45,7 +48,8 @@ export class QueryContactDto {
 
   @ApiPropertyOptional({
     example: 'createdAt',
-    description: "Field name to sort results by (e.g. 'createdAt', 'firstName', 'rating', 'updatedAt').",
+    description:
+      "Field name to sort results by (e.g. 'createdAt', 'firstName', 'rating', 'updatedAt').",
     default: 'createdAt',
   })
   @IsString()
@@ -55,7 +59,8 @@ export class QueryContactDto {
   @ApiPropertyOptional({
     example: 'desc',
     enum: ['asc', 'desc'],
-    description: 'Sorting direction order: asc (ascending) or desc (descending).',
+    description:
+      'Sorting direction order: asc (ascending) or desc (descending).',
     default: 'desc',
   })
   @IsEnum(['asc', 'desc'], { message: "Sort order must be 'asc' or 'desc'" })
@@ -64,7 +69,8 @@ export class QueryContactDto {
 
   @ApiPropertyOptional({
     example: '2026-05-26T12:00:00.000Z',
-    description: 'Sync Parameter: Fetch only records created or modified since this timestamp (ISO 8601). Supports differential sync.',
+    description:
+      'Sync Parameter: Fetch only records created or modified since this timestamp (ISO 8601). Supports differential sync.',
   })
   @IsString()
   @IsOptional()
@@ -83,7 +89,8 @@ export class QueryContactDto {
 
   @ApiPropertyOptional({
     example: 10,
-    description: 'Number of results to retrieve per page. Set to 99999 to bypass pagination and download all for local client caching.',
+    description:
+      'Number of results to retrieve per page. Set to 99999 to bypass pagination and download all for local client caching.',
     default: 10,
   })
   @Type(() => Number)

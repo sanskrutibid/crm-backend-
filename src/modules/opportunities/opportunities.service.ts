@@ -1,7 +1,15 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Opportunity, OpportunityDocument, OpportunityStatus } from './schemas/opportunity.schema';
+import {
+  Opportunity,
+  OpportunityDocument,
+  OpportunityStatus,
+} from './schemas/opportunity.schema';
 import { Contact, ContactDocument } from '../contacts/schemas/contact.schema';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { CreateOpportunityDto } from './dto/create-opportunity.dto';
@@ -11,20 +19,27 @@ import { ActivityType } from '../activities/schemas/activity.schema';
 @Injectable()
 export class OpportunitiesService {
   constructor(
-    @InjectModel(Opportunity.name) private readonly opportunityModel: Model<OpportunityDocument>,
-    @InjectModel(Contact.name) private readonly contactModel: Model<ContactDocument>,
+    @InjectModel(Opportunity.name)
+    private readonly opportunityModel: Model<OpportunityDocument>,
+    @InjectModel(Contact.name)
+    private readonly contactModel: Model<ContactDocument>,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     private readonly activitiesService: ActivitiesService,
   ) {}
 
-  async create(createOpportunityDto: CreateOpportunityDto, defaultUserId: string): Promise<OpportunityDocument> {
+  async create(
+    createOpportunityDto: CreateOpportunityDto,
+    defaultUserId: string,
+  ): Promise<OpportunityDocument> {
     const assignedTo = createOpportunityDto.assignedTo || defaultUserId;
     let targetContactId = createOpportunityDto.contactId;
 
     // 1. Handle on-the-fly Contact creation if requested
     if (createOpportunityDto.addNewContact) {
       if (!createOpportunityDto.name || !createOpportunityDto.mobile) {
-        throw new BadRequestException('Name and Mobile are required to create a new contact on-the-fly');
+        throw new BadRequestException(
+          'Name and Mobile are required to create a new contact on-the-fly',
+        );
       }
 
       // Parse salutation, firstName, lastName from name string
@@ -56,7 +71,9 @@ export class OpportunitiesService {
         customerType: 'Customer',
         contactType: 'Employee',
         mobile: createOpportunityDto.mobile,
-        email: createOpportunityDto.email ? createOpportunityDto.email.toLowerCase().trim() : undefined,
+        email: createOpportunityDto.email
+          ? createOpportunityDto.email.toLowerCase().trim()
+          : undefined,
         companyName: createOpportunityDto.company,
         source: createOpportunityDto.source || 'Website',
         branch: createOpportunityDto.branch || 'Global Team',
@@ -73,19 +90,27 @@ export class OpportunitiesService {
       );
     } else {
       if (!targetContactId) {
-        throw new BadRequestException('Either contactId must be provided or addNewContact must be set to true');
+        throw new BadRequestException(
+          'Either contactId must be provided or addNewContact must be set to true',
+        );
       }
 
       // Verify the contact exists
-      const contactExists = await this.contactModel.findById(targetContactId).exec();
+      const contactExists = await this.contactModel
+        .findById(targetContactId)
+        .exec();
       if (!contactExists) {
-        throw new NotFoundException(`Contact with ID ${targetContactId} not found`);
+        throw new NotFoundException(
+          `Contact with ID ${targetContactId} not found`,
+        );
       }
     }
 
     // 2. Fetch target contact for descriptive activity log details
-    const targetContact = await this.contactModel.findById(targetContactId).exec();
-    const contactDisplayName = targetContact 
+    const targetContact = await this.contactModel
+      .findById(targetContactId)
+      .exec();
+    const contactDisplayName = targetContact
       ? `${targetContact.firstName} ${targetContact.lastName || ''}`.trim()
       : 'Unknown Customer';
 
@@ -109,7 +134,12 @@ export class OpportunitiesService {
     );
 
     // 5. Populate and return complete object
-    return savedOpportunity.populate(['contactId', 'assignedTo', 'createdBy', 'updatedBy']);
+    return savedOpportunity.populate([
+      'contactId',
+      'assignedTo',
+      'createdBy',
+      'updatedBy',
+    ]);
   }
 
   async getMyOpportunities(
@@ -126,13 +156,12 @@ export class OpportunitiesService {
     const sortObj = this.buildSortObject(sortBy, orderBy);
 
     const filter: any = {
-      $or: [
-        { assignedTo: userId },
-        { createdBy: userId },
-      ],
+      $or: [{ assignedTo: userId }, { createdBy: userId }],
     };
 
-    const totalRecords = await this.opportunityModel.countDocuments(filter).exec();
+    const totalRecords = await this.opportunityModel
+      .countDocuments(filter)
+      .exec();
 
     const opportunities = await this.opportunityModel
       .find(filter)
@@ -158,14 +187,17 @@ export class OpportunitiesService {
     };
   }
 
-  private buildSortObject(sortBy: string, orderBy: 'Asc' | 'Desc'): Record<string, 1 | -1> {
+  private buildSortObject(
+    sortBy: string,
+    orderBy: 'Asc' | 'Desc',
+  ): Record<string, 1 | -1> {
     const dir: 1 | -1 = orderBy === 'Asc' ? 1 : -1;
     const fieldMap: Record<string, string> = {
       'Assigned Date': 'assignDate',
-      'Create Date':   'createdAt',
+      'Create Date': 'createdAt',
       'FollowUp Date': 'scheduleDate',
-      'Updated Date':  'updatedAt',
-      'Name':          'contactId', // in-memory sort applied after populate
+      'Updated Date': 'updatedAt',
+      Name: 'contactId', // in-memory sort applied after populate
     };
     const field = fieldMap[sortBy] ?? 'createdAt';
     return { [field]: dir };

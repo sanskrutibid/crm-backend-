@@ -14,14 +14,16 @@ export class LeadsAIService {
         '⚠️ GEMINI_API_KEY is not defined in .env file! AI Lead Scoring will run in Fallback Mode.',
       );
     } else {
-      this.logger.log('🚀 Gemini AI Engine successfully loaded for CRM Leads scoring.');
+      this.logger.log(
+        '🚀 Gemini AI Engine successfully loaded for CRM Leads scoring.',
+      );
     }
   }
 
   /**
    * Automatically analyzes customer requirement and followup notes using Google Gemini AI.
    * Classifies lead temperature, calculates numerical value score, extracts property keywords, and drafts a next remark.
-   * 
+   *
    * @param requirement Customer requirement description text
    * @param followupNote Followup details/conversation notes
    * @returns Predicted lead attributes to merge with creation payload
@@ -105,11 +107,14 @@ export class LeadsAIService {
       // 3. Validation and Sanitization of AI outputs
       let temperature = LeadTemperature.COLD;
       if (parsed.temperature === 'Hot') temperature = LeadTemperature.HOT;
-      else if (parsed.temperature === 'Warm') temperature = LeadTemperature.WARM;
+      else if (parsed.temperature === 'Warm')
+        temperature = LeadTemperature.WARM;
 
       const score = Math.max(1.0, Math.min(5.0, Number(parsed.score) || 1.0));
       const keywords = parsed.keywords ? String(parsed.keywords).trim() : '';
-      const nextRemark = parsed.nextRemark ? String(parsed.nextRemark).trim() : 'Follow-up scheduled';
+      const nextRemark = parsed.nextRemark
+        ? String(parsed.nextRemark).trim()
+        : 'Follow-up scheduled';
 
       return {
         temperature,
@@ -152,7 +157,7 @@ export class LeadsAIService {
   } {
     return {
       temperature: LeadTemperature.COLD,
-      score: 1.00,
+      score: 1.0,
       keywords: '',
       nextRemark: 'no response',
     };

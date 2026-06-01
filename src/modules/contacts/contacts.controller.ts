@@ -11,7 +11,13 @@ import {
   UseGuards,
   Header,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags, ApiOperation, ApiCreatedResponse, ApiOkResponse } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiTags,
+  ApiOperation,
+  ApiCreatedResponse,
+  ApiOkResponse,
+} from '@nestjs/swagger';
 import { ContactsService } from './contacts.service';
 import { CreateContactDto } from './dto/create-contact.dto';
 import { UpdateContactDto } from './dto/update-contact.dto';
@@ -47,7 +53,10 @@ export class ContactsController {
   constructor(private readonly contactsService: ContactsService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create a new CRM Contact (Personal + Professional + Save/Publish)' })
+  @ApiOperation({
+    summary:
+      'Create a new CRM Contact (Personal + Professional + Save/Publish)',
+  })
   @ApiCreatedResponse({
     description: 'Contact record successfully created.',
     type: ContactResponseDto,
@@ -59,7 +68,10 @@ export class ContactsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'List and filter all Contacts with search, sorting, and pagination' })
+  @ApiOperation({
+    summary:
+      'List and filter all Contacts with search, sorting, and pagination',
+  })
   @ApiOkResponse({
     description: 'Contacts matching filters retrieved successfully.',
     type: [ContactResponseDto],
@@ -70,11 +82,19 @@ export class ContactsController {
   }
 
   @Post('actions/create-audience')
-  @ApiOperation({ summary: 'Create a new marketing Audience from selected/all contacts' })
+  @ApiOperation({
+    summary: 'Create a new marketing Audience from selected/all contacts',
+  })
   @ResponseMessage('Audience created successfully')
-  async createAudience(@Body() createAudienceDto: CreateAudienceDto, @Req() req: any) {
+  async createAudience(
+    @Body() createAudienceDto: CreateAudienceDto,
+    @Req() req: any,
+  ) {
     const requestUserId = req.user.id;
-    return this.contactsService.createAudience(createAudienceDto, requestUserId);
+    return this.contactsService.createAudience(
+      createAudienceDto,
+      requestUserId,
+    );
   }
 
   @Get('actions/audiences')
@@ -101,7 +121,9 @@ export class ContactsController {
   }
 
   @Post('actions/group-delete')
-  @ApiOperation({ summary: 'Bulk delete contacts matching selection or filters' })
+  @ApiOperation({
+    summary: 'Bulk delete contacts matching selection or filters',
+  })
   @ResponseMessage('Contacts bulk deleted successfully')
   async groupDelete(@Body() groupDeleteDto: GroupDeleteDto, @Req() req: any) {
     const requestUserId = req.user.id;
@@ -135,29 +157,44 @@ export class ContactsController {
   @Post('actions/verify-emails')
   @ApiOperation({ summary: 'Smarter bulk email verification for contacts' })
   @ResponseMessage('Email verification completed successfully')
-  async verifyEmails(@Body() verifyEmailsDto: VerifyEmailsDto, @Req() req: any) {
+  async verifyEmails(
+    @Body() verifyEmailsDto: VerifyEmailsDto,
+    @Req() req: any,
+  ) {
     const requestUserId = req.user.id;
     return this.contactsService.verifyEmails(verifyEmailsDto, requestUserId);
   }
 
   @Post('actions/merge')
-  @ApiOperation({ summary: 'Merge duplicate contacts into primary contact profile' })
+  @ApiOperation({
+    summary: 'Merge duplicate contacts into primary contact profile',
+  })
   @ResponseMessage('Contacts merged successfully')
-  async mergeContacts(@Body() mergeContactsDto: MergeContactsDto, @Req() req: any) {
+  async mergeContacts(
+    @Body() mergeContactsDto: MergeContactsDto,
+    @Req() req: any,
+  ) {
     const requestUserId = req.user.id;
     return this.contactsService.mergeContacts(mergeContactsDto, requestUserId);
   }
 
   @Post('actions/mark-dnd-comma')
-  @ApiOperation({ summary: 'Update DND status using comma separated mobile numbers (Max 500)' })
+  @ApiOperation({
+    summary: 'Update DND status using comma separated mobile numbers (Max 500)',
+  })
   @ResponseMessage('DND numbers updated successfully')
-  async markDndComma(@Body() updateDndCommaDto: UpdateDndCommaDto, @Req() req: any) {
+  async markDndComma(
+    @Body() updateDndCommaDto: UpdateDndCommaDto,
+    @Req() req: any,
+  ) {
     const requestUserId = req.user.id;
     return this.contactsService.markDndComma(updateDndCommaDto, requestUserId);
   }
 
   @Post('actions/auto-merge')
-  @ApiOperation({ summary: 'Auto merge all duplicate contacts sharing same mobile numbers' })
+  @ApiOperation({
+    summary: 'Auto merge all duplicate contacts sharing same mobile numbers',
+  })
   @ResponseMessage('Duplicate contacts auto merged successfully')
   async autoMergeDuplicates(@Req() req: any) {
     const requestUserId = req.user.id;
@@ -165,7 +202,9 @@ export class ContactsController {
   }
 
   @Post(':id/actions/change-status')
-  @ApiOperation({ summary: 'Change status of a single contact with status & remark details' })
+  @ApiOperation({
+    summary: 'Change status of a single contact with status & remark details',
+  })
   @ResponseMessage('Contact status updated successfully')
   async changeStatus(
     @Param('id') id: string,
@@ -173,11 +212,17 @@ export class ContactsController {
     @Req() req: any,
   ) {
     const requestUserId = req.user.id;
-    return this.contactsService.changeStatus(id, changeStatusDto, requestUserId);
+    return this.contactsService.changeStatus(
+      id,
+      changeStatusDto,
+      requestUserId,
+    );
   }
 
   @Post(':id/actions/send-sms')
-  @ApiOperation({ summary: 'Send scheduled or immediate single SMS to a contact' })
+  @ApiOperation({
+    summary: 'Send scheduled or immediate single SMS to a contact',
+  })
   @ResponseMessage('SMS queued/sent successfully')
   async sendSmsSingle(
     @Param('id') id: string,
@@ -185,11 +230,17 @@ export class ContactsController {
     @Req() req: any,
   ) {
     const requestUserId = req.user.id;
-    return this.contactsService.sendSmsSingle(id, sendSmsSingleDto, requestUserId);
+    return this.contactsService.sendSmsSingle(
+      id,
+      sendSmsSingleDto,
+      requestUserId,
+    );
   }
 
   @Post(':id/actions/send-email')
-  @ApiOperation({ summary: 'Send scheduled or immediate single Email to a contact' })
+  @ApiOperation({
+    summary: 'Send scheduled or immediate single Email to a contact',
+  })
   @ResponseMessage('Email queued/sent successfully')
   async sendEmailSingle(
     @Param('id') id: string,
@@ -197,11 +248,17 @@ export class ContactsController {
     @Req() req: any,
   ) {
     const requestUserId = req.user.id;
-    return this.contactsService.sendEmailSingle(id, sendEmailSingleDto, requestUserId);
+    return this.contactsService.sendEmailSingle(
+      id,
+      sendEmailSingleDto,
+      requestUserId,
+    );
   }
 
   @Post(':id/actions/quick-note')
-  @ApiOperation({ summary: 'Add a new Quick Note comment detail on contact profile timeline' })
+  @ApiOperation({
+    summary: 'Add a new Quick Note comment detail on contact profile timeline',
+  })
   @ResponseMessage('Quick note added successfully')
   async addQuickNote(
     @Param('id') id: string,
@@ -213,7 +270,10 @@ export class ContactsController {
   }
 
   @Post(':id/actions/transfer')
-  @ApiOperation({ summary: 'Transfer ownership assignment of a single contact to another agent' })
+  @ApiOperation({
+    summary:
+      'Transfer ownership assignment of a single contact to another agent',
+  })
   @ResponseMessage('Contact transferred successfully')
   async transferContact(
     @Param('id') id: string,
@@ -221,18 +281,26 @@ export class ContactsController {
     @Req() req: any,
   ) {
     const requestUserId = req.user.id;
-    return this.contactsService.transferContact(id, transferContactDto, requestUserId);
+    return this.contactsService.transferContact(
+      id,
+      transferContactDto,
+      requestUserId,
+    );
   }
 
   @Get(':id/actions/history')
-  @ApiOperation({ summary: 'Retrieve activity history logs for a single contact profile' })
+  @ApiOperation({
+    summary: 'Retrieve activity history logs for a single contact profile',
+  })
   @ResponseMessage('Contact activity history retrieved successfully')
   async getContactHistory(@Param('id') id: string) {
     return this.contactsService.getContactHistory(id);
   }
 
   @Post(':id/actions/attach-document')
-  @ApiOperation({ summary: 'Attach uploaded document metadata to a contact profile' })
+  @ApiOperation({
+    summary: 'Attach uploaded document metadata to a contact profile',
+  })
   @ResponseMessage('Document attached successfully')
   async attachDocument(
     @Param('id') id: string,
@@ -240,11 +308,17 @@ export class ContactsController {
     @Req() req: any,
   ) {
     const requestUserId = req.user.id;
-    return this.contactsService.attachDocument(id, attachDocumentDto, requestUserId);
+    return this.contactsService.attachDocument(
+      id,
+      attachDocumentDto,
+      requestUserId,
+    );
   }
 
   @Post(':id/actions/terms-conditions')
-  @ApiOperation({ summary: 'Email rich text Terms and Conditions to a contact' })
+  @ApiOperation({
+    summary: 'Email rich text Terms and Conditions to a contact',
+  })
   @ResponseMessage('Terms and Conditions sent successfully')
   async sendTermsConditions(
     @Param('id') id: string,
@@ -252,7 +326,11 @@ export class ContactsController {
     @Req() req: any,
   ) {
     const requestUserId = req.user.id;
-    return this.contactsService.sendTermsConditions(id, termsConditionsDto, requestUserId);
+    return this.contactsService.sendTermsConditions(
+      id,
+      termsConditionsDto,
+      requestUserId,
+    );
   }
 
   @Get(':id')

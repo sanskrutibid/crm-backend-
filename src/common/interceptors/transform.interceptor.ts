@@ -17,9 +17,10 @@ export interface Response<T> {
 }
 
 @Injectable()
-export class TransformInterceptor<T>
-  implements NestInterceptor<T, Response<T>>
-{
+export class TransformInterceptor<T> implements NestInterceptor<
+  T,
+  Response<T>
+> {
   constructor(private reflector: Reflector) {}
 
   intercept(
@@ -30,16 +31,11 @@ export class TransformInterceptor<T>
     const response = httpContext.getResponse();
 
     // Support both Fastify (reply.statusCode) and Express (res.statusCode)
-    const statusCode =
-      response.statusCode ??
-      response.raw?.statusCode ??
-      200;
+    const statusCode = response.statusCode ?? response.raw?.statusCode ?? 200;
 
     const message =
-      this.reflector.get<string>(
-        RESPONSE_MESSAGE_KEY,
-        context.getHandler(),
-      ) || 'Operation successful';
+      this.reflector.get<string>(RESPONSE_MESSAGE_KEY, context.getHandler()) ||
+      'Operation successful';
 
     return next.handle().pipe(
       map((data) => ({

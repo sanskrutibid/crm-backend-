@@ -1,37 +1,68 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsBoolean, IsOptional, IsString, IsNumber, Min, Max, IsEmail } from 'class-validator';
-import { DNDStatus, EmailStatus, ContactVisibility } from '../schemas/contact.schema';
+import {
+  IsEnum,
+  IsBoolean,
+  IsOptional,
+  IsString,
+  IsNumber,
+  Min,
+  Max,
+  IsEmail,
+} from 'class-validator';
+import {
+  DNDStatus,
+  EmailStatus,
+  ContactVisibility,
+} from '../schemas/contact.schema';
 
 export class UpdateContactDto {
   // ==========================================
   // 1. Personal Information (Step 1)
   // ==========================================
-  @ApiPropertyOptional({ example: 'Mrs', description: 'Updated Salutation title' })
+  @ApiPropertyOptional({
+    example: 'Mrs',
+    description: 'Updated Salutation title',
+  })
   @IsString()
   @IsOptional()
   salutation?: string;
 
-  @ApiPropertyOptional({ example: 'Dayamati', description: 'Updated Contact first name' })
+  @ApiPropertyOptional({
+    example: 'Dayamati',
+    description: 'Updated Contact first name',
+  })
   @IsString()
   @IsOptional()
   firstName?: string;
 
-  @ApiPropertyOptional({ example: 'Chirawali', description: 'Updated Contact last name' })
+  @ApiPropertyOptional({
+    example: 'Chirawali',
+    description: 'Updated Contact last name',
+  })
   @IsString()
   @IsOptional()
   lastName?: string;
 
-  @ApiPropertyOptional({ example: 'Customer', description: 'Updated Customer Type classification' })
+  @ApiPropertyOptional({
+    example: 'Customer',
+    description: 'Updated Customer Type classification',
+  })
   @IsString()
   @IsOptional()
   customerType?: string;
 
-  @ApiPropertyOptional({ example: 'Employee', description: 'Updated Contact Type classification' })
+  @ApiPropertyOptional({
+    example: 'Employee',
+    description: 'Updated Contact Type classification',
+  })
   @IsString()
   @IsOptional()
   contactType?: string;
 
-  @ApiPropertyOptional({ example: '+91 9876543210', description: 'Updated Primary mobile number' })
+  @ApiPropertyOptional({
+    example: '+91 9876543210',
+    description: 'Updated Primary mobile number',
+  })
   @IsString()
   @IsOptional()
   mobile?: string;
@@ -45,12 +76,18 @@ export class UpdateContactDto {
   @IsOptional()
   dndStatus?: DNDStatus;
 
-  @ApiPropertyOptional({ example: '+91 8765432109', description: 'Updated alternative contact numbers' })
+  @ApiPropertyOptional({
+    example: '+91 8765432109',
+    description: 'Updated alternative contact numbers',
+  })
   @IsString()
   @IsOptional()
   otherNumbers?: string;
 
-  @ApiPropertyOptional({ example: 'dayamati.chirawali@gmail.com', description: 'Updated Primary contact email' })
+  @ApiPropertyOptional({
+    example: 'dayamati.chirawali@gmail.com',
+    description: 'Updated Primary contact email',
+  })
   @IsEmail({}, { message: 'Please enter a valid email address' })
   @IsOptional()
   email?: string;
@@ -64,12 +101,18 @@ export class UpdateContactDto {
   @IsOptional()
   emailStatus?: EmailStatus;
 
-  @ApiPropertyOptional({ example: 'GC170426-110807-2165', description: 'Updated Unique identification number' })
+  @ApiPropertyOptional({
+    example: 'GC170426-110807-2165',
+    description: 'Updated Unique identification number',
+  })
   @IsString()
   @IsOptional()
   uniqueNumber?: string;
 
-  @ApiPropertyOptional({ example: 'Dhantoli, Nearby Lokmat Building', description: 'Updated Address description' })
+  @ApiPropertyOptional({
+    example: 'Dhantoli, Nearby Lokmat Building',
+    description: 'Updated Address description',
+  })
   @IsString()
   @IsOptional()
   address?: string;
@@ -79,12 +122,18 @@ export class UpdateContactDto {
   @IsOptional()
   city?: string;
 
-  @ApiPropertyOptional({ example: 'Dhantoli', description: 'Updated Locality region name' })
+  @ApiPropertyOptional({
+    example: 'Dhantoli',
+    description: 'Updated Locality region name',
+  })
   @IsString()
   @IsOptional()
   locality?: string;
 
-  @ApiPropertyOptional({ example: '440012', description: 'Updated Zip/Postal pin code' })
+  @ApiPropertyOptional({
+    example: '440012',
+    description: 'Updated Zip/Postal pin code',
+  })
   @IsString()
   @IsOptional()
   pincode?: string;
@@ -92,62 +141,98 @@ export class UpdateContactDto {
   // ==========================================
   // 2. Professional Information (Step 2)
   // ==========================================
-  @ApiPropertyOptional({ example: 'Reliance Industries', description: 'Updated Company name' })
+  @ApiPropertyOptional({
+    example: 'Reliance Industries',
+    description: 'Updated Company name',
+  })
   @IsString()
   @IsOptional()
   companyName?: string;
 
-  @ApiPropertyOptional({ example: 'IT & Software Solutions', description: 'Updated Business domain' })
+  @ApiPropertyOptional({
+    example: 'IT & Software Solutions',
+    description: 'Updated Business domain',
+  })
   @IsString()
   @IsOptional()
   businessDomain?: string;
 
-  @ApiPropertyOptional({ example: 'Private Limited', description: 'Updated Company type' })
+  @ApiPropertyOptional({
+    example: 'Private Limited',
+    description: 'Updated Company type',
+  })
   @IsString()
   @IsOptional()
   companyType?: string;
 
-  @ApiPropertyOptional({ example: 'Senior Director', description: 'Updated Designation title' })
+  @ApiPropertyOptional({
+    example: 'Senior Director',
+    description: 'Updated Designation title',
+  })
   @IsString()
   @IsOptional()
   designation?: string;
 
-  @ApiPropertyOptional({ example: '₹5 Cr - ₹10 Cr', description: 'Updated Investment capacity range' })
+  @ApiPropertyOptional({
+    example: '₹5 Cr - ₹10 Cr',
+    description: 'Updated Investment capacity range',
+  })
   @IsString()
   @IsOptional()
   investCapacity?: string;
 
-  @ApiPropertyOptional({ example: 'State Bank of India', description: 'Updated Bank name' })
+  @ApiPropertyOptional({
+    example: 'State Bank of India',
+    description: 'Updated Bank name',
+  })
   @IsString()
   @IsOptional()
   bankName?: string;
 
-  @ApiPropertyOptional({ example: 'Dayamati Chirawali', description: 'Updated Bank account name' })
+  @ApiPropertyOptional({
+    example: 'Dayamati Chirawali',
+    description: 'Updated Bank account name',
+  })
   @IsString()
   @IsOptional()
   bankAccountName?: string;
 
-  @ApiPropertyOptional({ example: '32104598734', description: 'Updated Bank Account Number' })
+  @ApiPropertyOptional({
+    example: '32104598734',
+    description: 'Updated Bank Account Number',
+  })
   @IsString()
   @IsOptional()
   bankAccountNumber?: string;
 
-  @ApiPropertyOptional({ example: 'SBIN0001423', description: 'Updated Bank IFSC code' })
+  @ApiPropertyOptional({
+    example: 'SBIN0001423',
+    description: 'Updated Bank IFSC code',
+  })
   @IsString()
   @IsOptional()
   ifscCode?: string;
 
-  @ApiPropertyOptional({ example: 'Corporate Hub whitefield Bangalore', description: 'Updated Professional address' })
+  @ApiPropertyOptional({
+    example: 'Corporate Hub whitefield Bangalore',
+    description: 'Updated Professional address',
+  })
   @IsString()
   @IsOptional()
   professionalAddress?: string;
 
-  @ApiPropertyOptional({ example: 'Bangalore', description: 'Updated Professional City' })
+  @ApiPropertyOptional({
+    example: 'Bangalore',
+    description: 'Updated Professional City',
+  })
   @IsString()
   @IsOptional()
   professionalCity?: string;
 
-  @ApiPropertyOptional({ example: 'Whitefield', description: 'Updated Professional Locality' })
+  @ApiPropertyOptional({
+    example: 'Whitefield',
+    description: 'Updated Professional Locality',
+  })
   @IsString()
   @IsOptional()
   professionalLocality?: string;
@@ -155,54 +240,84 @@ export class UpdateContactDto {
   // ==========================================
   // 3. Other Information (Step 3)
   // ==========================================
-  @ApiPropertyOptional({ example: '1984-06-12', description: 'Updated DOB (YYYY-MM-DD)' })
+  @ApiPropertyOptional({
+    example: '1984-06-12',
+    description: 'Updated DOB (YYYY-MM-DD)',
+  })
   @IsString()
   @IsOptional()
   dob?: string;
 
-  @ApiPropertyOptional({ example: '2010-11-22', description: 'Updated Anniversary Date (YYYY-MM-DD)' })
+  @ApiPropertyOptional({
+    example: '2010-11-22',
+    description: 'Updated Anniversary Date (YYYY-MM-DD)',
+  })
   @IsString()
   @IsOptional()
   anniversary?: string;
 
-  @ApiPropertyOptional({ example: true, description: 'Updated Email greeting opt-in status' })
+  @ApiPropertyOptional({
+    example: true,
+    description: 'Updated Email greeting opt-in status',
+  })
   @IsBoolean()
   @IsOptional()
   sendEmailGreeting?: boolean;
 
-  @ApiPropertyOptional({ example: true, description: 'Updated SMS greeting opt-in status' })
+  @ApiPropertyOptional({
+    example: true,
+    description: 'Updated SMS greeting opt-in status',
+  })
   @IsBoolean()
   @IsOptional()
   sendSmsGreeting?: boolean;
 
-  @ApiPropertyOptional({ example: '022-26593452', description: 'Updated Fax number' })
+  @ApiPropertyOptional({
+    example: '022-26593452',
+    description: 'Updated Fax number',
+  })
   @IsString()
   @IsOptional()
   faxNumber?: string;
 
-  @ApiPropertyOptional({ example: 'https://b2bbricks.com', description: 'Updated Website URL' })
+  @ApiPropertyOptional({
+    example: 'https://b2bbricks.com',
+    description: 'Updated Website URL',
+  })
   @IsString()
   @IsOptional()
   website?: string;
 
-  @ApiPropertyOptional({ example: 'live:dayamati_skype', description: 'Updated Skype username handle' })
+  @ApiPropertyOptional({
+    example: 'live:dayamati_skype',
+    description: 'Updated Skype username handle',
+  })
   @IsString()
   @IsOptional()
   skype?: string;
 
-  @ApiPropertyOptional({ example: 'English', description: 'Updated Preferred contact language' })
+  @ApiPropertyOptional({
+    example: 'English',
+    description: 'Updated Preferred contact language',
+  })
   @IsString()
   @IsOptional()
   preferredLanguage?: string;
 
-  @ApiPropertyOptional({ example: 4.50, description: 'Updated priority rating ratio' })
+  @ApiPropertyOptional({
+    example: 4.5,
+    description: 'Updated priority rating ratio',
+  })
   @IsNumber()
-  @Min(1.00)
-  @Max(5.00)
+  @Min(1.0)
+  @Max(5.0)
   @IsOptional()
   rating?: number;
 
-  @ApiPropertyOptional({ example: 'High intent buyer, looking for flats in Dhantoli.', description: 'Updated remarks' })
+  @ApiPropertyOptional({
+    example: 'High intent buyer, looking for flats in Dhantoli.',
+    description: 'Updated remarks',
+  })
   @IsString()
   @IsOptional()
   customerRemark?: string;
@@ -210,32 +325,50 @@ export class UpdateContactDto {
   // ==========================================
   // 4. Save and Publish Settings (Step 4)
   // ==========================================
-  @ApiPropertyOptional({ example: 'Dhantoli, 172Sqft flat 2cr', description: 'Updated keywords/tags' })
+  @ApiPropertyOptional({
+    example: 'Dhantoli, 172Sqft flat 2cr',
+    description: 'Updated keywords/tags',
+  })
   @IsString()
   @IsOptional()
   keyword?: string;
 
-  @ApiPropertyOptional({ example: 'Premium Leads Folder', description: 'Updated CRM folder category' })
+  @ApiPropertyOptional({
+    example: 'Premium Leads Folder',
+    description: 'Updated CRM folder category',
+  })
   @IsString()
   @IsOptional()
   folder?: string;
 
-  @ApiPropertyOptional({ example: 'Website Form', description: 'Updated Discovery source' })
+  @ApiPropertyOptional({
+    example: 'Website Form',
+    description: 'Updated Discovery source',
+  })
   @IsString()
   @IsOptional()
   source?: string;
 
-  @ApiPropertyOptional({ example: 'Global Team', description: 'Updated Assigned CRM Office branch' })
+  @ApiPropertyOptional({
+    example: 'Global Team',
+    description: 'Updated Assigned CRM Office branch',
+  })
   @IsString()
   @IsOptional()
   branch?: string;
 
-  @ApiPropertyOptional({ example: '60d5ecb8b394142e88a38c21', description: 'Reassign contact to user ID' })
+  @ApiPropertyOptional({
+    example: '60d5ecb8b394142e88a38c21',
+    description: 'Reassign contact to user ID',
+  })
   @IsString()
   @IsOptional()
   assignedTo?: string;
 
-  @ApiPropertyOptional({ example: 'https://cdn.b2bbricks.com/profiles/avatar.png', description: 'Updated photograph URL path' })
+  @ApiPropertyOptional({
+    example: 'https://cdn.b2bbricks.com/profiles/avatar.png',
+    description: 'Updated photograph URL path',
+  })
   @IsString()
   @IsOptional()
   photograph?: string;
@@ -249,12 +382,18 @@ export class UpdateContactDto {
   @IsOptional()
   visibility?: ContactVisibility;
 
-  @ApiPropertyOptional({ example: false, description: 'Toggle number confidentiality parameter' })
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Toggle number confidentiality parameter',
+  })
   @IsBoolean()
   @IsOptional()
   isConfidential?: boolean;
 
-  @ApiPropertyOptional({ example: true, description: 'Toggle promotion marketing subscription' })
+  @ApiPropertyOptional({
+    example: true,
+    description: 'Toggle promotion marketing subscription',
+  })
   @IsBoolean()
   @IsOptional()
   subscribePromotions?: boolean;

@@ -1,7 +1,11 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Activity, ActivityDocument, ActivityType } from './schemas/activity.schema';
+import {
+  Activity,
+  ActivityDocument,
+  ActivityType,
+} from './schemas/activity.schema';
 import { CreateActivityDto } from './dto/create-activity.dto';
 import { QueryActivityDto } from './dto/query-activity.dto';
 import { User, UserDocument } from '../users/schemas/user.schema';
@@ -9,7 +13,8 @@ import { User, UserDocument } from '../users/schemas/user.schema';
 @Injectable()
 export class ActivitiesService implements OnModuleInit {
   constructor(
-    @InjectModel(Activity.name) private readonly activityModel: Model<ActivityDocument>,
+    @InjectModel(Activity.name)
+    private readonly activityModel: Model<ActivityDocument>,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
   ) {}
 
@@ -25,7 +30,8 @@ export class ActivitiesService implements OnModuleInit {
 
       const initialLogs: Partial<Activity>[] = [
         {
-          description: 'Booking confirmed! Token received for Skyline Business Hub',
+          description:
+            'Booking confirmed! Token received for Skyline Business Hub',
           type: ActivityType.LEAD,
           timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000),
           performedBy: userId as any,
@@ -49,7 +55,9 @@ export class ActivitiesService implements OnModuleInit {
         },
       ];
       await this.activityModel.insertMany(initialLogs);
-      console.log('🌱 Successfully seeded initial Activity Logs database collection.');
+      console.log(
+        '🌱 Successfully seeded initial Activity Logs database collection.',
+      );
     }
   }
 
@@ -57,7 +65,11 @@ export class ActivitiesService implements OnModuleInit {
    * Standard programmatic log method.
    * Allows other backend modules to log events without making HTTP requests.
    */
-  async log(description: string, type: ActivityType, performedByUserId?: string): Promise<ActivityDocument> {
+  async log(
+    description: string,
+    type: ActivityType,
+    performedByUserId?: string,
+  ): Promise<ActivityDocument> {
     const newActivity = new this.activityModel({
       description,
       type,
@@ -71,7 +83,10 @@ export class ActivitiesService implements OnModuleInit {
     return savedLog;
   }
 
-  async create(createActivityDto: CreateActivityDto, defaultUserId?: string): Promise<ActivityDocument> {
+  async create(
+    createActivityDto: CreateActivityDto,
+    defaultUserId?: string,
+  ): Promise<ActivityDocument> {
     const performedBy = createActivityDto.performedBy || defaultUserId;
     const newActivity = new this.activityModel({
       ...createActivityDto,
@@ -84,7 +99,9 @@ export class ActivitiesService implements OnModuleInit {
     return savedLog;
   }
 
-  async findAll(query: QueryActivityDto): Promise<{ activities: ActivityDocument[]; total: number }> {
+  async findAll(
+    query: QueryActivityDto,
+  ): Promise<{ activities: ActivityDocument[]; total: number }> {
     const { type, search, page = 1, limit = 10 } = query;
     const filter: any = {};
 
@@ -108,7 +125,11 @@ export class ActivitiesService implements OnModuleInit {
     return { activities, total };
   }
 
-  async findLogsForContact(contactName: string, id: string, uniqueNumber?: string): Promise<ActivityDocument[]> {
+  async findLogsForContact(
+    contactName: string,
+    id: string,
+    uniqueNumber?: string,
+  ): Promise<ActivityDocument[]> {
     const orConditions: any[] = [
       { description: new RegExp(contactName, 'i') },
       { description: new RegExp(id, 'i') },

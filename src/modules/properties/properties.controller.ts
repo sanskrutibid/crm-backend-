@@ -7,9 +7,16 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags, ApiOperation, ApiCreatedResponse, ApiOkResponse } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiTags,
+  ApiOperation,
+  ApiCreatedResponse,
+  ApiOkResponse,
+} from '@nestjs/swagger';
 import { PropertiesService } from './properties.service';
 import { CreatePropertyDto } from './dto/create-property.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
@@ -32,8 +39,46 @@ export class PropertiesController {
     type: PropertyResponseDto,
   })
   @ResponseMessage('Property created successfully')
-  async create(@Body() createPropertyDto: CreatePropertyDto) {
-    return this.propertiesService.create(createPropertyDto);
+  async create(@Body() createPropertyDto: CreatePropertyDto, @Req() req: any) {
+    const requestUserId = req.user.id;
+    return this.propertiesService.create(createPropertyDto, requestUserId);
+  }
+
+  @Get('my-properties')
+  @ApiOperation({
+    summary: 'Get My Properties',
+    description:
+      'Returns properties assigned to or registered by the logged-in user, with optional filters and pagination.',
+  })
+  @ApiOkResponse({
+    description: 'My Properties retrieved successfully.',
+    type: [PropertyResponseDto],
+  })
+  @ResponseMessage('My Properties retrieved successfully')
+  async getMyProperties(
+    @Query() queryPropertyDto: QueryPropertyDto,
+    @Req() req: any,
+  ) {
+    const requestUserId = req.user.id;
+    return this.propertiesService.getMyProperties(
+      requestUserId,
+      queryPropertyDto,
+    );
+  }
+
+  @Get('available-properties')
+  @ApiOperation({
+    summary: 'Get Available Properties',
+    description:
+      'Returns only properties with an active "Available" status stage, incorporating identical sorting, filters, and pagination.',
+  })
+  @ApiOkResponse({
+    description: 'Available Properties retrieved successfully.',
+    type: [PropertyResponseDto],
+  })
+  @ResponseMessage('Available Properties retrieved successfully')
+  async getAvailableProperties(@Query() queryPropertyDto: QueryPropertyDto) {
+    return this.propertiesService.getAvailableProperties(queryPropertyDto);
   }
 
   @Get()

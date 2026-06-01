@@ -22,7 +22,9 @@ import { OpportunitiesModule } from './modules/opportunities/opportunities.modul
     MongooseModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        uri: configService.get<string>('MONGO_URI') || 'mongodb://localhost:27017/crm_app',
+        uri:
+          configService.get<string>('MONGO_URI') ||
+          'mongodb://localhost:27017/crm_app',
       }),
     }),
 

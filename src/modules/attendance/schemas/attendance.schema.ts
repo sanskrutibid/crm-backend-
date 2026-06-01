@@ -37,7 +37,12 @@ const LocationPointSchema = SchemaFactory.createForClass(LocationPoint);
   },
 })
 export class Attendance {
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true, index: true })
+  @Prop({
+    type: MongooseSchema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+    index: true,
+  })
   userId: any;
 
   @Prop({ required: true, trim: true, index: true })
@@ -55,7 +60,12 @@ export class Attendance {
   @Prop({ type: LocationPointSchema })
   punchOutLocation?: LocationPoint;
 
-  @Prop({ required: true, enum: ['ACTIVE', 'COMPLETED'], default: 'ACTIVE', index: true })
+  @Prop({
+    required: true,
+    enum: ['ACTIVE', 'COMPLETED'],
+    default: 'ACTIVE',
+    index: true,
+  })
   status: string;
 
   @Prop({ type: [LocationPointSchema], default: [] })

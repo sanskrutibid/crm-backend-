@@ -1,21 +1,33 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsOptional, IsString, IsInt, Min, IsNumber } from 'class-validator';
+import {
+  IsEnum,
+  IsOptional,
+  IsString,
+  IsInt,
+  Min,
+  IsNumber,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class QueryLeadDto {
   @ApiPropertyOptional({
     example: 'all',
     enum: ['today', 'open', 'all', 'backlog', 'pending', 'calendar'],
-    description: "Filter listings by custom view categories: 'today' (Todays follow-up), 'open' (Active Leads), 'all' (All Leads), 'backlog' (Outstanding/Missed follow-ups in the past), 'pending' (Awaiting follow-up), 'calendar' (Scheduled dates feed).",
+    description:
+      "Filter listings by custom view categories: 'today' (Todays follow-up), 'open' (Active Leads), 'all' (All Leads), 'backlog' (Outstanding/Missed follow-ups in the past), 'pending' (Awaiting follow-up), 'calendar' (Scheduled dates feed).",
     default: 'all',
   })
-  @IsEnum(['today', 'open', 'all', 'backlog', 'pending', 'calendar'], { message: 'Invalid lead view type' })
+  @IsEnum(['today', 'open', 'all', 'backlog', 'pending', 'calendar'], {
+    message: 'Invalid lead view type',
+  })
   @IsOptional()
-  viewType?: 'today' | 'open' | 'all' | 'backlog' | 'pending' | 'calendar' = 'all';
+  viewType?: 'today' | 'open' | 'all' | 'backlog' | 'pending' | 'calendar' =
+    'all';
 
   @ApiPropertyOptional({
     example: 'Chirag',
-    description: 'Search string matching customer name, phone, email, or requirements details',
+    description:
+      'Search string matching customer name, phone, email, or requirements details',
   })
   @IsString()
   @IsOptional()
@@ -31,7 +43,8 @@ export class QueryLeadDto {
 
   @ApiPropertyOptional({
     example: '2026-05-26T12:00:00.000Z',
-    description: 'Sync Parameter: Fetch only lead records created or modified since this timestamp.',
+    description:
+      'Sync Parameter: Fetch only lead records created or modified since this timestamp.',
   })
   @IsString()
   @IsOptional()
@@ -42,8 +55,15 @@ export class QueryLeadDto {
   // ==========================================
   @ApiPropertyOptional({
     example: 'Create Date',
-    enum: ['Assigned Date', 'Create Date', 'FollowUp Date', 'Updated Date', 'Name'],
-    description: 'Field to sort leads by (Assigned Date, Create Date, FollowUp Date, Updated Date, Name)',
+    enum: [
+      'Assigned Date',
+      'Create Date',
+      'FollowUp Date',
+      'Updated Date',
+      'Name',
+    ],
+    description:
+      'Field to sort leads by (Assigned Date, Create Date, FollowUp Date, Updated Date, Name)',
     default: 'Create Date',
   })
   @IsString()
@@ -65,7 +85,8 @@ export class QueryLeadDto {
   // ==========================================
   @ApiPropertyOptional({
     example: 'Customer',
-    description: 'Filter by linked Contact Customer Type (Customer, Landlord, Shared, Broker)',
+    description:
+      'Filter by linked Contact Customer Type (Customer, Landlord, Shared, Broker)',
   })
   @IsString()
   @IsOptional()
@@ -176,7 +197,7 @@ export class QueryLeadDto {
   purpose?: string;
 
   @ApiPropertyOptional({
-    example: 1.00,
+    example: 1.0,
     description: 'Filter by minimum Rating/Score ratio',
   })
   @Type(() => Number)
@@ -185,7 +206,7 @@ export class QueryLeadDto {
   ratingFrom?: number;
 
   @ApiPropertyOptional({
-    example: 5.00,
+    example: 5.0,
     description: 'Filter by maximum Rating/Score ratio',
   })
   @Type(() => Number)
@@ -284,7 +305,8 @@ export class QueryLeadDto {
 
   @ApiPropertyOptional({
     example: 10,
-    description: 'Number of results to retrieve per page. Set to 99999 to bypass pagination and sync all.',
+    description:
+      'Number of results to retrieve per page. Set to 99999 to bypass pagination and sync all.',
     default: 10,
   })
   @Type(() => Number)

@@ -30,7 +30,9 @@ export class TasksService implements OnModuleInit {
           {
             task: 'Schedule site escort visit for Vikram Singh',
             description: 'Provide row villa structural updates',
-            scheduledDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            scheduledDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000)
+              .toISOString()
+              .split('T')[0],
             scheduleTime: '3:30pm',
             branch: 'Mumbai Bandra',
             status: TaskStatus.OPEN,
@@ -39,7 +41,9 @@ export class TasksService implements OnModuleInit {
           {
             task: 'Share booking forms & quotation draft',
             description: 'Quotation details and payment link',
-            scheduledDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            scheduledDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000)
+              .toISOString()
+              .split('T')[0],
             scheduleTime: '11:00am',
             branch: 'Noida Hub',
             status: TaskStatus.CLOSED,
@@ -57,7 +61,9 @@ export class TasksService implements OnModuleInit {
           {
             task: 'Collect structural updates details from site manager',
             description: 'Regular construction check log',
-            scheduledDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            scheduledDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000)
+              .toISOString()
+              .split('T')[0],
             scheduleTime: '10:00am',
             branch: 'Pune Solitaire',
             status: TaskStatus.OPEN,
@@ -65,14 +71,21 @@ export class TasksService implements OnModuleInit {
           },
         ];
         await this.taskModel.insertMany(initialTasks);
-        console.log('🌱 Successfully seeded initial Task directory database collection.');
+        console.log(
+          '🌱 Successfully seeded initial Task directory database collection.',
+        );
       } else {
-        console.log('⚠️ No users found in database to assign seed Tasks to. Seeding skipped.');
+        console.log(
+          '⚠️ No users found in database to assign seed Tasks to. Seeding skipped.',
+        );
       }
     }
   }
 
-  async create(createTaskDto: CreateTaskDto, defaultUserId: string): Promise<TaskDocument> {
+  async create(
+    createTaskDto: CreateTaskDto,
+    defaultUserId: string,
+  ): Promise<TaskDocument> {
     const assignedTo = createTaskDto.assignedTo || defaultUserId;
     const newTask = new this.taskModel({
       ...createTaskDto,
@@ -90,8 +103,22 @@ export class TasksService implements OnModuleInit {
     return savedTask.populate('assignedTo');
   }
 
-  async findAll(query: QueryTaskDto): Promise<{ tasks: TaskDocument[]; total: number }> {
-    const { status, search, assignedTo, branch, startDate, endDate, sortBy = 'createdAt', sortOrder = 'desc', updatedSince, page, limit } = query;
+  async findAll(
+    query: QueryTaskDto,
+  ): Promise<{ tasks: TaskDocument[]; total: number }> {
+    const {
+      status,
+      search,
+      assignedTo,
+      branch,
+      startDate,
+      endDate,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+      updatedSince,
+      page,
+      limit,
+    } = query;
     const filter: any = {};
 
     if (status) {
@@ -135,10 +162,13 @@ export class TasksService implements OnModuleInit {
     const sortOption: any = { [sortField]: sortDirection };
 
     const total = await this.taskModel.countDocuments(filter).exec();
-    
+
     // Pagination bypass logic: If limit is not specified, return all matching records at once.
     // If limit is specified and is >= 99999, return all matching records.
-    const queryChain = this.taskModel.find(filter).populate('assignedTo').sort(sortOption);
+    const queryChain = this.taskModel
+      .find(filter)
+      .populate('assignedTo')
+      .sort(sortOption);
 
     if (limit && limit > 0 && limit < 99999) {
       const pageNum = page && page > 0 ? page : 1;
@@ -150,14 +180,20 @@ export class TasksService implements OnModuleInit {
   }
 
   async findOne(id: string): Promise<TaskDocument> {
-    const task = await this.taskModel.findById(id).populate('assignedTo').exec();
+    const task = await this.taskModel
+      .findById(id)
+      .populate('assignedTo')
+      .exec();
     if (!task) {
       throw new NotFoundException(`Task item with ID "${id}" not found`);
     }
     return task;
   }
 
-  async update(id: string, updateTaskDto: UpdateTaskDto): Promise<TaskDocument> {
+  async update(
+    id: string,
+    updateTaskDto: UpdateTaskDto,
+  ): Promise<TaskDocument> {
     const originalTask = await this.taskModel.findById(id).exec();
     if (!originalTask) {
       throw new NotFoundException(`Task item with ID "${id}" not found`);

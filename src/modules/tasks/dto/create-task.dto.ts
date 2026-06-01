@@ -12,7 +12,8 @@ export class CreateTaskDto {
   task: string;
 
   @ApiPropertyOptional({
-    example: 'Show premium 3 BHK apartment, explain booking terms and token amounts.',
+    example:
+      'Show premium 3 BHK apartment, explain booking terms and token amounts.',
     description: 'Detailed description of follow-up action details',
   })
   @IsString()

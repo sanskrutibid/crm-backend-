@@ -4,14 +4,17 @@ import { IsBoolean, IsOptional, IsString } from 'class-validator';
 export class ChangeStatusDto {
   @ApiProperty({
     example: 'Active',
-    description: 'New status classification for the contact (e.g. Active, Inactive, Pending Contact, DND, etc.)',
+    description:
+      'New status classification for the contact (e.g. Active, Inactive, Pending Contact, DND, etc.)',
   })
   @IsString()
   status: string;
 
   @ApiPropertyOptional({
-    example: 'Client confirmed structural requirements during row villa review.',
-    description: 'Status update remark/comment explaining the rationale behind change.',
+    example:
+      'Client confirmed structural requirements during row villa review.',
+    description:
+      'Status update remark/comment explaining the rationale behind change.',
   })
   @IsString()
   @IsOptional()
@@ -118,7 +121,8 @@ export class SendEmailSingleDto {
 export class QuickNoteDto {
   @ApiProperty({
     example: 'Call Summary',
-    description: 'Category/type of quick note comment (e.g. Call Summary, Site Visit, Meeting Minutes).',
+    description:
+      'Category/type of quick note comment (e.g. Call Summary, Site Visit, Meeting Minutes).',
   })
   @IsString()
   commentType: string;
@@ -134,7 +138,8 @@ export class QuickNoteDto {
 export class TransferContactDto {
   @ApiProperty({
     example: '60d5ecb8b394142e88a38c21',
-    description: 'Mongoose ObjectId of the new User (Agent/Employee) to transfer contact assignee ownership to.',
+    description:
+      'Mongoose ObjectId of the new User (Agent/Employee) to transfer contact assignee ownership to.',
   })
   @IsString()
   assignedTo: string;
@@ -218,7 +223,8 @@ export class TransferContactDto {
 export class AttachDocumentDto {
   @ApiProperty({
     example: 'General',
-    description: 'Type/category of the document (e.g. General, Invoice, Contract).',
+    description:
+      'Type/category of the document (e.g. General, Invoice, Contract).',
   })
   @IsString()
   type: string;
@@ -262,8 +268,10 @@ export class TermsConditionsDto {
   subject: string;
 
   @ApiProperty({
-    example: '<p>Dear Customer, please view our standard terms and conditions details below...</p>',
-    description: 'Rich text/HTML email message body containing terms and conditions.',
+    example:
+      '<p>Dear Customer, please view our standard terms and conditions details below...</p>',
+    description:
+      'Rich text/HTML email message body containing terms and conditions.',
   })
   @IsString()
   message: string;

@@ -1,7 +1,18 @@
-import { Injectable, NotFoundException, OnModuleInit, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  OnModuleInit,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Lead, LeadDocument, LeadStatus, LeadTemperature, LeadVisibility } from './schemas/lead.schema';
+import {
+  Lead,
+  LeadDocument,
+  LeadStatus,
+  LeadTemperature,
+  LeadVisibility,
+} from './schemas/lead.schema';
 import { Contact, ContactDocument } from '../contacts/schemas/contact.schema';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { CreateLeadDto } from './dto/create-lead.dto';
@@ -25,7 +36,8 @@ import { LeadsAIService } from './leads-ai.service';
 export class LeadsService implements OnModuleInit {
   constructor(
     @InjectModel(Lead.name) private readonly leadModel: Model<LeadDocument>,
-    @InjectModel(Contact.name) private readonly contactModel: Model<ContactDocument>,
+    @InjectModel(Contact.name)
+    private readonly contactModel: Model<ContactDocument>,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     private readonly activitiesService: ActivitiesService,
     private readonly leadsAiService: LeadsAIService,
@@ -38,16 +50,19 @@ export class LeadsService implements OnModuleInit {
     const leadCount = await this.leadModel.countDocuments().exec();
     if (leadCount === 0) {
       const defaultUser = await this.userModel.findOne().exec();
-      const defaultContact = await this.contactModel.findOne({ firstName: 'Dayamati' }).exec();
+      const defaultContact = await this.contactModel
+        .findOne({ firstName: 'Dayamati' })
+        .exec();
 
       if (defaultUser && defaultContact) {
         const seedLead: Partial<Lead> = {
           contactId: defaultContact._id as any,
-          requirement: 'Y88006356 Rs. 1.38 Crore, 3 Bed, for Sale in Riddhi Siddhi, Pande Layout , for',
+          requirement:
+            'Y88006356 Rs. 1.38 Crore, 3 Bed, for Sale in Riddhi Siddhi, Pande Layout , for',
           followupNote: 'Followup on flat details and pricing terms',
           scheduleDate: '2026-06-19', // 19-Jun-2026 YYYY-MM-DD
           scheduleTime: '12:39pm',
-          score: 4.50,
+          score: 4.5,
           keywords: 'Dhantoli ,172Sqft flat 2cr',
           folder: 'Dhantoli Premium Folder',
           source: 'Campaigns',
@@ -59,28 +74,38 @@ export class LeadsService implements OnModuleInit {
           status: LeadStatus.IN_PROGRESS,
           nextRemark: 'no response',
           outcome: 'Said Not Looking Any Property Now',
-          interestedIn: 'Rs. 1.38 Crore, 3 Bed, for Sale in Riddhi Siddhi, Pande Layout',
+          interestedIn:
+            'Rs. 1.38 Crore, 3 Bed, for Sale in Riddhi Siddhi, Pande Layout',
           purpose: 'Follow-Up Scheduled',
           assignDate: new Date(),
           createdBy: defaultUser._id as any,
           updatedBy: defaultUser._id as any,
         };
         await this.leadModel.create(seedLead);
-        console.log('🌱 Successfully seeded initial CRM Leads database collection.');
+        console.log(
+          '🌱 Successfully seeded initial CRM Leads database collection.',
+        );
       } else {
-        console.log('⚠️ No users or contacts found in database to assign seed Lead to. Seeding skipped.');
+        console.log(
+          '⚠️ No users or contacts found in database to assign seed Lead to. Seeding skipped.',
+        );
       }
     }
   }
 
-  async create(createLeadDto: CreateLeadDto, defaultUserId: string): Promise<LeadDocument> {
+  async create(
+    createLeadDto: CreateLeadDto,
+    defaultUserId: string,
+  ): Promise<LeadDocument> {
     const assignedTo = createLeadDto.assignedTo || defaultUserId;
 
     let targetContactId = createLeadDto.contactId;
 
     if (createLeadDto.addNewContact) {
       if (!createLeadDto.name || !createLeadDto.mobile) {
-        throw new BadRequestException('Name and Mobile are required to create a new contact on-the-fly');
+        throw new BadRequestException(
+          'Name and Mobile are required to create a new contact on-the-fly',
+        );
       }
 
       // Parse salutation, firstName, lastName from name string
@@ -112,7 +137,9 @@ export class LeadsService implements OnModuleInit {
         customerType: 'Customer',
         contactType: 'Employee',
         mobile: createLeadDto.mobile,
-        email: createLeadDto.email ? createLeadDto.email.toLowerCase().trim() : undefined,
+        email: createLeadDto.email
+          ? createLeadDto.email.toLowerCase().trim()
+          : undefined,
         companyName: createLeadDto.company,
         source: createLeadDto.source || 'Website Form',
         branch: createLeadDto.branch || 'Global Team',
@@ -129,7 +156,9 @@ export class LeadsService implements OnModuleInit {
       );
     } else {
       if (!targetContactId) {
-        throw new BadRequestException('Either contactId must be provided or addNewContact must be set to true');
+        throw new BadRequestException(
+          'Either contactId must be provided or addNewContact must be set to true',
+        );
       }
     }
 
@@ -140,10 +169,23 @@ export class LeadsService implements OnModuleInit {
     );
 
     // Merge AI predictions only if the user didn't explicitly override them with manual values
-    const score = createLeadDto.score !== undefined ? createLeadDto.score : aiAnalysis.score;
-    const temperature = createLeadDto.temperature !== undefined ? createLeadDto.temperature : aiAnalysis.temperature;
-    const keywords = createLeadDto.keywords !== undefined && createLeadDto.keywords !== '' ? createLeadDto.keywords : aiAnalysis.keywords;
-    const nextRemark = createLeadDto.nextRemark !== undefined && createLeadDto.nextRemark !== 'no response' ? createLeadDto.nextRemark : aiAnalysis.nextRemark;
+    const score =
+      createLeadDto.score !== undefined
+        ? createLeadDto.score
+        : aiAnalysis.score;
+    const temperature =
+      createLeadDto.temperature !== undefined
+        ? createLeadDto.temperature
+        : aiAnalysis.temperature;
+    const keywords =
+      createLeadDto.keywords !== undefined && createLeadDto.keywords !== ''
+        ? createLeadDto.keywords
+        : aiAnalysis.keywords;
+    const nextRemark =
+      createLeadDto.nextRemark !== undefined &&
+      createLeadDto.nextRemark !== 'no response'
+        ? createLeadDto.nextRemark
+        : aiAnalysis.nextRemark;
 
     const newLead = new this.leadModel({
       ...createLeadDto,
@@ -161,7 +203,9 @@ export class LeadsService implements OnModuleInit {
 
     // Log lead creation
     const contact = await this.contactModel.findById(targetContactId).exec();
-    const customerName = contact ? `${contact.firstName} ${contact.lastName || ''}`.trim() : 'Unknown';
+    const customerName = contact
+      ? `${contact.firstName} ${contact.lastName || ''}`.trim()
+      : 'Unknown';
     await this.activitiesService.log(
       `Added lead: "${customerName}" for requirement: "${savedLead.requirement.substring(0, 30)}..."`,
       ActivityType.LEAD,
@@ -171,7 +215,9 @@ export class LeadsService implements OnModuleInit {
     return savedLead.populate(['contactId', 'assignedTo']);
   }
 
-  async findAll(query: QueryLeadDto): Promise<{ leads: LeadDocument[]; total: number }> {
+  async findAll(
+    query: QueryLeadDto,
+  ): Promise<{ leads: LeadDocument[]; total: number }> {
     const {
       viewType = 'all',
       search,
@@ -257,11 +303,18 @@ export class LeadsService implements OnModuleInit {
     }
 
     if (hasContactFilters) {
-      const matchedContacts = await this.contactModel.find(contactFilter).select('_id').exec();
+      const matchedContacts = await this.contactModel
+        .find(contactFilter)
+        .select('_id')
+        .exec();
       const contactIds = matchedContacts.map((c) => c._id.toString());
       if (filter.contactId && filter.contactId.$in) {
-        const searchContactIds = filter.contactId.$in.map((id: any) => id.toString());
-        const intersection = contactIds.filter((id) => searchContactIds.includes(id));
+        const searchContactIds = filter.contactId.$in.map((id: any) =>
+          id.toString(),
+        );
+        const intersection = contactIds.filter((id) =>
+          searchContactIds.includes(id),
+        );
         filter.contactId = { $in: intersection };
       } else {
         filter.contactId = { $in: contactIds };
@@ -343,7 +396,10 @@ export class LeadsService implements OnModuleInit {
 
     // Permission
     if (permission) {
-      filter.visibility = permission === 'Private' ? LeadVisibility.PRIVATE : LeadVisibility.BRANCH;
+      filter.visibility =
+        permission === 'Private'
+          ? LeadVisibility.PRIVATE
+          : LeadVisibility.BRANCH;
     }
 
     // Batch identifier
@@ -363,7 +419,20 @@ export class LeadsService implements OnModuleInit {
     // 2. Custom views (today, open, backlog, pending, calendar, all)
     const now = new Date();
     const format1 = now.toISOString().split('T')[0]; // "2026-05-26"
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     const format2 = `${now.getDate()}-${months[now.getMonth()]}-${now.getFullYear()}`; // "26-May-2026"
 
     switch (viewType) {
@@ -428,7 +497,9 @@ export class LeadsService implements OnModuleInit {
       leads.sort((a, b) => {
         const nameA = (a.contactId as any)?.firstName || '';
         const nameB = (b.contactId as any)?.firstName || '';
-        return sortOrder === 1 ? nameA.localeCompare(nameB) : nameB.localeCompare(nameA);
+        return sortOrder === 1
+          ? nameA.localeCompare(nameB)
+          : nameB.localeCompare(nameA);
       });
     }
 
@@ -454,12 +525,16 @@ export class LeadsService implements OnModuleInit {
 
     leadObj['daysSinceAssigned'] = daysSinceAssigned;
     leadObj['totalCallDuration'] = 0;
-    leadObj['aiSummary'] = 'No AI summary available yet. Please try again after some interaction is recorded';
+    leadObj['aiSummary'] =
+      'No AI summary available yet. Please try again after some interaction is recorded';
 
     return leadObj;
   }
 
-  async update(id: string, updateLeadDto: UpdateLeadDto): Promise<LeadDocument> {
+  async update(
+    id: string,
+    updateLeadDto: UpdateLeadDto,
+  ): Promise<LeadDocument> {
     const originalLead = await this.leadModel.findById(id).exec();
     if (!originalLead) {
       throw new NotFoundException(`Lead with ID "${id}" not found`);
@@ -499,7 +574,9 @@ export class LeadsService implements OnModuleInit {
     await this.leadModel.findByIdAndDelete(id).exec();
 
     // Log deletion action
-    const customerName = lead.contactId ? `${lead.contactId.firstName} ${lead.contactId.lastName || ''}`.trim() : 'Unknown';
+    const customerName = lead.contactId
+      ? `${lead.contactId.firstName} ${lead.contactId.lastName || ''}`.trim()
+      : 'Unknown';
     await this.activitiesService.log(
       `Deleted lead: "${customerName}"`,
       ActivityType.LEAD,
@@ -510,14 +587,17 @@ export class LeadsService implements OnModuleInit {
    * Shared sort helper — maps UI Sort By label → MongoDB field + direction.
    * Supported labels: 'Assigned Date' | 'Create Date' | 'FollowUp Date' | 'Updated Date' | 'Name'
    */
-  private buildSortObject(sortBy: string, orderBy: 'Asc' | 'Desc'): Record<string, 1 | -1> {
+  private buildSortObject(
+    sortBy: string,
+    orderBy: 'Asc' | 'Desc',
+  ): Record<string, 1 | -1> {
     const dir: 1 | -1 = orderBy === 'Asc' ? 1 : -1;
     const fieldMap: Record<string, string> = {
       'Assigned Date': 'assignDate',
-      'Create Date':   'createdAt',
+      'Create Date': 'createdAt',
       'FollowUp Date': 'scheduleDate',
-      'Updated Date':  'updatedAt',
-      'Name':          'contactId',   // in-memory sort applied after populate
+      'Updated Date': 'updatedAt',
+      Name: 'contactId', // in-memory sort applied after populate
     };
     const field = fieldMap[sortBy] ?? 'createdAt';
     return { [field]: dir };
@@ -549,8 +629,21 @@ export class LeadsService implements OnModuleInit {
     const now = new Date();
 
     // Build two date string formats to match stored scheduleDate values
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const todayISO  = now.toISOString().split('T')[0];                          // "2026-05-29"
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    const todayISO = now.toISOString().split('T')[0]; // "2026-05-29"
     const todayLong = `${now.getDate()}-${months[now.getMonth()]}-${now.getFullYear()}`; // "29-May-2026"
 
     // Base filter: only In Progress leads (Won/Lost don't need followup)
@@ -578,34 +671,46 @@ export class LeadsService implements OnModuleInit {
     const isNameSort = sortBy === 'Name';
 
     // Run all queries in parallel for performance
-    const [todayLeads, overdueLeads, hotCount, warmCount, coldCount, overdueCount] =
-      await Promise.all([
-        // Paginated today leads
-        this.leadModel
-          .find(todayFilter)
-          .populate(['contactId', 'assignedTo'])
-          .sort(isNameSort ? { createdAt: -1 } : sortObj)
-          .skip((page - 1) * limit)
-          .limit(limit)
-          .exec(),
+    const [
+      todayLeads,
+      overdueLeads,
+      hotCount,
+      warmCount,
+      coldCount,
+      overdueCount,
+    ] = await Promise.all([
+      // Paginated today leads
+      this.leadModel
+        .find(todayFilter)
+        .populate(['contactId', 'assignedTo'])
+        .sort(isNameSort ? { createdAt: -1 } : sortObj)
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .exec(),
 
-        // Paginated overdue leads — always sorted oldest-first (most urgent)
-        this.leadModel
-          .find(overdueFilter)
-          .populate(['contactId', 'assignedTo'])
-          .sort({ scheduleDate: 1 })
-          .skip((page - 1) * limit)
-          .limit(limit)
-          .exec(),
+      // Paginated overdue leads — always sorted oldest-first (most urgent)
+      this.leadModel
+        .find(overdueFilter)
+        .populate(['contactId', 'assignedTo'])
+        .sort({ scheduleDate: 1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .exec(),
 
-        // Summary counts — temperature breakdown for TODAY's leads
-        this.leadModel.countDocuments({ ...todayFilter, temperature: LeadTemperature.HOT }).exec(),
-        this.leadModel.countDocuments({ ...todayFilter, temperature: LeadTemperature.WARM }).exec(),
-        this.leadModel.countDocuments({ ...todayFilter, temperature: LeadTemperature.COLD }).exec(),
+      // Summary counts — temperature breakdown for TODAY's leads
+      this.leadModel
+        .countDocuments({ ...todayFilter, temperature: LeadTemperature.HOT })
+        .exec(),
+      this.leadModel
+        .countDocuments({ ...todayFilter, temperature: LeadTemperature.WARM })
+        .exec(),
+      this.leadModel
+        .countDocuments({ ...todayFilter, temperature: LeadTemperature.COLD })
+        .exec(),
 
-        // Total overdue count
-        this.leadModel.countDocuments(overdueFilter).exec(),
-      ]);
+      // Total overdue count
+      this.leadModel.countDocuments(overdueFilter).exec(),
+    ]);
 
     // In-memory name sort for today leads (populated field)
     let finalTodayLeads: any[] = todayLeads;
@@ -614,7 +719,9 @@ export class LeadsService implements OnModuleInit {
       finalTodayLeads = [...todayLeads].sort((a, b) => {
         const nameA = (a.contactId as any)?.firstName || '';
         const nameB = (b.contactId as any)?.firstName || '';
-        return dir === 1 ? nameA.localeCompare(nameB) : nameB.localeCompare(nameA);
+        return dir === 1
+          ? nameA.localeCompare(nameB)
+          : nameB.localeCompare(nameA);
       });
     }
 
@@ -661,21 +768,31 @@ export class LeadsService implements OnModuleInit {
         .exec(),
 
       this.leadModel.countDocuments(baseFilter).exec(),
-      this.leadModel.countDocuments({ ...baseFilter, temperature: LeadTemperature.HOT }).exec(),
-      this.leadModel.countDocuments({ ...baseFilter, temperature: LeadTemperature.WARM }).exec(),
-      this.leadModel.countDocuments({ ...baseFilter, temperature: LeadTemperature.COLD }).exec(),
+      this.leadModel
+        .countDocuments({ ...baseFilter, temperature: LeadTemperature.HOT })
+        .exec(),
+      this.leadModel
+        .countDocuments({ ...baseFilter, temperature: LeadTemperature.WARM })
+        .exec(),
+      this.leadModel
+        .countDocuments({ ...baseFilter, temperature: LeadTemperature.COLD })
+        .exec(),
 
       // Won/Lost counts scoped to same agent/branch for context
-      this.leadModel.countDocuments({
-        ...(assignedTo ? { assignedTo } : {}),
-        ...(branch ? { branch: new RegExp(branch, 'i') } : {}),
-        status: LeadStatus.WON,
-      } as any).exec(),
-      this.leadModel.countDocuments({
-        ...(assignedTo ? { assignedTo } : {}),
-        ...(branch ? { branch: new RegExp(branch, 'i') } : {}),
-        status: LeadStatus.LOST,
-      } as any).exec(),
+      this.leadModel
+        .countDocuments({
+          ...(assignedTo ? { assignedTo } : {}),
+          ...(branch ? { branch: new RegExp(branch, 'i') } : {}),
+          status: LeadStatus.WON,
+        } as any)
+        .exec(),
+      this.leadModel
+        .countDocuments({
+          ...(assignedTo ? { assignedTo } : {}),
+          ...(branch ? { branch: new RegExp(branch, 'i') } : {}),
+          status: LeadStatus.LOST,
+        } as any)
+        .exec(),
     ]);
 
     // In-memory name sort for open leads (populated field)
@@ -685,7 +802,9 @@ export class LeadsService implements OnModuleInit {
       finalLeads = [...leads].sort((a, b) => {
         const nameA = (a.contactId as any)?.firstName || '';
         const nameB = (b.contactId as any)?.firstName || '';
-        return dir === 1 ? nameA.localeCompare(nameB) : nameB.localeCompare(nameA);
+        return dir === 1
+          ? nameA.localeCompare(nameB)
+          : nameB.localeCompare(nameA);
       });
     }
 
@@ -695,7 +814,11 @@ export class LeadsService implements OnModuleInit {
     };
   }
 
-  async changeStatus(id: string, dto: ChangeLeadStatusDto, defaultUserId: string) {
+  async changeStatus(
+    id: string,
+    dto: ChangeLeadStatusDto,
+    defaultUserId: string,
+  ) {
     const lead = await this.leadModel.findById(id).populate('contactId').exec();
     if (!lead) {
       throw new NotFoundException(`Lead with ID "${id}" not found`);
@@ -705,7 +828,9 @@ export class LeadsService implements OnModuleInit {
     lead.outcome = dto.outcome;
     const saved = await lead.save();
 
-    const customerName = lead.contactId ? `${lead.contactId.firstName} ${lead.contactId.lastName || ''}`.trim() : 'Unknown';
+    const customerName = lead.contactId
+      ? `${lead.contactId.firstName} ${lead.contactId.lastName || ''}`.trim()
+      : 'Unknown';
     await this.activitiesService.log(
       `Changed status of lead for "${customerName}" to "${dto.status}" | Outcome: "${dto.outcome}"`,
       ActivityType.LEAD,
@@ -715,7 +840,11 @@ export class LeadsService implements OnModuleInit {
     return saved.populate(['contactId', 'assignedTo']);
   }
 
-  async updateRequirement(id: string, dto: UpdateRequirementDto, defaultUserId: string) {
+  async updateRequirement(
+    id: string,
+    dto: UpdateRequirementDto,
+    defaultUserId: string,
+  ) {
     const lead = await this.leadModel.findById(id).populate('contactId').exec();
     if (!lead) {
       throw new NotFoundException(`Lead with ID "${id}" not found`);
@@ -724,7 +853,9 @@ export class LeadsService implements OnModuleInit {
     lead.requirement = dto.requirement;
     const saved = await lead.save();
 
-    const customerName = lead.contactId ? `${lead.contactId.firstName} ${lead.contactId.lastName || ''}`.trim() : 'Unknown';
+    const customerName = lead.contactId
+      ? `${lead.contactId.firstName} ${lead.contactId.lastName || ''}`.trim()
+      : 'Unknown';
     await this.activitiesService.log(
       `Updated raw requirement of lead for "${customerName}" to: "${dto.requirement}"`,
       ActivityType.LEAD,
@@ -740,7 +871,9 @@ export class LeadsService implements OnModuleInit {
       throw new NotFoundException(`Lead with ID "${id}" not found`);
     }
 
-    const customerName = lead.contactId ? `${lead.contactId.firstName} ${lead.contactId.lastName || ''}`.trim() : 'Unknown';
+    const customerName = lead.contactId
+      ? `${lead.contactId.firstName} ${lead.contactId.lastName || ''}`.trim()
+      : 'Unknown';
     const mobile = lead.contactId ? lead.contactId.mobile : 'unknown mobile';
 
     await this.activitiesService.log(
@@ -758,7 +891,9 @@ export class LeadsService implements OnModuleInit {
       throw new NotFoundException(`Lead with ID "${id}" not found`);
     }
 
-    const customerName = lead.contactId ? `${lead.contactId.firstName} ${lead.contactId.lastName || ''}`.trim() : 'Unknown';
+    const customerName = lead.contactId
+      ? `${lead.contactId.firstName} ${lead.contactId.lastName || ''}`.trim()
+      : 'Unknown';
 
     await this.activitiesService.log(
       `Sent Email to lead "${customerName}" (${dto.to}) with Subject: "${dto.subject}" [Template: ${dto.template}, CC: ${dto.cc || 'None'}, BCC: ${dto.bcc || 'None'}] (Scheduled: ${dto.scheduleDate} at ${dto.scheduleTime})`,
@@ -775,7 +910,9 @@ export class LeadsService implements OnModuleInit {
       throw new NotFoundException(`Lead with ID "${id}" not found`);
     }
 
-    const customerName = lead.contactId ? `${lead.contactId.firstName} ${lead.contactId.lastName || ''}`.trim() : 'Unknown';
+    const customerName = lead.contactId
+      ? `${lead.contactId.firstName} ${lead.contactId.lastName || ''}`.trim()
+      : 'Unknown';
     await this.activitiesService.log(
       `Added Quick Note [Type: ${dto.commentType}] to lead for "${customerName}": "${dto.comment}"`,
       ActivityType.LEAD,
@@ -791,8 +928,11 @@ export class LeadsService implements OnModuleInit {
       throw new NotFoundException(`Lead with ID "${id}" not found`);
     }
 
-    const customerName = lead.contactId ? `${lead.contactId.firstName} ${lead.contactId.lastName || ''}`.trim() : 'Unknown';
-    const recipientEmail = (lead.contactId as any)?.email || 'no-email-defined@crm.com';
+    const customerName = lead.contactId
+      ? `${lead.contactId.firstName} ${lead.contactId.lastName || ''}`.trim()
+      : 'Unknown';
+    const recipientEmail =
+      (lead.contactId as any)?.email || 'no-email-defined@crm.com';
 
     await this.activitiesService.log(
       `Sent Proposal to "${customerName}" (${recipientEmail}) | Language: ${dto.language}, Module: ${dto.module}, Project: ${dto.propertyProject}, Template: ${dto.template}`,
@@ -800,7 +940,10 @@ export class LeadsService implements OnModuleInit {
       defaultUserId,
     );
 
-    return { success: true, message: `Proposal successfully sent to ${recipientEmail}` };
+    return {
+      success: true,
+      message: `Proposal successfully sent to ${recipientEmail}`,
+    };
   }
 
   async getLeadHistory(id: string) {
@@ -809,18 +952,27 @@ export class LeadsService implements OnModuleInit {
       throw new NotFoundException(`Lead with ID "${id}" not found`);
     }
 
-    const customerName = lead.contactId ? `${lead.contactId.firstName} ${lead.contactId.lastName || ''}`.trim() : 'Unknown';
+    const customerName = lead.contactId
+      ? `${lead.contactId.firstName} ${lead.contactId.lastName || ''}`.trim()
+      : 'Unknown';
     return this.activitiesService.findLogsForContact(customerName, id);
   }
 
-  async sendTermsConditions(id: string, dto: LeadTermsConditionsDto, defaultUserId: string) {
+  async sendTermsConditions(
+    id: string,
+    dto: LeadTermsConditionsDto,
+    defaultUserId: string,
+  ) {
     const lead = await this.leadModel.findById(id).populate('contactId').exec();
     if (!lead) {
       throw new NotFoundException(`Lead with ID "${id}" not found`);
     }
 
-    const customerName = lead.contactId ? `${lead.contactId.firstName} ${lead.contactId.lastName || ''}`.trim() : 'Unknown';
-    const recipientEmail = (lead.contactId as any)?.email || 'no-email-defined@crm.com';
+    const customerName = lead.contactId
+      ? `${lead.contactId.firstName} ${lead.contactId.lastName || ''}`.trim()
+      : 'Unknown';
+    const recipientEmail =
+      (lead.contactId as any)?.email || 'no-email-defined@crm.com';
 
     await this.activitiesService.log(
       `Sent Terms & Conditions HTML email to lead "${customerName}" (${recipientEmail}) with Subject: "${dto.subject}" and Message body: "${dto.message}"`,
@@ -828,7 +980,10 @@ export class LeadsService implements OnModuleInit {
       defaultUserId,
     );
 
-    return { success: true, message: `Terms & Conditions successfully sent to ${recipientEmail}` };
+    return {
+      success: true,
+      message: `Terms & Conditions successfully sent to ${recipientEmail}`,
+    };
   }
 
   async getSiteVisits(id: string) {
@@ -839,7 +994,11 @@ export class LeadsService implements OnModuleInit {
     return lead.siteVisits || [];
   }
 
-  async createSiteVisit(id: string, dto: CreateSiteVisitDto, defaultUserId: string) {
+  async createSiteVisit(
+    id: string,
+    dto: CreateSiteVisitDto,
+    defaultUserId: string,
+  ) {
     const lead = await this.leadModel.findById(id).populate('contactId').exec();
     if (!lead) {
       throw new NotFoundException(`Lead with ID "${id}" not found`);
@@ -858,11 +1017,14 @@ export class LeadsService implements OnModuleInit {
     lead.siteVisits.push(siteVisitData as any);
     const saved = await lead.save();
 
-    const customerName = lead.contactId ? `${lead.contactId.firstName} ${lead.contactId.lastName || ''}`.trim() : 'Unknown';
-    
+    const customerName = lead.contactId
+      ? `${lead.contactId.firstName} ${lead.contactId.lastName || ''}`.trim()
+      : 'Unknown';
+
     let notificationLog = '';
     if (dto.sendSmsNotification) notificationLog += `[SMS Notification: Sent] `;
-    if (dto.sendEmailNotification) notificationLog += `[Email Notification: Sent] `;
+    if (dto.sendEmailNotification)
+      notificationLog += `[Email Notification: Sent] `;
 
     await this.activitiesService.log(
       `Scheduled site visit for visitor "${dto.visitor}" (Lead: "${customerName}") to "${dto.siteName}" on ${dto.visitDate} from ${dto.timeIn} to ${dto.timeOut} | Site Manager: "${dto.siteManager}", Visit Status: "${dto.visitStatus}" ${notificationLog}`.trim(),

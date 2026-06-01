@@ -34,7 +34,10 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password');
     }
 
-    const isPasswordValid = await bcrypt.compare(loginDto.password, user.password ?? '');
+    const isPasswordValid = await bcrypt.compare(
+      loginDto.password,
+      user.password ?? '',
+    );
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid email or password');
     }
@@ -53,7 +56,8 @@ export class AuthService {
   }
 
   private generateToken(user: any): string {
-    const secret = this.configService.get<string>('JWT_SECRET') || 'your_secret_key';
+    const secret =
+      this.configService.get<string>('JWT_SECRET') || 'your_secret_key';
     const payload = {
       sub: user.id ?? user._id.toString(),
       email: user.email,

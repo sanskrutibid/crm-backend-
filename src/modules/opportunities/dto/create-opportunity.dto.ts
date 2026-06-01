@@ -1,13 +1,21 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsEnum, IsBoolean, IsOptional, IsString, IsNumber, Min } from 'class-validator';
-import { 
-  OpportunityVisibility, 
+import {
+  IsNotEmpty,
+  IsEnum,
+  IsBoolean,
+  IsOptional,
+  IsString,
+  IsNumber,
+  Min,
+} from 'class-validator';
+import {
+  OpportunityVisibility,
   OpportunityStatus,
   OpportunityPurpose,
   OpportunityLookingFor,
   OpportunityAreaUnit,
   OpportunityBedroom,
-  OpportunityFurnishing
+  OpportunityFurnishing,
 } from '../schemas/opportunity.schema';
 
 export class CreateOpportunityDto {
@@ -16,7 +24,8 @@ export class CreateOpportunityDto {
   // ==========================================
   @ApiPropertyOptional({
     example: '60d5ec7ab394142e88a38c29',
-    description: 'Target Contact ID registered in the CRM Contacts directory. Required if addNewContact is false/omitted.',
+    description:
+      'Target Contact ID registered in the CRM Contacts directory. Required if addNewContact is false/omitted.',
   })
   @IsString()
   @IsOptional()
@@ -24,7 +33,8 @@ export class CreateOpportunityDto {
 
   @ApiPropertyOptional({
     example: false,
-    description: 'Whether to add a new contact on-the-fly when creating the opportunity',
+    description:
+      'Whether to add a new contact on-the-fly when creating the opportunity',
     default: false,
   })
   @IsBoolean()
@@ -331,22 +341,38 @@ export class CreateOpportunityDto {
   @IsOptional()
   estRevenue?: number;
 
-  @ApiPropertyOptional({ example: false, description: 'Alert Assignee via WhatsApp', default: false })
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Alert Assignee via WhatsApp',
+    default: false,
+  })
   @IsBoolean()
   @IsOptional()
   sendWhatsAppToAssignee?: boolean;
 
-  @ApiPropertyOptional({ example: false, description: 'Alert Assignee via Email', default: false })
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Alert Assignee via Email',
+    default: false,
+  })
   @IsBoolean()
   @IsOptional()
   sendEmailToAssignee?: boolean;
 
-  @ApiPropertyOptional({ example: false, description: 'Alert Customer via WhatsApp', default: false })
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Alert Customer via WhatsApp',
+    default: false,
+  })
   @IsBoolean()
   @IsOptional()
   sendWhatsAppToCustomer?: boolean;
 
-  @ApiPropertyOptional({ example: false, description: 'Alert Customer via Email', default: false })
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Alert Customer via Email',
+    default: false,
+  })
   @IsBoolean()
   @IsOptional()
   sendEmailToCustomer?: boolean;
@@ -361,12 +387,20 @@ export class CreateOpportunityDto {
   @IsOptional()
   visibility?: OpportunityVisibility;
 
-  @ApiPropertyOptional({ example: false, description: 'Protect this record from general sharing', default: false })
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Protect this record from general sharing',
+    default: false,
+  })
   @IsBoolean()
   @IsOptional()
   protected?: boolean;
 
-  @ApiPropertyOptional({ example: false, description: 'Automatically generate property match alerts', default: false })
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Automatically generate property match alerts',
+    default: false,
+  })
   @IsBoolean()
   @IsOptional()
   matchingAlert?: boolean;

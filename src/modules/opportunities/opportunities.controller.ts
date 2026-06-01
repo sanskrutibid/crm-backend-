@@ -7,7 +7,14 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags, ApiOperation, ApiCreatedResponse, ApiOkResponse, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiTags,
+  ApiOperation,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { OpportunitiesService } from './opportunities.service';
 import { CreateOpportunityDto } from './dto/create-opportunity.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -26,9 +33,15 @@ export class OpportunitiesController {
     description: 'Opportunity successfully created.',
   })
   @ResponseMessage('Opportunity created successfully')
-  async create(@Body() createOpportunityDto: CreateOpportunityDto, @Req() req: any) {
+  async create(
+    @Body() createOpportunityDto: CreateOpportunityDto,
+    @Req() req: any,
+  ) {
     const requestUserId = req.user.id;
-    return this.opportunitiesService.create(createOpportunityDto, requestUserId);
+    return this.opportunitiesService.create(
+      createOpportunityDto,
+      requestUserId,
+    );
   }
 
   @Get('my-opportunities')
@@ -43,7 +56,13 @@ export class OpportunitiesController {
   @ApiQuery({
     name: 'sortBy',
     required: false,
-    enum: ['Assigned Date', 'Create Date', 'FollowUp Date', 'Updated Date', 'Name'],
+    enum: [
+      'Assigned Date',
+      'Create Date',
+      'FollowUp Date',
+      'Updated Date',
+      'Name',
+    ],
     default: 'Create Date',
   })
   @ApiQuery({

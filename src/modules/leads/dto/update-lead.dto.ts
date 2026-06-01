@@ -1,6 +1,18 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsBoolean, IsOptional, IsString, IsNumber, Min, Max } from 'class-validator';
-import { LeadTemperature, LeadStatus, LeadVisibility } from '../schemas/lead.schema';
+import {
+  IsEnum,
+  IsBoolean,
+  IsOptional,
+  IsString,
+  IsNumber,
+  Min,
+  Max,
+} from 'class-validator';
+import {
+  LeadTemperature,
+  LeadStatus,
+  LeadVisibility,
+} from '../schemas/lead.schema';
 
 export class UpdateLeadDto {
   // ==========================================
@@ -51,8 +63,8 @@ export class UpdateLeadDto {
     description: 'Updated lead score',
   })
   @IsNumber()
-  @Min(1.00)
-  @Max(5.00)
+  @Min(1.0)
+  @Max(5.0)
   @IsOptional()
   score?: number;
 
@@ -99,22 +111,34 @@ export class UpdateLeadDto {
   @IsOptional()
   assignedTo?: string;
 
-  @ApiPropertyOptional({ example: false, description: 'Toggle WhatsApp notification alert to assignee executive' })
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Toggle WhatsApp notification alert to assignee executive',
+  })
   @IsBoolean()
   @IsOptional()
   sendWhatsAppToAssignee?: boolean;
 
-  @ApiPropertyOptional({ example: false, description: 'Toggle Email notification alert to assignee executive' })
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Toggle Email notification alert to assignee executive',
+  })
   @IsBoolean()
   @IsOptional()
   sendEmailToAssignee?: boolean;
 
-  @ApiPropertyOptional({ example: false, description: 'Toggle WhatsApp notification alert to customer' })
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Toggle WhatsApp notification alert to customer',
+  })
   @IsBoolean()
   @IsOptional()
   sendWhatsAppToCustomer?: boolean;
 
-  @ApiPropertyOptional({ example: false, description: 'Toggle Email notification alert to customer' })
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Toggle Email notification alert to customer',
+  })
   @IsBoolean()
   @IsOptional()
   sendEmailToCustomer?: boolean;
@@ -128,7 +152,10 @@ export class UpdateLeadDto {
   @IsOptional()
   visibility?: LeadVisibility;
 
-  @ApiPropertyOptional({ example: false, description: 'Confirms terms and conditions have been shared' })
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Confirms terms and conditions have been shared',
+  })
   @IsBoolean()
   @IsOptional()
   termsShared?: boolean;
@@ -154,22 +181,34 @@ export class UpdateLeadDto {
   @IsOptional()
   status?: LeadStatus;
 
-  @ApiPropertyOptional({ example: 'no response', description: 'Updated next followup remark' })
+  @ApiPropertyOptional({
+    example: 'no response',
+    description: 'Updated next followup remark',
+  })
   @IsString()
   @IsOptional()
   nextRemark?: string;
 
-  @ApiPropertyOptional({ example: 'Said Not Looking Any Property Now', description: 'Updated followup outcome remarks' })
+  @ApiPropertyOptional({
+    example: 'Said Not Looking Any Property Now',
+    description: 'Updated followup outcome remarks',
+  })
   @IsString()
   @IsOptional()
   outcome?: string;
 
-  @ApiPropertyOptional({ example: 'Rs. 1.38 Crore, 3 Bed, for Sale in Riddhi Siddhi, Pande Layout', description: 'Updated interested target property description' })
+  @ApiPropertyOptional({
+    example: 'Rs. 1.38 Crore, 3 Bed, for Sale in Riddhi Siddhi, Pande Layout',
+    description: 'Updated interested target property description',
+  })
   @IsString()
   @IsOptional()
   interestedIn?: string;
 
-  @ApiPropertyOptional({ example: 'Follow-Up Scheduled', description: 'Updated scheduled purpose classification' })
+  @ApiPropertyOptional({
+    example: 'Follow-Up Scheduled',
+    description: 'Updated scheduled purpose classification',
+  })
   @IsString()
   @IsOptional()
   purpose?: string;

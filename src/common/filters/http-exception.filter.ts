@@ -39,7 +39,9 @@ export class HttpExceptionFilter implements ExceptionFilter {
       error = 'Bad Request';
     } else if (exception?.name === 'ValidationError') {
       status = HttpStatus.BAD_REQUEST;
-      message = Object.values(exception.errors || {}).map((err: any) => err.message);
+      message = Object.values(exception.errors || {}).map(
+        (err: any) => err.message,
+      );
       error = 'Bad Request';
     } else {
       this.logger.error(

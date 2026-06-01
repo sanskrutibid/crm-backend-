@@ -27,13 +27,23 @@ export class Activity {
   @Prop({ required: true, trim: true })
   description: string;
 
-  @Prop({ required: true, enum: ActivityType, default: ActivityType.SYSTEM, index: true })
+  @Prop({
+    required: true,
+    enum: ActivityType,
+    default: ActivityType.SYSTEM,
+    index: true,
+  })
   type: ActivityType;
 
   @Prop({ type: Date, default: Date.now, index: true })
   timestamp: Date;
 
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: false, index: true })
+  @Prop({
+    type: MongooseSchema.Types.ObjectId,
+    ref: 'User',
+    required: false,
+    index: true,
+  })
   performedBy?: User;
 }
 

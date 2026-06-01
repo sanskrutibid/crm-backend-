@@ -7,7 +7,9 @@ import { ActivitiesModule } from '../activities/activities.module';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: Property.name, schema: PropertySchema }]),
+    MongooseModule.forFeature([
+      { name: Property.name, schema: PropertySchema },
+    ]),
     ActivitiesModule,
   ],
   controllers: [PropertiesController],
