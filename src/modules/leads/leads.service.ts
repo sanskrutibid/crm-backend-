@@ -3,7 +3,10 @@ import {
   NotFoundException,
   OnModuleInit,
   BadRequestException,
+  Inject,
 } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import {
@@ -34,12 +37,25 @@ import { ActivityType } from '../activities/schemas/activity.schema';
 @Injectable()
 export class LeadsService implements OnModuleInit {
   constructor(
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
     @InjectModel(Lead.name) private readonly leadModel: Model<LeadDocument>,
     @InjectModel(Contact.name)
     private readonly contactModel: Model<ContactDocument>,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     private readonly activitiesService: ActivitiesService,
   ) {}
+
+  private async invalidateCache(id?: string) {
+    try {
+      if (id) {
+        await this.cacheManager.del(`leads:id:${id}`);
+      }
+      const version = (await this.cacheManager.get<number>('leads_version')) || 1;
+      await this.cacheManager.set('leads_version', version + 1);
+    } catch (err) {
+      console.error('Cache invalidation failed:', err);
+    }
+  }
 
   /**
    * Seed Chirag Ashtankar's lead profile linked to Dayamati's contact profile on boot if collection is empty.
@@ -204,12 +220,24 @@ export class LeadsService implements OnModuleInit {
       defaultUserId,
     );
 
+    await this.invalidateCache();
     return savedLead.populate(['contactId', 'assignedTo']);
   }
 
   async findAll(
     query: QueryLeadDto,
   ): Promise<{ leads: LeadDocument[]; total: number }> {
+    const version = (await this.cacheManager.get<number>('leads_version')) || 1;
+    const cacheKey = `leads:list:${version}:${JSON.stringify(query)}`;
+    try {
+      const cached = await this.cacheManager.get<{ leads: any[]; total: number }>(cacheKey);
+      if (cached) {
+        return cached as any;
+      }
+    } catch (err) {
+      console.error('Cache read error in findAll:', err);
+    }
+
     const {
       viewType = 'all',
       search,
@@ -495,10 +523,26 @@ export class LeadsService implements OnModuleInit {
       });
     }
 
-    return { leads, total };
+    const result = { leads, total };
+    try {
+      await this.cacheManager.set(cacheKey, result, 300 * 1000); // Cache for 5 minutes
+    } catch (err) {
+      console.error('Cache write error in findAll:', err);
+    }
+    return result;
   }
 
   async findOne(id: string): Promise<any> {
+    const cacheKey = `leads:id:${id}`;
+    try {
+      const cached = await this.cacheManager.get<any>(cacheKey);
+      if (cached) {
+        return cached;
+      }
+    } catch (err) {
+      console.error('Cache read error in findOne:', err);
+    }
+
     const lead = await this.leadModel
       .findById(id)
       .populate(['contactId', 'assignedTo', 'createdBy', 'updatedBy'])
@@ -520,6 +564,11 @@ export class LeadsService implements OnModuleInit {
     leadObj['aiSummary'] =
       'No AI summary available yet. Please try again after some interaction is recorded';
 
+    try {
+      await this.cacheManager.set(cacheKey, leadObj, 600 * 1000); // Cache for 10 minutes
+    } catch (err) {
+      console.error('Cache write error in findOne:', err);
+    }
     return leadObj;
   }
 
@@ -554,6 +603,7 @@ export class LeadsService implements OnModuleInit {
       );
     }
 
+    await this.invalidateCache(id);
     return updatedLead;
   }
 
@@ -573,6 +623,7 @@ export class LeadsService implements OnModuleInit {
       `Deleted lead: "${customerName}"`,
       ActivityType.LEAD,
     );
+    await this.invalidateCache(id);
   }
 
   /**
@@ -618,6 +669,17 @@ export class LeadsService implements OnModuleInit {
     todayLeads: any[];
     overdueLeads: any[];
   }> {
+    const version = (await this.cacheManager.get<number>('leads_version')) || 1;
+    const cacheKey = `leads:today:${version}:${assignedTo || 'all'}:${sortBy}:${orderBy}:${page}:${limit}`;
+    try {
+      const cached = await this.cacheManager.get<any>(cacheKey);
+      if (cached) {
+        return cached;
+      }
+    } catch (err) {
+      console.error('Cache read error in getTodayFollowup:', err);
+    }
+
     const now = new Date();
 
     // Build two date string formats to match stored scheduleDate values
@@ -717,7 +779,7 @@ export class LeadsService implements OnModuleInit {
       });
     }
 
-    return {
+    const result = {
       summary: {
         totalToday: hotCount + warmCount + coldCount,
         hot: hotCount,
@@ -728,6 +790,12 @@ export class LeadsService implements OnModuleInit {
       todayLeads: finalTodayLeads,
       overdueLeads,
     };
+    try {
+      await this.cacheManager.set(cacheKey, result, 300 * 1000); // Cache for 5 minutes
+    } catch (err) {
+      console.error('Cache write error in getTodayFollowup:', err);
+    }
+    return result;
   }
 
   /**
@@ -743,6 +811,17 @@ export class LeadsService implements OnModuleInit {
     page = 1,
     limit = 20,
   ) {
+    const version = (await this.cacheManager.get<number>('leads_version')) || 1;
+    const cacheKey = `leads:open:${version}:${assignedTo || 'all'}:${branch || 'all'}:${sortBy}:${orderBy}:${page}:${limit}`;
+    try {
+      const cached = await this.cacheManager.get<any>(cacheKey);
+      if (cached) {
+        return cached;
+      }
+    } catch (err) {
+      console.error('Cache read error in getOpenLeads:', err);
+    }
+
     const baseFilter: any = { status: LeadStatus.IN_PROGRESS };
     if (assignedTo) baseFilter.assignedTo = assignedTo;
     if (branch) baseFilter.branch = new RegExp(branch, 'i');
@@ -800,10 +879,16 @@ export class LeadsService implements OnModuleInit {
       });
     }
 
-    return {
+    const result = {
       summary: { total, hot, warm, cold, won, lost },
       leads: finalLeads,
     };
+    try {
+      await this.cacheManager.set(cacheKey, result, 300 * 1000); // Cache for 5 minutes
+    } catch (err) {
+      console.error('Cache write error in getOpenLeads:', err);
+    }
+    return result;
   }
 
   async changeStatus(
@@ -829,6 +914,7 @@ export class LeadsService implements OnModuleInit {
       defaultUserId,
     );
 
+    await this.invalidateCache(id);
     return saved.populate(['contactId', 'assignedTo']);
   }
 
@@ -854,6 +940,7 @@ export class LeadsService implements OnModuleInit {
       defaultUserId,
     );
 
+    await this.invalidateCache(id);
     return saved.populate(['contactId', 'assignedTo']);
   }
 
@@ -1024,6 +1111,7 @@ export class LeadsService implements OnModuleInit {
       defaultUserId,
     );
 
+    await this.invalidateCache(id);
     return saved;
   }
 }

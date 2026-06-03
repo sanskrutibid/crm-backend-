@@ -3,6 +3,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
+import { CrmCacheModule } from './common/cache/cache.module';
 import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { LeadsModule } from './modules/leads/leads.module';
@@ -28,6 +29,8 @@ import { ProjectsModule } from './modules/projects/projects.module';
           'mongodb://localhost:27017/crm_app',
       }),
     }),
+
+    CrmCacheModule,
 
     UsersModule,
     AuthModule,
