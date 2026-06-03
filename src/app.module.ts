@@ -14,6 +14,7 @@ import { ActivitiesModule } from './modules/activities/activities.module';
 import { ContactsModule } from './modules/contacts/contacts.module';
 import { OpportunitiesModule } from './modules/opportunities/opportunities.module';
 import { ProjectsModule } from './modules/projects/projects.module';
+import { SiteVisitsModule } from './modules/site-visits/site-visits.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { ProjectsModule } from './modules/projects/projects.module';
     ContactsModule,
     OpportunitiesModule,
     ProjectsModule,
+    SiteVisitsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -18,6 +18,7 @@ import {
 } from './schemas/lead.schema';
 import { Contact, ContactDocument } from '../contacts/schemas/contact.schema';
 import { User, UserDocument } from '../users/schemas/user.schema';
+import { SiteVisit, SiteVisitDocument } from '../site-visits/schemas/site-visit.schema';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
 import { QueryLeadDto } from './dto/query-lead.dto';
@@ -42,6 +43,7 @@ export class LeadsService implements OnModuleInit {
     @InjectModel(Contact.name)
     private readonly contactModel: Model<ContactDocument>,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
+    @InjectModel(SiteVisit.name) private readonly siteVisitModel: Model<SiteVisitDocument>,
     private readonly activitiesService: ActivitiesService,
   ) {}
 
@@ -1095,6 +1097,47 @@ export class LeadsService implements OnModuleInit {
     }
     lead.siteVisits.push(siteVisitData as any);
     const saved = await lead.save();
+
+    // ALSO CREATE STANDALONE SITE VISIT DOCUMENT
+    // Lookup user ID matching assignee name (dto.assignee is a string like "Gourav Raut")
+    const assigneeUser = await this.userModel.findOne({
+      $or: [
+        { firstName: new RegExp(dto.assignee, 'i') },
+        { lastName: new RegExp(dto.assignee, 'i') },
+        { email: new RegExp(dto.assignee, 'i') },
+      ],
+    }).exec();
+
+    const assigneeId = assigneeUser
+      ? assigneeUser._id
+      : (defaultUserId || lead.assignedTo || (await this.userModel.findOne().exec())?._id);
+
+    const newStandaloneSiteVisit = new this.siteVisitModel({
+      visitor: dto.visitor,
+      visitType: dto.visitType,
+      module: dto.module,
+      siteName: dto.siteName,
+      otherName: dto.otherName,
+      visitDate: dto.visitDate,
+      timeIn: dto.timeIn,
+      timeOut: dto.timeOut,
+      remark: dto.remark,
+      siteManager: dto.siteManager,
+      sourcingManager: dto.sourcingManager,
+      closingManager: dto.closingManager,
+      source: dto.source,
+      branch: dto.branch,
+      assignee: assigneeId,
+      visitStatus: dto.visitStatus,
+      sendSmsNotification: dto.sendSmsNotification === true,
+      sendEmailNotification: dto.sendEmailNotification === true,
+      isPrivate: dto.visibility === 'Private',
+      photograph: dto.photograph,
+      createdBy: defaultUserId || lead.assignedTo,
+      leadId: lead._id,
+      contactId: (lead.contactId as any)?._id || (lead.contactId as any),
+    });
+    await newStandaloneSiteVisit.save();
 
     const customerName = lead.contactId
       ? `${lead.contactId.firstName} ${lead.contactId.lastName || ''}`.trim()

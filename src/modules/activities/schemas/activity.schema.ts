@@ -10,6 +10,7 @@ export enum ActivityType {
   TASK = 'task',
   OPPORTUNITY = 'opportunity',
   SYSTEM = 'system',
+  SITE_VISIT = 'site-visit',
 }
 
 @Schema({
