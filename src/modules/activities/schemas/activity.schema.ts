@@ -14,6 +14,8 @@ export enum ActivityType {
   TEMPLATE = 'template',
   SALE_AGREEMENT = 'sale-agreement',
   RENT_AGREEMENT = 'rent-agreement',
+  DOCUMENT = 'document',
+  REPORT = 'report',
 }
 
 @Schema({

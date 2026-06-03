@@ -19,6 +19,8 @@ import { TemplatesModule } from './modules/templates/templates.module';
 import { CampaignsModule } from './modules/campaigns/campaigns.module';
 import { SaleAgreementsModule } from './modules/sale-agreements/sale-agreements.module';
 import { RentAgreementsModule } from './modules/rent-agreements/rent-agreements.module';
+import { DocumentsModule } from './modules/documents/documents.module';
+import { ReportsModule } from './modules/reports/reports.module';
 
 @Module({
   imports: [
@@ -52,6 +54,8 @@ import { RentAgreementsModule } from './modules/rent-agreements/rent-agreements.
     CampaignsModule,
     SaleAgreementsModule,
     RentAgreementsModule,
+    DocumentsModule,
+    ReportsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
