@@ -11,6 +11,9 @@ export enum ActivityType {
   OPPORTUNITY = 'opportunity',
   SYSTEM = 'system',
   SITE_VISIT = 'site-visit',
+  TEMPLATE = 'template',
+  SALE_AGREEMENT = 'sale-agreement',
+  RENT_AGREEMENT = 'rent-agreement',
 }
 
 @Schema({

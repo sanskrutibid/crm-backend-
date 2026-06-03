@@ -15,6 +15,10 @@ import { ContactsModule } from './modules/contacts/contacts.module';
 import { OpportunitiesModule } from './modules/opportunities/opportunities.module';
 import { ProjectsModule } from './modules/projects/projects.module';
 import { SiteVisitsModule } from './modules/site-visits/site-visits.module';
+import { TemplatesModule } from './modules/templates/templates.module';
+import { CampaignsModule } from './modules/campaigns/campaigns.module';
+import { SaleAgreementsModule } from './modules/sale-agreements/sale-agreements.module';
+import { RentAgreementsModule } from './modules/rent-agreements/rent-agreements.module';
 
 @Module({
   imports: [
@@ -44,6 +48,10 @@ import { SiteVisitsModule } from './modules/site-visits/site-visits.module';
     OpportunitiesModule,
     ProjectsModule,
     SiteVisitsModule,
+    TemplatesModule,
+    CampaignsModule,
+    SaleAgreementsModule,
+    RentAgreementsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
