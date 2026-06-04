@@ -21,6 +21,8 @@ import { SaleAgreementsModule } from './modules/sale-agreements/sale-agreements.
 import { RentAgreementsModule } from './modules/rent-agreements/rent-agreements.module';
 import { DocumentsModule } from './modules/documents/documents.module';
 import { ReportsModule } from './modules/reports/reports.module';
+import { EmailsModule } from './modules/emails/emails.module';
+import { SmsModule } from './modules/sms/sms.module';
 
 @Module({
   imports: [
@@ -56,6 +58,8 @@ import { ReportsModule } from './modules/reports/reports.module';
     RentAgreementsModule,
     DocumentsModule,
     ReportsModule,
+    EmailsModule,
+    SmsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
