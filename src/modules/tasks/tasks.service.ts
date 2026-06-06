@@ -1,4 +1,4 @@
-﻿import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Task, TaskDocument, TaskStatus } from './schemas/task.schema';
@@ -86,9 +86,17 @@ export class TasksService implements OnModuleInit {
     createTaskDto: CreateTaskDto,
     defaultUserId?: string,
   ): Promise<TaskDocument> {
+    const scheduledDate = createTaskDto.scheduledDate || createTaskDto.scheduleDate;
+    if (!scheduledDate) {
+      throw new BadRequestException('Scheduled Date is required');
+    }
+
     const assignedTo = createTaskDto.assignedTo || defaultUserId;
+    const { scheduleDate, ...rest } = createTaskDto;
+
     const newTask = new this.taskModel({
-      ...createTaskDto,
+      ...rest,
+      scheduledDate,
       assignedTo,
     });
     const savedTask = await newTask.save();
@@ -199,8 +207,16 @@ export class TasksService implements OnModuleInit {
       throw new NotFoundException(`Task item with ID "${id}" not found`);
     }
 
+    const { scheduleDate, ...rest } = updateTaskDto;
+    const updateData: any = { ...rest };
+    
+    const updatedDate = updateTaskDto.scheduledDate || updateTaskDto.scheduleDate;
+    if (updatedDate) {
+      updateData.scheduledDate = updatedDate;
+    }
+
     const updatedTask = await this.taskModel
-      .findByIdAndUpdate(id, updateTaskDto, { new: true })
+      .findByIdAndUpdate(id, updateData, { new: true })
       .populate('assignedTo')
       .exec();
 

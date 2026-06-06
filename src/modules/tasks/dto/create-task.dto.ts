@@ -20,13 +20,21 @@ export class CreateTaskDto {
   @IsOptional()
   description?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: '26-May-2026',
     description: 'Scheduled execution date',
   })
   @IsString()
-  @IsNotEmpty({ message: 'Scheduled Date is required' })
-  scheduledDate: string;
+  @IsOptional()
+  scheduledDate?: string;
+
+  @ApiPropertyOptional({
+    example: '26-May-2026',
+    description: 'Scheduled execution date (alternative parameter)',
+  })
+  @IsString()
+  @IsOptional()
+  scheduleDate?: string;
 
   @ApiProperty({
     example: '3:43pm',
