@@ -7,6 +7,8 @@ import {
   Param,
   Post,
   Query,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -20,6 +22,7 @@ import { PunchOutDto } from './dto/punch-out.dto';
 import { TrackLocationDto } from './dto/track-location.dto';
 import { AgentMovementTimelineDto } from './dto/attendance-response.dto';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('Attendance & Location Tracking')
 @Controller('attendance')
@@ -27,6 +30,7 @@ export class AttendanceController {
   constructor(private readonly attendanceService: AttendanceService) {}
 
   @Post('punch-in')
+  @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Punch-In shift startup' })
   @ApiCreatedResponse({
@@ -34,24 +38,26 @@ export class AttendanceController {
       'Shift punched in and initial coordinates registered successfully.',
   })
   @ResponseMessage('Punch-in completed successfully')
-  async punchIn(@Body() punchInDto: PunchInDto) {
-    const activeUserId = null;
+  async punchIn(@Req() req: any, @Body() punchInDto: PunchInDto) {
+    const activeUserId = req.user.id;
     return this.attendanceService.punchIn(activeUserId, punchInDto);
   }
 
   @Post('punch-out')
+  @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Punch-Out shift shutdown' })
   @ApiOkResponse({
     description: 'Shift closed and final coordinates registered successfully.',
   })
   @ResponseMessage('Punch-out completed successfully')
-  async punchOut(@Body() punchOutDto: PunchOutDto) {
-    const activeUserId = null;
+  async punchOut(@Req() req: any, @Body() punchOutDto: PunchOutDto) {
+    const activeUserId = req.user.id;
     return this.attendanceService.punchOut(activeUserId, punchOutDto);
   }
 
   @Post('track')
+  @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Push dynamic background location update' })
   @ApiOkResponse({
@@ -59,13 +65,15 @@ export class AttendanceController {
   })
   @ResponseMessage('Location tracking point registered successfully')
   async trackLocation(
+    @Req() req: any,
     @Body() trackLocationDto: TrackLocationDto,
   ) {
-    const activeUserId = null;
+    const activeUserId = req.user.id;
     return this.attendanceService.trackLocation(activeUserId, trackLocationDto);
   }
 
   @Get('agent/:userId/timeline')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({
     summary: 'Retrieve comprehensive agent route timeline and stops',
   })

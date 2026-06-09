@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
@@ -14,7 +14,24 @@ export class AuthService {
   ) {}
 
   async register(registerDto: RegisterDto) {
-    const user = await this.usersService.create(registerDto);
+    if (registerDto.password !== registerDto.confirmPassword) {
+      throw new BadRequestException('Passwords do not match');
+    }
+    if (registerDto.agreeTerms !== true) {
+      throw new BadRequestException('You must accept the terms and conditions');
+    }
+
+    const nameParts = registerDto.name.trim().split(/\s+/);
+    const firstName = nameParts[0] || 'Unknown';
+    const lastName = nameParts.slice(1).join(' ') || '';
+
+    const user = await this.usersService.create({
+      email: registerDto.email,
+      password: registerDto.password,
+      firstName,
+      lastName,
+      role: registerDto.role,
+    });
     const token = this.generateToken(user);
     return {
       user: {

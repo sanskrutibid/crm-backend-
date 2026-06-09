@@ -6,6 +6,7 @@ import {
   IsString,
   IsEnum,
   IsOptional,
+  Equals,
 } from 'class-validator';
 import { UserRole } from '../../users/schemas/user.schema';
 
@@ -28,20 +29,28 @@ export class RegisterDto {
   password: string;
 
   @ApiProperty({
-    example: 'John',
-    description: 'Given/First name of the user',
+    example: 'SecureAgent123!',
+    description: 'Confirm registration password',
+    minLength: 6,
   })
-  @IsString()
-  @IsNotEmpty({ message: 'First name is required' })
-  firstName: string;
+  @IsNotEmpty({ message: 'Confirm password is required' })
+  @MinLength(6, { message: 'Confirm password must be at least 6 characters' })
+  confirmPassword: string;
 
   @ApiProperty({
-    example: 'Doe',
-    description: 'Family/Last name of the user',
+    example: 'John Doe',
+    description: 'Full name of the user',
   })
   @IsString()
-  @IsNotEmpty({ message: 'Last name is required' })
-  lastName: string;
+  @IsNotEmpty({ message: 'Name is required' })
+  name: string;
+
+  @ApiProperty({
+    example: true,
+    description: 'Must accept terms and conditions',
+  })
+  @Equals(true, { message: 'You must accept the terms and conditions' })
+  agreeTerms: boolean;
 
   @ApiPropertyOptional({
     example: UserRole.AGENT,

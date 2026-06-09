@@ -1,4 +1,4 @@
-﻿import {
+import {
   Injectable,
   ConflictException,
   NotFoundException,
@@ -121,6 +121,22 @@ export class AttendanceService {
       );
     }
 
+    // Check if the agent has actually moved (minimum 10 meters / 0.01 km)
+    if (activeShift.path && activeShift.path.length > 0) {
+      const lastPoint = activeShift.path[activeShift.path.length - 1];
+      const distance = this.getDistance(
+        lastPoint.latitude,
+        lastPoint.longitude,
+        trackLocationDto.latitude,
+        trackLocationDto.longitude,
+      );
+
+      // 0.01 km = 10 meters threshold
+      if (distance < 0.01) {
+        return activeShift;
+      }
+    }
+
     activeShift.path.push({
       latitude: trackLocationDto.latitude,
       longitude: trackLocationDto.longitude,
@@ -139,6 +155,7 @@ export class AttendanceService {
         userId,
         date,
       })
+      .sort({ punchInTime: -1 })
       .exec();
 
     if (!shift) {

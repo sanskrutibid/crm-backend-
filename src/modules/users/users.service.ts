@@ -1,7 +1,7 @@
 import { Injectable, ConflictException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { User, UserDocument } from './schemas/user.schema';
+import { User, UserDocument, UserRole } from './schemas/user.schema';
 
 @Injectable()
 export class UsersService {
@@ -22,5 +22,9 @@ export class UsersService {
     }
     const newUser = new this.userModel(userData);
     return newUser.save();
+  }
+
+  async findAllAgents(): Promise<UserDocument[]> {
+    return this.userModel.find({ role: UserRole.AGENT, isActive: true }).exec();
   }
 }

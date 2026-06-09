@@ -31,8 +31,8 @@ export class User {
   @Prop({ required: true, trim: true })
   firstName: string;
 
-  @Prop({ required: true, trim: true })
-  lastName: string;
+  @Prop({ required: false, trim: true, default: '' })
+  lastName?: string;
 
   @Prop({ required: true, enum: UserRole, default: UserRole.AGENT })
   role: UserRole;
