@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsNotEmpty, IsEnum, IsOptional, IsString } from 'class-validator';
-import { TaskStatus } from '../schemas/task.schema';
+import { TaskStatus, TaskPriority } from '../schemas/task.schema';
 
 export class CreateTaskDto {
   @ApiProperty({
@@ -63,6 +63,16 @@ export class CreateTaskDto {
   status?: TaskStatus;
 
   @ApiPropertyOptional({
+    example: TaskPriority.MEDIUM,
+    enum: TaskPriority,
+    description: 'Priority level of the task',
+    default: TaskPriority.MEDIUM,
+  })
+  @IsEnum(TaskPriority, { message: 'Invalid task priority' })
+  @IsOptional()
+  priority?: TaskPriority;
+
+  @ApiPropertyOptional({
     example: '60d5ecb8b394142e88a38c21',
     description: 'Assigned CRM User ID. Defaults to the requesting user.',
   })
@@ -70,3 +80,4 @@ export class CreateTaskDto {
   @IsOptional()
   assignedTo?: string;
 }
+

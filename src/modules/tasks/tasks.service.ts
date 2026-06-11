@@ -1,10 +1,11 @@
 import { BadRequestException, Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Task, TaskDocument, TaskStatus } from './schemas/task.schema';
+import { Task, TaskDocument, TaskStatus, TaskPriority } from './schemas/task.schema';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { QueryTaskDto } from './dto/query-task.dto';
+import { AddHistoryDto } from './dto/add-history.dto';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { ActivitiesService } from '../activities/activities.service';
 import { ActivityType } from '../activities/schemas/activity.schema';
@@ -36,6 +37,7 @@ export class TasksService implements OnModuleInit {
             scheduleTime: '3:30pm',
             branch: 'Mumbai Bandra',
             status: TaskStatus.OPEN,
+            priority: TaskPriority.MEDIUM,
             assignedTo: defaultUser._id as any,
           },
           {
@@ -47,6 +49,7 @@ export class TasksService implements OnModuleInit {
             scheduleTime: '11:00am',
             branch: 'Noida Hub',
             status: TaskStatus.CLOSED,
+            priority: TaskPriority.LOW,
             assignedTo: defaultUser._id as any,
           },
           {
@@ -56,6 +59,7 @@ export class TasksService implements OnModuleInit {
             scheduleTime: '5:45pm',
             branch: 'Whitefield Bangalore',
             status: TaskStatus.OPEN,
+            priority: TaskPriority.HIGH,
             assignedTo: defaultUser._id as any,
           },
           {
@@ -67,6 +71,7 @@ export class TasksService implements OnModuleInit {
             scheduleTime: '10:00am',
             branch: 'Pune Solitaire',
             status: TaskStatus.OPEN,
+            priority: TaskPriority.MEDIUM,
             assignedTo: defaultUser._id as any,
           },
         ];
@@ -116,6 +121,7 @@ export class TasksService implements OnModuleInit {
   ): Promise<{ tasks: TaskDocument[]; total: number }> {
     const {
       status,
+      priority,
       search,
       assignedTo,
       branch,
@@ -133,12 +139,16 @@ export class TasksService implements OnModuleInit {
       filter.status = status;
     }
 
+    if (priority) {
+      filter.priority = priority;
+    }
+
     if (assignedTo) {
       filter.assignedTo = assignedTo;
     }
 
     if (branch) {
-      filter.branch = branch;
+      filter.branch = new RegExp(branch, 'i');
     }
 
     if (startDate || endDate) {
@@ -164,12 +174,47 @@ export class TasksService implements OnModuleInit {
       filter.updatedAt = { $gte: new Date(updatedSince) };
     }
 
+    const total = await this.taskModel.countDocuments(filter).exec();
+
+    // If sorting by priority, use MongoDB aggregation with priorityWeight
+    if (sortBy === 'priority') {
+      const sortDirection = sortOrder === 'asc' ? 1 : -1;
+      const pipeline: any[] = [
+        { $match: filter },
+        {
+          $addFields: {
+            priorityWeight: {
+              $switch: {
+                branches: [
+                  { case: { $eq: ['$priority', TaskPriority.LOW] }, then: 1 },
+                  { case: { $eq: ['$priority', TaskPriority.MEDIUM] }, then: 2 },
+                  { case: { $eq: ['$priority', TaskPriority.HIGH] }, then: 3 },
+                ],
+                default: 2, // Default weight for Medium
+              },
+            },
+          },
+        },
+        { $sort: { priorityWeight: sortDirection, createdAt: -1 } },
+      ];
+
+      if (limit && limit > 0 && limit < 99999) {
+        const pageNum = page && page > 0 ? page : 1;
+        pipeline.push({ $skip: (pageNum - 1) * limit });
+        pipeline.push({ $limit: limit });
+      }
+
+      const rawTasks = await this.taskModel.aggregate(pipeline).exec();
+      const populated = await this.taskModel.populate(rawTasks, [
+        { path: 'assignedTo' },
+      ]);
+      return { tasks: populated as any, total };
+    }
+
     // Dynamic sorting with typecast bypass for Mongoose interface compatibility
     const sortField = sortBy || 'createdAt';
     const sortDirection = sortOrder === 'asc' ? 1 : -1;
     const sortOption: any = { [sortField]: sortDirection };
-
-    const total = await this.taskModel.countDocuments(filter).exec();
 
     // Pagination bypass logic: If limit is not specified, return all matching records at once.
     // If limit is specified and is >= 99999, return all matching records.
@@ -186,6 +231,7 @@ export class TasksService implements OnModuleInit {
     const tasks = await queryChain.exec();
     return { tasks, total };
   }
+
 
   async findOne(id: string): Promise<TaskDocument> {
     const task = await this.taskModel
@@ -253,5 +299,49 @@ export class TasksService implements OnModuleInit {
       `Deleted task: "${task.task}"`,
       ActivityType.TASK,
     );
+  }
+
+  async addHistory(id: string, historyData: AddHistoryDto): Promise<TaskDocument> {
+    const task = await this.taskModel.findById(id).exec();
+    if (!task) {
+      throw new NotFoundException(`Task item with ID "${id}" not found`);
+    }
+
+    if (!task.history) {
+      task.history = [];
+    }
+
+    task.history.push({
+      comment: historyData.comment,
+      nextAction: (historyData.nextAction as any) || 'None',
+      nextDate: historyData.nextDate,
+      nextTime: historyData.nextTime,
+      priority: historyData.priority as any,
+      createdAt: new Date(),
+    });
+
+    // Automatically reschedule the main task if next follow-up details are provided
+    if (historyData.nextAction && historyData.nextAction !== 'None') {
+      if (historyData.nextDate) {
+        task.scheduledDate = historyData.nextDate;
+      }
+      if (historyData.nextTime) {
+        task.scheduleTime = historyData.nextTime;
+      }
+    }
+
+    // Update the task priority if specified
+    if (historyData.priority) {
+      task.priority = historyData.priority as TaskPriority;
+    }
+
+    const updatedTask = await task.save();
+
+    await this.activitiesService.log(
+      `Logged history on task: "${updatedTask.task}". Next action: ${historyData.nextAction || 'None'}, Priority updated to: ${historyData.priority || task.priority}`,
+      ActivityType.TASK,
+    );
+
+    return updatedTask.populate('assignedTo');
   }
 }

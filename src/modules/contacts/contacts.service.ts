@@ -1,4 +1,4 @@
-﻿import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
+import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import {
@@ -21,6 +21,7 @@ import {
   VerifyEmailsDto,
   MergeContactsDto,
   UpdateDndCommaDto,
+  GroupTransferDto,
 } from './dto/bulk-actions.dto';
 import {
   ChangeStatusDto,
@@ -952,5 +953,50 @@ export class ContactsService implements OnModuleInit {
       success: true,
       message: `Terms & Conditions successfully sent to ${recipientEmail}`,
     };
+  }
+
+  async groupTransfer(dto: GroupTransferDto, defaultUserId?: string) {
+    const filter: any = { isDeleted: { $ne: true } };
+    if (dto.contactIds && dto.contactIds.length > 0) {
+      filter._id = { $in: dto.contactIds };
+    }
+
+    const count = await this.contactModel.countDocuments(filter).exec();
+
+    const updateFields: any = {};
+    if (dto.folder && dto.folder !== 'Select') {
+      updateFields.folder = dto.folder;
+    }
+    if (dto.branch && dto.branch !== 'Select') {
+      updateFields.branch = dto.branch;
+    }
+    if (dto.assignedTo && dto.assignedTo !== 'Select') {
+      updateFields.assignedTo = dto.assignedTo;
+    }
+    if (dto.permission && dto.permission !== 'Select') {
+      if (dto.permission === 'Private') {
+        updateFields.visibility = ContactVisibility.PRIVATE;
+      } else if (dto.permission === 'Branch') {
+        updateFields.visibility = ContactVisibility.BRANCH;
+      }
+    }
+
+    if (Object.keys(updateFields).length > 0) {
+      await this.contactModel.updateMany(filter, updateFields).exec();
+    }
+
+    const commentStr = dto.comment ? ` | Comment: "${dto.comment}"` : '';
+    const folderStr = dto.folder && dto.folder !== 'Select' ? `, Folder: "${dto.folder}"` : '';
+    const branchStr = dto.branch && dto.branch !== 'Select' ? `, Branch: "${dto.branch}"` : '';
+    const assignedStr = dto.assignedTo && dto.assignedTo !== 'Select' ? `, Assignee: "${dto.assignedTo}"` : '';
+    const permissionStr = dto.permission && dto.permission !== 'Select' ? `, Permission: "${dto.permission}"` : '';
+
+    await this.activitiesService.log(
+      `Group Transferred ${count} contacts (Type: ${dto.transferType})${folderStr}${branchStr}${assignedStr}${permissionStr}${commentStr}`,
+      ActivityType.LEAD,
+      defaultUserId,
+    );
+
+    return { success: true, count };
   }
 }

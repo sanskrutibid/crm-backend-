@@ -29,6 +29,7 @@ import {
   VerifyEmailsDto,
   MergeContactsDto,
   UpdateDndCommaDto,
+  GroupTransferDto,
 } from './dto/bulk-actions.dto';
 import {
   ChangeStatusDto,
@@ -115,6 +116,15 @@ export class ContactsController {
   @ResponseMessage('Contacts bulk deleted successfully')
   async groupDelete(@Body() groupDeleteDto: GroupDeleteDto) {
     return this.contactsService.groupDelete(groupDeleteDto);
+  }
+
+  @Post('actions/group-transfer')
+  @ApiOperation({
+    summary: 'Bulk transfer contacts ownership, folders, permissions',
+  })
+  @ResponseMessage('Contacts transferred successfully')
+  async groupTransfer(@Body() groupTransferDto: GroupTransferDto) {
+    return this.contactsService.groupTransfer(groupTransferDto);
   }
 
   @Get('actions/download')

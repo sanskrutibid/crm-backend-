@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEnum, IsOptional, IsString } from 'class-validator';
-import { TaskStatus } from '../schemas/task.schema';
+import { TaskStatus, TaskPriority } from '../schemas/task.schema';
 
 export class UpdateTaskDto {
   @ApiPropertyOptional({
@@ -61,10 +61,26 @@ export class UpdateTaskDto {
   status?: TaskStatus;
 
   @ApiPropertyOptional({
+    example: TaskPriority.HIGH,
+    enum: TaskPriority,
+    description: 'Updated priority level of the task',
+  })
+  @IsEnum(TaskPriority, { message: 'Invalid task priority' })
+  @IsOptional()
+  priority?: TaskPriority;
+
+  @ApiPropertyOptional({
     example: '60d5ecb8b394142e88a38c21',
     description: 'Reassigned CRM User ID',
   })
   @IsString()
   @IsOptional()
   assignedTo?: string;
+
+  @ApiPropertyOptional({
+    description: 'Task history records',
+  })
+  @IsOptional()
+  history?: any[];
 }
+

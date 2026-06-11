@@ -24,6 +24,7 @@ import { ReportsModule } from './modules/reports/reports.module';
 import { EmailsModule } from './modules/emails/emails.module';
 import { SmsModule } from './modules/sms/sms.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { HistoriesModule } from './modules/histories/histories.module';
 
 @Module({
   imports: [
@@ -62,6 +63,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
     EmailsModule,
     SmsModule,
     DashboardModule,
+    HistoriesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

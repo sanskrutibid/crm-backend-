@@ -1,4 +1,4 @@
-﻿import {
+import {
   Body,
   Controller,
   Delete,
@@ -18,6 +18,7 @@ import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { QueryTaskDto } from './dto/query-task.dto';
+import { AddHistoryDto } from './dto/add-history.dto';
 import { TaskResponseDto } from './dto/task-response.dto';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
 
@@ -79,5 +80,15 @@ export class TasksController {
   async remove(@Param('id') id: string) {
     await this.tasksService.remove(id);
     return null;
+  }
+
+  @Post(':id/history')
+  @ApiOperation({ summary: 'Add history/discussion log to a task' })
+  @ResponseMessage('History logged successfully')
+  async addHistory(
+    @Param('id') id: string,
+    @Body() addHistoryDto: AddHistoryDto,
+  ) {
+    return this.tasksService.addHistory(id, addHistoryDto);
   }
 }

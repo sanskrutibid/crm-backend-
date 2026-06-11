@@ -305,12 +305,12 @@ export class UpdateContactDto {
   preferredLanguage?: string;
 
   @ApiPropertyOptional({
-    example: 4.5,
-    description: 'Updated priority rating ratio',
+    example: 53,
+    description: 'Updated priority rating percentage (0-100%)',
   })
   @IsNumber()
-  @Min(1.0)
-  @Max(5.0)
+  @Min(0)
+  @Max(100)
   @IsOptional()
   rating?: number;
 

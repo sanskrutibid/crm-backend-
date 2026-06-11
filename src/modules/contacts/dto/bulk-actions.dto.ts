@@ -158,3 +158,45 @@ export class UpdateDndCommaDto {
   @IsString()
   mobiles: string;
 }
+
+export class GroupTransferDto {
+  @ApiPropertyOptional({ type: [String] })
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  contactIds?: string[];
+
+  @ApiProperty({ example: 'Customer Transfer' })
+  @IsString()
+  transferType: string;
+
+  @ApiPropertyOptional({ example: 'Sales' })
+  @IsString()
+  @IsOptional()
+  folder?: string;
+
+  @ApiPropertyOptional({ example: 'Nagpur' })
+  @IsString()
+  @IsOptional()
+  branch?: string;
+
+  @ApiPropertyOptional({ example: '60d5ecb8b394142e88a38c21' })
+  @IsString()
+  @IsOptional()
+  assignedTo?: string;
+
+  @ApiPropertyOptional({ example: 'Regular' })
+  @IsString()
+  @IsOptional()
+  assignMode?: string; // 'Regular' or 'Random'
+
+  @ApiPropertyOptional({ example: 'Private' })
+  @IsString()
+  @IsOptional()
+  permission?: string;
+
+  @ApiPropertyOptional({ example: 'Bulk transfer comment.' })
+  @IsString()
+  @IsOptional()
+  comment?: string;
+}

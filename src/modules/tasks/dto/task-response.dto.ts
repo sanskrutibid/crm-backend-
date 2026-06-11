@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { TaskStatus } from '../schemas/task.schema';
+import { TaskStatus, TaskPriority } from '../schemas/task.schema';
 import { AuthUserDto } from '../../auth/dto/auth-response.dto';
 
 export class TaskResponseDto {
@@ -46,11 +46,19 @@ export class TaskResponseDto {
   })
   status: TaskStatus;
 
+  @ApiPropertyOptional({
+    example: TaskPriority.MEDIUM,
+    enum: TaskPriority,
+    description: 'Task priority level',
+  })
+  priority?: TaskPriority;
+
   @ApiProperty({
     description: 'CRM agent assigned to this task',
     type: AuthUserDto,
   })
   assignedTo: AuthUserDto;
+
 
   @ApiProperty({
     example: '2026-05-26T14:04:03.000Z',

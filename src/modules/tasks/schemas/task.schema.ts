@@ -13,6 +13,12 @@ export enum TaskStatus {
   CLOSED = 'Closed',
 }
 
+export enum TaskPriority {
+  LOW = 'Low',
+  MEDIUM = 'Medium',
+  HIGH = 'High',
+}
+
 @Schema({
   timestamps: true,
   toJSON: {
@@ -49,12 +55,43 @@ export class Task {
   status: TaskStatus;
 
   @Prop({
+    required: true,
+    enum: TaskPriority,
+    default: TaskPriority.MEDIUM,
+    index: true,
+  })
+  priority: TaskPriority;
+
+  @Prop({
     type: MongooseSchema.Types.ObjectId,
     ref: 'User',
     required: true,
     index: true,
   })
   assignedTo: User;
+
+  @Prop({
+    type: [
+      {
+        comment: { type: String, required: true },
+        nextAction: { type: String, enum: ['Call', 'Meeting', 'None'], default: 'None' },
+        nextDate: { type: String },
+        nextTime: { type: String },
+        priority: { type: String, enum: ['Low', 'Medium', 'High'] },
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
+    default: [],
+  })
+  history: Array<{
+    comment: string;
+    nextAction?: 'Call' | 'Meeting' | 'None';
+    nextDate?: string;
+    nextTime?: string;
+    priority?: 'Low' | 'Medium' | 'High';
+    createdAt?: Date;
+  }>;
 }
 
 export const TaskSchema = SchemaFactory.createForClass(Task);
+

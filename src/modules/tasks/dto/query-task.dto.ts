@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEnum, IsOptional, IsString, IsInt, Min } from 'class-validator';
-import { TaskStatus } from '../schemas/task.schema';
+import { TaskStatus, TaskPriority } from '../schemas/task.schema';
 import { Type } from 'class-transformer';
 
 export class QueryTaskDto {
@@ -12,6 +12,16 @@ export class QueryTaskDto {
   @IsEnum(TaskStatus, { message: 'Invalid task status' })
   @IsOptional()
   status?: TaskStatus;
+
+  @ApiPropertyOptional({
+    example: TaskPriority.MEDIUM,
+    enum: TaskPriority,
+    description: 'Filter by priority level',
+  })
+  @IsEnum(TaskPriority, { message: 'Invalid task priority' })
+  @IsOptional()
+  priority?: TaskPriority;
+
 
   @ApiPropertyOptional({
     example: 'Priya',
