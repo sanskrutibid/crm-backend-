@@ -13,7 +13,7 @@ export class DashboardService {
     @InjectModel(Lead.name) private readonly leadModel: Model<LeadDocument>,
     @InjectModel(Contact.name) private readonly contactModel: Model<ContactDocument>,
     @InjectModel(Opportunity.name) private readonly opportunityModel: Model<OpportunityDocument>,
-  ) {}
+  ) { }
 
   async getStats() {
     // 1. Contacts
@@ -116,10 +116,10 @@ export class DashboardService {
 
     // Fallback to display pre-filled values if no items are in the DB yet
     const hasRealData = buyingData.some(v => v > 0) || sellingData.some(v => v > 0);
-    if (!hasRealData) {
-      buyingData.splice(0, 6, 110, 60, 210, 175, 190, 170);
-      sellingData.splice(0, 6, 70, 80, 55, 78, 95, 135);
-    }
+    // if (!hasRealData) {
+    //   buyingData.splice(0, 6, 110, 60, 210, 175, 190, 170);
+    //   sellingData.splice(0, 6, 70, 80, 55, 78, 95, 135);
+    // }
 
     return {
       contacts: {
