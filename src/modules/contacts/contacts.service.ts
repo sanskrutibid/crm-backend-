@@ -45,7 +45,7 @@ export class ContactsService implements OnModuleInit {
     private readonly audienceModel: Model<AudienceDocument>,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     private readonly activitiesService: ActivitiesService,
-  ) {}
+  ) { }
 
   /**
    * Seed Dayamati Chirawali's contact details on boot if the database collection is empty.
@@ -135,6 +135,7 @@ export class ContactsService implements OnModuleInit {
       ...createContactDto,
       assignedTo,
       uniqueNumber,
+      createdBy: defaultUserId,
     });
     const savedContact = await newContact.save();
 
@@ -147,7 +148,7 @@ export class ContactsService implements OnModuleInit {
       defaultUserId,
     );
 
-    return savedContact.populate('assignedTo');
+    return savedContact.populate(['assignedTo', 'createdBy']);
   }
 
   async findAll(
@@ -158,6 +159,21 @@ export class ContactsService implements OnModuleInit {
       contactType,
       branch,
       assignedTo,
+      assignTo,
+      submittedBy,
+      city,
+      location,
+      status,
+      permission,
+      batchNumber,
+      searchMode,
+      source,
+      createDateFrom,
+      createDateTo,
+      dobFrom,
+      dobTo,
+      anniversaryFrom,
+      anniversaryTo,
       search,
       sortBy = 'createdAt',
       sortOrder = 'desc',
@@ -179,12 +195,69 @@ export class ContactsService implements OnModuleInit {
       filter.branch = branch;
     }
 
-    if (assignedTo) {
-      filter.assignedTo = assignedTo;
+    const targetAssignee = assignedTo || assignTo;
+    if (targetAssignee) {
+      filter.assignedTo = targetAssignee;
+    }
+
+    if (submittedBy) {
+      filter.createdBy = submittedBy;
+    }
+
+    if (city) {
+      filter.city = new RegExp(city, 'i');
+    }
+
+    if (location) {
+      filter.locality = new RegExp(location, 'i');
+    }
+
+    if (status) {
+      filter.status = status;
+    }
+
+    if (permission) {
+      filter.visibility =
+        permission === 'Private'
+          ? ContactVisibility.PRIVATE
+          : ContactVisibility.BRANCH;
+    }
+
+    if (batchNumber) {
+      filter.$or = filter.$or || [];
+      filter.$or.push(
+        { keyword: new RegExp(batchNumber, 'i') },
+        { folder: new RegExp(batchNumber, 'i') },
+      );
+    }
+
+    if (source) {
+      filter.source = new RegExp(source, 'i');
+    }
+
+    if (createDateFrom || createDateTo) {
+      const range: any = {};
+      if (createDateFrom) range.$gte = new Date(createDateFrom);
+      if (createDateTo) range.$lte = new Date(createDateTo);
+      filter.createdAt = range;
+    }
+
+    if (dobFrom || dobTo) {
+      const range: any = {};
+      if (dobFrom) range.$gte = dobFrom;
+      if (dobTo) range.$lte = dobTo;
+      filter.dob = range;
+    }
+
+    if (anniversaryFrom || anniversaryTo) {
+      const range: any = {};
+      if (anniversaryFrom) range.$gte = anniversaryFrom;
+      if (anniversaryTo) range.$lte = anniversaryTo;
+      filter.anniversary = range;
     }
 
     if (search) {
-      filter.$or = [
+      const searchConditions = [
         { firstName: new RegExp(search, 'i') },
         { lastName: new RegExp(search, 'i') },
         { mobile: new RegExp(search, 'i') },
@@ -193,6 +266,12 @@ export class ContactsService implements OnModuleInit {
         { keyword: new RegExp(search, 'i') },
         { locality: new RegExp(search, 'i') },
       ];
+      if (filter.$or) {
+        filter.$and = filter.$and || [];
+        filter.$and.push({ $or: searchConditions });
+      } else {
+        filter.$or = searchConditions;
+      }
     }
 
     // Sync Filter: Retrieve only records added or modified after this timestamp
@@ -211,7 +290,7 @@ export class ContactsService implements OnModuleInit {
     // If limit is specified and is >= 99999, return all matching records.
     const queryChain = this.contactModel
       .find(filter)
-      .populate('assignedTo')
+      .populate(['assignedTo', 'createdBy'])
       .sort(sortOption);
 
     if (limit && limit > 0 && limit < 99999) {
@@ -226,7 +305,7 @@ export class ContactsService implements OnModuleInit {
   async findOne(id: string): Promise<ContactDocument> {
     const contact = await this.contactModel
       .findOne({ _id: id, isDeleted: { $ne: true } })
-      .populate('assignedTo')
+      .populate(['assignedTo', 'createdBy'])
       .exec();
     if (!contact) {
       throw new NotFoundException(`Contact with ID "${id}" not found`);
@@ -251,7 +330,7 @@ export class ContactsService implements OnModuleInit {
         updateContactDto,
         { new: true },
       )
-      .populate('assignedTo')
+      .populate(['assignedTo', 'createdBy'])
       .exec();
 
     if (!updatedContact) {
@@ -534,7 +613,7 @@ export class ContactsService implements OnModuleInit {
 
     await this.activitiesService.log(
       `Merged duplicate contacts: [${duplicateNames.join(', ')}] into primary contact "${primary.firstName} ${primary.lastName || ''}`.trim() +
-        '"',
+      '"',
       ActivityType.LEAD,
       defaultUserId,
     );
@@ -752,7 +831,7 @@ export class ContactsService implements OnModuleInit {
       defaultUserId,
     );
 
-    return saved.populate('assignedTo');
+    return saved.populate(['assignedTo', 'createdBy']);
   }
 
   async sendSmsSingle(
@@ -871,7 +950,7 @@ export class ContactsService implements OnModuleInit {
       defaultUserId,
     );
 
-    return saved.populate('assignedTo');
+    return saved.populate(['assignedTo', 'createdBy']);
   }
 
   async getContactHistory(id: string) {

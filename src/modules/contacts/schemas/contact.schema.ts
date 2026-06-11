@@ -178,6 +178,14 @@ export class Contact {
   })
   assignedTo?: User; // Dropdown label "Assignee"
 
+  @Prop({
+    type: MongooseSchema.Types.ObjectId,
+    ref: 'User',
+    required: false,
+    index: true,
+  })
+  createdBy?: User;
+
   @Prop({ trim: true })
   photograph?: string; // URL path of profile image upload
 
