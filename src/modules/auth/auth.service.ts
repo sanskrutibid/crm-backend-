@@ -3,6 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { LogoutDto } from './dto/logout.dto';
+import { LoginHistoryService } from '../login-history/login-history.service';
 import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
 
@@ -11,6 +13,7 @@ export class AuthService {
   constructor(
     private usersService: UsersService,
     private configService: ConfigService,
+    private loginHistoryService: LoginHistoryService,
   ) {}
 
   async register(registerDto: RegisterDto) {
@@ -45,7 +48,7 @@ export class AuthService {
     };
   }
 
-  async login(loginDto: LoginDto) {
+  async login(loginDto: LoginDto, clientInfo: { ip: string; userAgent: string }) {
     const user = await this.usersService.findByEmail(loginDto.email);
     if (!user) {
       throw new UnauthorizedException('Invalid email or password');
@@ -60,6 +63,17 @@ export class AuthService {
     }
 
     const token = this.generateToken(user);
+
+    // Save login history log
+    await this.loginHistoryService.create({
+      userId: user._id.toString(),
+      type: 'login',
+      ip: clientInfo.ip,
+      userAgent: clientInfo.userAgent,
+      lat: loginDto.lat,
+      long: loginDto.long,
+    });
+
     return {
       user: {
         id: user._id.toString(),
@@ -69,6 +83,26 @@ export class AuthService {
         role: user.role,
       },
       accessToken: token,
+    };
+  }
+
+  async logout(
+    userId: string,
+    logoutDto: LogoutDto,
+    clientInfo: { ip: string; userAgent: string },
+  ) {
+    // Save logout history log
+    await this.loginHistoryService.create({
+      userId,
+      type: 'logout',
+      ip: clientInfo.ip,
+      userAgent: clientInfo.userAgent,
+      lat: logoutDto.lat,
+      long: logoutDto.long,
+    });
+
+    return {
+      success: true,
     };
   }
 

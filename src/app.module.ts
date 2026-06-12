@@ -25,6 +25,8 @@ import { EmailsModule } from './modules/emails/emails.module';
 import { SmsModule } from './modules/sms/sms.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { HistoriesModule } from './modules/histories/histories.module';
+import { LoginHistoryModule } from './modules/login-history/login-history.module';
+import { DatabackupModule } from './modules/databackup/databackup.module';
 
 @Module({
   imports: [
@@ -64,6 +66,8 @@ import { HistoriesModule } from './modules/histories/histories.module';
     SmsModule,
     DashboardModule,
     HistoriesModule,
+    LoginHistoryModule,
+    DatabackupModule,
   ],
   controllers: [AppController],
   providers: [AppService],
