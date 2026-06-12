@@ -47,7 +47,8 @@ export class QueryHistoryDto {
 
   @ApiPropertyOptional({
     example: 'Nagpur',
-    description: "Filter by client's location (checks client's city or locality)",
+    description:
+      "Filter by client's location (checks client's city or locality)",
   })
   @IsString()
   @IsOptional()
@@ -63,7 +64,8 @@ export class QueryHistoryDto {
 
   @ApiPropertyOptional({
     example: 'date',
-    description: "Field name to sort histories by: 'date', 'priority', or 'createdAt'.",
+    description:
+      "Field name to sort histories by: 'date', 'priority', or 'createdAt'.",
     default: 'date',
   })
   @IsString()

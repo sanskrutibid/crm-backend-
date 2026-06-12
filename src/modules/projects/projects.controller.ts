@@ -32,9 +32,7 @@ export class ProjectsController {
     description: 'Project successfully created.',
   })
   @ResponseMessage('Project created successfully')
-  async create(
-    @Body() createProjectDto: CreateProjectDto,
-  ) {
+  async create(@Body() createProjectDto: CreateProjectDto) {
     return this.projectsService.create(createProjectDto);
   }
 
@@ -55,11 +53,16 @@ export class ProjectsController {
   })
   @ResponseMessage('Available Projects retrieved successfully')
   async findAvailable(@Query() queryProjectDto: QueryProjectDto) {
-    return this.projectsService.findAll(queryProjectDto, ProjectStatus.AVAILABLE);
+    return this.projectsService.findAll(
+      queryProjectDto,
+      ProjectStatus.AVAILABLE,
+    );
   }
 
   @Get('all')
-  @ApiOperation({ summary: 'List and filter All CRM Projects (Available & Sold)' })
+  @ApiOperation({
+    summary: 'List and filter All CRM Projects (Available & Sold)',
+  })
   @ApiOkResponse({
     description: 'All Projects matching filters retrieved successfully.',
   })
@@ -69,7 +72,9 @@ export class ProjectsController {
   }
 
   @Get('rera-hira')
-  @ApiOperation({ summary: 'List and filter CRM RERA/HIRA Registered Projects' })
+  @ApiOperation({
+    summary: 'List and filter CRM RERA/HIRA Registered Projects',
+  })
   @ApiOkResponse({
     description: 'RERA/HIRA Projects matching filters retrieved successfully.',
   })

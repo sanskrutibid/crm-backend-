@@ -17,13 +17,20 @@ import { redisStore } from 'cache-manager-redis-yet';
               url: redisUrl,
               ttl: 600 * 1000, // default TTL: 10 minutes (in milliseconds)
             });
-            console.log('🚀 Redis cache store connection established successfully.');
+            console.log(
+              '🚀 Redis cache store connection established successfully.',
+            );
             return { store };
           } catch (error) {
-            console.error('⚠️ Redis connection failed. Falling back to memory store:', error);
+            console.error(
+              '⚠️ Redis connection failed. Falling back to memory store:',
+              error,
+            );
           }
         }
-        console.log('ℹ️ Memory cache store initialized (REDIS_URL not configured).');
+        console.log(
+          'ℹ️ Memory cache store initialized (REDIS_URL not configured).',
+        );
         return {
           store: 'memory',
           ttl: 60 * 1000, // 60 seconds default TTL (in milliseconds)

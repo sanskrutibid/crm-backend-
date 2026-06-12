@@ -4,7 +4,8 @@ import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 export class ScheduleSmsDto {
   @ApiProperty({
     example: '+919999999999, +918888888888',
-    description: 'Recipient mobile numbers. Can be a comma-separated string or an array of numbers.',
+    description:
+      'Recipient mobile numbers. Can be a comma-separated string or an array of numbers.',
   })
   @IsNotEmpty({ message: 'Mobiles is required' })
   mobiles: string | string[];
@@ -35,7 +36,8 @@ export class ScheduleSmsDto {
 
   @ApiPropertyOptional({
     example: '2026-06-04',
-    description: 'Scheduled date to send the SMS (e.g. YYYY-MM-DD or DD-MMM-YYYY). If empty, today is used.',
+    description:
+      'Scheduled date to send the SMS (e.g. YYYY-MM-DD or DD-MMM-YYYY). If empty, today is used.',
   })
   @IsOptional()
   @IsString()
@@ -43,7 +45,8 @@ export class ScheduleSmsDto {
 
   @ApiPropertyOptional({
     example: '11:52 am',
-    description: 'Scheduled time to send the SMS (e.g. HH:mm or HH:mm am/pm). If empty, immediate sending is attempted.',
+    description:
+      'Scheduled time to send the SMS (e.g. HH:mm or HH:mm am/pm). If empty, immediate sending is attempted.',
   })
   @IsOptional()
   @IsString()

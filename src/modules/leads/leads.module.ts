@@ -3,7 +3,10 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Lead, LeadSchema } from './schemas/lead.schema';
 import { Contact, ContactSchema } from '../contacts/schemas/contact.schema';
 import { User, UserSchema } from '../users/schemas/user.schema';
-import { SiteVisit, SiteVisitSchema } from '../site-visits/schemas/site-visit.schema';
+import {
+  SiteVisit,
+  SiteVisitSchema,
+} from '../site-visits/schemas/site-visit.schema';
 import { LeadsController } from './leads.controller';
 import { LeadsService } from './leads.service';
 import { LeadsAIService } from './leads-ai.service';

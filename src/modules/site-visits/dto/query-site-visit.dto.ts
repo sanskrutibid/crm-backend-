@@ -1,11 +1,19 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsOptional, IsString, IsInt, Min, IsBoolean } from 'class-validator';
+import {
+  IsEnum,
+  IsOptional,
+  IsString,
+  IsInt,
+  Min,
+  IsBoolean,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class QuerySiteVisitDto {
   @ApiPropertyOptional({
     example: 'Avinash',
-    description: 'Search string matching visitor, site name, managers, remarks or branch location',
+    description:
+      'Search string matching visitor, site name, managers, remarks or branch location',
   })
   @IsString()
   @IsOptional()
@@ -13,7 +21,8 @@ export class QuerySiteVisitDto {
 
   @ApiPropertyOptional({
     example: 'Avinash',
-    description: 'Search keyword matching multiple text fields (alias for search)',
+    description:
+      'Search keyword matching multiple text fields (alias for search)',
   })
   @IsString()
   @IsOptional()
@@ -101,7 +110,8 @@ export class QuerySiteVisitDto {
 
   @ApiPropertyOptional({
     example: '2026-06-01',
-    description: 'Filter visits starting from this visit date (inclusive, format YYYY-MM-DD)',
+    description:
+      'Filter visits starting from this visit date (inclusive, format YYYY-MM-DD)',
   })
   @IsString()
   @IsOptional()
@@ -109,7 +119,8 @@ export class QuerySiteVisitDto {
 
   @ApiPropertyOptional({
     example: '2026-06-30',
-    description: 'Filter visits up to this visit date (inclusive, format YYYY-MM-DD)',
+    description:
+      'Filter visits up to this visit date (inclusive, format YYYY-MM-DD)',
   })
   @IsString()
   @IsOptional()
@@ -117,7 +128,8 @@ export class QuerySiteVisitDto {
 
   @ApiPropertyOptional({
     example: '2026-06-01T00:00:00.000Z',
-    description: 'Filter visits starting from this creation date (inclusive, ISO)',
+    description:
+      'Filter visits starting from this creation date (inclusive, ISO)',
   })
   @IsString()
   @IsOptional()
@@ -133,7 +145,8 @@ export class QuerySiteVisitDto {
 
   @ApiPropertyOptional({
     example: 1,
-    description: 'Filter visits starting from this number of locking days remaining',
+    description:
+      'Filter visits starting from this number of locking days remaining',
   })
   @Type(() => Number)
   @IsInt()
@@ -186,7 +199,8 @@ export class QuerySiteVisitDto {
 
   @ApiPropertyOptional({
     example: 'createdAt',
-    description: "Field name to sort results by: 'createdAt' (Created Date), 'visitor' (Visitor Name) or 'visitStatus' (Status).",
+    description:
+      "Field name to sort results by: 'createdAt' (Created Date), 'visitor' (Visitor Name) or 'visitStatus' (Status).",
     default: 'createdAt',
   })
   @IsString()
@@ -196,7 +210,8 @@ export class QuerySiteVisitDto {
   @ApiPropertyOptional({
     example: 'desc',
     enum: ['asc', 'desc'],
-    description: 'Sorting direction order: asc (ascending) or desc (descending).',
+    description:
+      'Sorting direction order: asc (ascending) or desc (descending).',
     default: 'desc',
   })
   @IsEnum(['asc', 'desc'], { message: "Sort order must be 'asc' or 'desc'" })

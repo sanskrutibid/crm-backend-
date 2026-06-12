@@ -1,4 +1,12 @@
-import { Body, Controller, HttpCode, HttpStatus, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -39,7 +47,11 @@ export class AuthController {
   })
   @ResponseMessage('Login completed successfully')
   async login(@Body() loginDto: LoginDto, @Req() req: any) {
-    const ip = req.ip || req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '';
+    const ip =
+      req.ip ||
+      req.headers['x-forwarded-for'] ||
+      req.socket?.remoteAddress ||
+      '';
     const userAgent = req.headers['user-agent'] || '';
     return this.authService.login(loginDto, { ip, userAgent });
   }
@@ -52,7 +64,11 @@ export class AuthController {
   @ResponseMessage('Logout completed successfully')
   async logout(@Body() logoutDto: LogoutDto, @Req() req: any) {
     const userId = req.user.id;
-    const ip = req.ip || req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '';
+    const ip =
+      req.ip ||
+      req.headers['x-forwarded-for'] ||
+      req.socket?.remoteAddress ||
+      '';
     const userAgent = req.headers['user-agent'] || '';
     return this.authService.logout(userId, logoutDto, { ip, userAgent });
   }

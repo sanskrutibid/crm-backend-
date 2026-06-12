@@ -74,7 +74,11 @@ export class Task {
     type: [
       {
         comment: { type: String, required: true },
-        nextAction: { type: String, enum: ['Call', 'Meeting', 'None'], default: 'None' },
+        nextAction: {
+          type: String,
+          enum: ['Call', 'Meeting', 'None'],
+          default: 'None',
+        },
         nextDate: { type: String },
         nextTime: { type: String },
         priority: { type: String, enum: ['Low', 'Medium', 'High'] },
@@ -94,4 +98,3 @@ export class Task {
 }
 
 export const TaskSchema = SchemaFactory.createForClass(Task);
-

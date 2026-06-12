@@ -1,4 +1,10 @@
-import { Injectable, Logger, NotFoundException, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  OnModuleInit,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ConfigService } from '@nestjs/config';
@@ -21,7 +27,7 @@ export class SmsService implements OnModuleInit, OnModuleDestroy {
   onModuleInit() {
     this.logger.log('📱 Initializing Scheduled SMS Polling Loop...');
     this.schedulerInterval = setInterval(() => {
-      this.processScheduledSms().catch(err => {
+      this.processScheduledSms().catch((err) => {
         this.logger.error('Error in scheduled SMS polling loop:', err);
       });
     }, 30000); // Polling every 30 seconds
@@ -39,10 +45,13 @@ export class SmsService implements OnModuleInit, OnModuleDestroy {
    */
   private parseMobiles(mobiles: string | string[]): string[] {
     if (Array.isArray(mobiles)) {
-      return mobiles.map(m => m.trim()).filter(Boolean);
+      return mobiles.map((m) => m.trim()).filter(Boolean);
     }
     if (typeof mobiles === 'string') {
-      return mobiles.split(',').map(m => m.trim()).filter(Boolean);
+      return mobiles
+        .split(',')
+        .map((m) => m.trim())
+        .filter(Boolean);
     }
     return [];
   }
@@ -55,7 +64,7 @@ export class SmsService implements OnModuleInit, OnModuleDestroy {
       return new Date();
     }
 
-    let time = timeStr ? timeStr.trim().toLowerCase() : '00:00';
+    const time = timeStr ? timeStr.trim().toLowerCase() : '00:00';
     let hours = 0;
     let minutes = 0;
 
@@ -92,7 +101,9 @@ export class SmsService implements OnModuleInit, OnModuleDestroy {
     let day = 0;
 
     const ymdMatch = dateStr.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
-    const dmyMatch = dateStr.match(/^(\d{1,2})-(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-(\d{4})$/i);
+    const dmyMatch = dateStr.match(
+      /^(\d{1,2})-(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-(\d{4})$/i,
+    );
     const dmySlashMatch = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
 
     if (ymdMatch) {
@@ -102,7 +113,20 @@ export class SmsService implements OnModuleInit, OnModuleDestroy {
     } else if (dmyMatch) {
       day = parseInt(dmyMatch[1], 10);
       year = parseInt(dmyMatch[3], 10);
-      const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+      const months = [
+        'jan',
+        'feb',
+        'mar',
+        'apr',
+        'may',
+        'jun',
+        'jul',
+        'aug',
+        'sep',
+        'oct',
+        'nov',
+        'dec',
+      ];
       month = months.indexOf(dmyMatch[2].toLowerCase());
       if (month === -1) month = 0;
     } else if (dmySlashMatch) {
@@ -138,7 +162,10 @@ export class SmsService implements OnModuleInit, OnModuleDestroy {
    */
   async schedule(dto: ScheduleSmsDto): Promise<SmsDocument> {
     const mobiles = this.parseMobiles(dto.mobiles);
-    const scheduleTime = this.parseScheduleDateTime(dto.scheduleDate, dto.scheduleTime);
+    const scheduleTime = this.parseScheduleDateTime(
+      dto.scheduleDate,
+      dto.scheduleTime,
+    );
 
     const newSms = new this.smsModel({
       mobiles,
@@ -151,11 +178,13 @@ export class SmsService implements OnModuleInit, OnModuleDestroy {
     });
 
     const saved = await newSms.save();
-    this.logger.log(`📱 SMS scheduled with ID ${saved._id} for ${scheduleTime.toISOString()}`);
+    this.logger.log(
+      `📱 SMS scheduled with ID ${saved._id} for ${scheduleTime.toISOString()}`,
+    );
 
     // If scheduled for immediate send (scheduleTime is now or in the past), run asynchronously
     if (scheduleTime <= new Date()) {
-      this.sendSms(saved).catch(err => {
+      this.sendSms(saved).catch((err) => {
         this.logger.error(`Failed to send immediate SMS ${saved._id}:`, err);
       });
     }
@@ -166,7 +195,9 @@ export class SmsService implements OnModuleInit, OnModuleDestroy {
   /**
    * Fetch all SMS reports
    */
-  async findAll(query: QuerySmsDto): Promise<{ smsReports: SmsDocument[]; total: number }> {
+  async findAll(
+    query: QuerySmsDto,
+  ): Promise<{ smsReports: SmsDocument[]; total: number }> {
     const {
       search,
       keyword,
@@ -236,7 +267,9 @@ export class SmsService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
-    this.logger.log(`📱 Found ${pendingSms.length} pending scheduled SMS to send.`);
+    this.logger.log(
+      `📱 Found ${pendingSms.length} pending scheduled SMS to send.`,
+    );
     for (const sms of pendingSms) {
       await this.sendSms(sms);
     }
@@ -246,12 +279,17 @@ export class SmsService implements OnModuleInit, OnModuleDestroy {
    * Send SMS via Twilio API
    */
   async sendSms(sms: SmsDocument) {
-    const accountSid = this.configService.get<string>('TWILIO_ACCOUNT_SID') || this.configService.get<string>('TWILIO_SID');
+    const accountSid =
+      this.configService.get<string>('TWILIO_ACCOUNT_SID') ||
+      this.configService.get<string>('TWILIO_SID');
     const authToken = this.configService.get<string>('TWILIO_AUTH_TOKEN');
-    const fromNumber = this.configService.get<string>('TWILIO_PHONE_NUMBER') || '+1234567890';
+    const fromNumber =
+      this.configService.get<string>('TWILIO_PHONE_NUMBER') || '+1234567890';
 
     if (!accountSid || !authToken) {
-      this.logger.warn('⚠️ Twilio credentials TWILIO_SID/TWILIO_ACCOUNT_SID or TWILIO_AUTH_TOKEN are missing in .env. SMS will fail.');
+      this.logger.warn(
+        '⚠️ Twilio credentials TWILIO_SID/TWILIO_ACCOUNT_SID or TWILIO_AUTH_TOKEN are missing in .env. SMS will fail.',
+      );
       sms.status = 'Failed';
       sms.errorMessage = 'Twilio credentials are not configured in .env';
       await sms.save();
@@ -261,11 +299,13 @@ export class SmsService implements OnModuleInit, OnModuleDestroy {
     try {
       const client = new Twilio(accountSid, authToken);
 
-      this.logger.log(`📱 Dispatching SMS ID ${sms._id} to ${sms.mobiles.length} recipients...`);
+      this.logger.log(
+        `📱 Dispatching SMS ID ${sms._id} to ${sms.mobiles.length} recipients...`,
+      );
 
       // Dispatch to all numbers concurrently
       const results = await Promise.allSettled(
-        sms.mobiles.map(mobile =>
+        sms.mobiles.map((mobile) =>
           client.messages.create({
             body: sms.message,
             from: fromNumber,
@@ -293,11 +333,16 @@ export class SmsService implements OnModuleInit, OnModuleDestroy {
         if (errors.length > 0) {
           sms.errorMessage = `Partial failure. Errors: ${errors.join('; ')}`;
         }
-        this.logger.log(`📱 SMS ID ${sms._id} sent. Sids: ${messageSids.join(', ')}`);
+        this.logger.log(
+          `📱 SMS ID ${sms._id} sent. Sids: ${messageSids.join(', ')}`,
+        );
       } else {
         sms.status = 'Failed';
-        sms.errorMessage = errors.join('; ') || 'All Twilio SMS transmissions failed';
-        this.logger.error(`❌ Failed to send SMS ID ${sms._id}. Errors: ${sms.errorMessage}`);
+        sms.errorMessage =
+          errors.join('; ') || 'All Twilio SMS transmissions failed';
+        this.logger.error(
+          `❌ Failed to send SMS ID ${sms._id}. Errors: ${sms.errorMessage}`,
+        );
       }
 
       await sms.save();

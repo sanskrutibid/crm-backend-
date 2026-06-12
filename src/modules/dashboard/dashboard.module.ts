@@ -2,10 +2,16 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { DashboardController } from './dashboard.controller';
 import { DashboardService } from './dashboard.service';
-import { Property, PropertySchema } from '../properties/schemas/property.schema';
+import {
+  Property,
+  PropertySchema,
+} from '../properties/schemas/property.schema';
 import { Lead, LeadSchema } from '../leads/schemas/lead.schema';
 import { Contact, ContactSchema } from '../contacts/schemas/contact.schema';
-import { Opportunity, OpportunitySchema } from '../opportunities/schemas/opportunity.schema';
+import {
+  Opportunity,
+  OpportunitySchema,
+} from '../opportunities/schemas/opportunity.schema';
 
 @Module({
   imports: [

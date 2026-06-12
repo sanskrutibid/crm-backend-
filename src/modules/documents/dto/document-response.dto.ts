@@ -20,7 +20,8 @@ export class DocumentResponseDto {
   title: string;
 
   @ApiPropertyOptional({
-    example: 'Detailed plans and specifications for the new commercial residency.',
+    example:
+      'Detailed plans and specifications for the new commercial residency.',
     description: 'Detailed description of the document contents',
   })
   description?: string;

@@ -9,10 +9,7 @@ import {
   Min,
   IsArray,
 } from 'class-validator';
-import {
-  ProjectVisibility,
-  ProjectStatus,
-} from '../schemas/project.schema';
+import { ProjectVisibility, ProjectStatus } from '../schemas/project.schema';
 
 export class CreateProjectDto {
   // ==========================================
@@ -20,7 +17,8 @@ export class CreateProjectDto {
   // ==========================================
   @ApiPropertyOptional({
     example: '60d5ec7ab394142e88a38c29',
-    description: 'Target Contact ID registered in CRM Contacts. Required if addNewContact is false/omitted.',
+    description:
+      'Target Contact ID registered in CRM Contacts. Required if addNewContact is false/omitted.',
   })
   @IsString()
   @IsOptional()
@@ -28,7 +26,8 @@ export class CreateProjectDto {
 
   @ApiPropertyOptional({
     example: false,
-    description: 'Whether to add a new contact on-the-fly when creating the project',
+    description:
+      'Whether to add a new contact on-the-fly when creating the project',
     default: false,
   })
   @IsBoolean()

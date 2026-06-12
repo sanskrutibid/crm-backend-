@@ -1,9 +1,15 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { RentAgreement, RentAgreementSchema } from './schemas/rent-agreement.schema';
+import {
+  RentAgreement,
+  RentAgreementSchema,
+} from './schemas/rent-agreement.schema';
 import { RentAgreementsController } from './rent-agreements.controller';
 import { RentAgreementsService } from './rent-agreements.service';
-import { Property, PropertySchema } from '../properties/schemas/property.schema';
+import {
+  Property,
+  PropertySchema,
+} from '../properties/schemas/property.schema';
 import { Contact, ContactSchema } from '../contacts/schemas/contact.schema';
 import { ActivitiesModule } from '../activities/activities.module';
 

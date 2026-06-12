@@ -1,5 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document as MongooseDocument, Schema as MongooseSchema } from 'mongoose';
+import {
+  Document as MongooseDocument,
+  Schema as MongooseSchema,
+} from 'mongoose';
 import { User } from '../../users/schemas/user.schema';
 
 export type ReportDocument = ReportClass & MongooseDocument;

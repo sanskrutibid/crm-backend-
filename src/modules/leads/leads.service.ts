@@ -18,7 +18,10 @@ import {
 } from './schemas/lead.schema';
 import { Contact, ContactDocument } from '../contacts/schemas/contact.schema';
 import { User, UserDocument } from '../users/schemas/user.schema';
-import { SiteVisit, SiteVisitDocument } from '../site-visits/schemas/site-visit.schema';
+import {
+  SiteVisit,
+  SiteVisitDocument,
+} from '../site-visits/schemas/site-visit.schema';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
 import { QueryLeadDto } from './dto/query-lead.dto';
@@ -43,7 +46,8 @@ export class LeadsService implements OnModuleInit {
     @InjectModel(Contact.name)
     private readonly contactModel: Model<ContactDocument>,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
-    @InjectModel(SiteVisit.name) private readonly siteVisitModel: Model<SiteVisitDocument>,
+    @InjectModel(SiteVisit.name)
+    private readonly siteVisitModel: Model<SiteVisitDocument>,
     private readonly activitiesService: ActivitiesService,
   ) {}
 
@@ -52,7 +56,8 @@ export class LeadsService implements OnModuleInit {
       if (id) {
         await this.cacheManager.del(`leads:id:${id}`);
       }
-      const version = (await this.cacheManager.get<number>('leads_version')) || 1;
+      const version =
+        (await this.cacheManager.get<number>('leads_version')) || 1;
       await this.cacheManager.set('leads_version', version + 1);
     } catch (err) {
       console.error('Cache invalidation failed:', err);
@@ -179,10 +184,7 @@ export class LeadsService implements OnModuleInit {
     }
 
     // Setup default fallback values without Gemini AI analysis
-    const score =
-      createLeadDto.score !== undefined
-        ? createLeadDto.score
-        : 1.0;
+    const score = createLeadDto.score !== undefined ? createLeadDto.score : 1.0;
     const temperature =
       createLeadDto.temperature !== undefined
         ? createLeadDto.temperature
@@ -232,9 +234,12 @@ export class LeadsService implements OnModuleInit {
     const version = (await this.cacheManager.get<number>('leads_version')) || 1;
     const cacheKey = `leads:list:${version}:${JSON.stringify(query)}`;
     try {
-      const cached = await this.cacheManager.get<{ leads: any[]; total: number }>(cacheKey);
+      const cached = await this.cacheManager.get<{
+        leads: any[];
+        total: number;
+      }>(cacheKey);
       if (cached) {
-        return cached as any;
+        return cached;
       }
     } catch (err) {
       console.error('Cache read error in findAll:', err);
@@ -985,7 +990,11 @@ export class LeadsService implements OnModuleInit {
     return { success: true };
   }
 
-  async addQuickNote(id: string, dto: LeadQuickNoteDto, defaultUserId?: string) {
+  async addQuickNote(
+    id: string,
+    dto: LeadQuickNoteDto,
+    defaultUserId?: string,
+  ) {
     const lead = await this.leadModel.findById(id).populate('contactId').exec();
     if (!lead) {
       throw new NotFoundException(`Lead with ID "${id}" not found`);
@@ -1100,17 +1109,21 @@ export class LeadsService implements OnModuleInit {
 
     // ALSO CREATE STANDALONE SITE VISIT DOCUMENT
     // Lookup user ID matching assignee name (dto.assignee is a string like "Gourav Raut")
-    const assigneeUser = await this.userModel.findOne({
-      $or: [
-        { firstName: new RegExp(dto.assignee, 'i') },
-        { lastName: new RegExp(dto.assignee, 'i') },
-        { email: new RegExp(dto.assignee, 'i') },
-      ],
-    }).exec();
+    const assigneeUser = await this.userModel
+      .findOne({
+        $or: [
+          { firstName: new RegExp(dto.assignee, 'i') },
+          { lastName: new RegExp(dto.assignee, 'i') },
+          { email: new RegExp(dto.assignee, 'i') },
+        ],
+      })
+      .exec();
 
     const assigneeId = assigneeUser
       ? assigneeUser._id
-      : (defaultUserId || lead.assignedTo || (await this.userModel.findOne().exec())?._id);
+      : defaultUserId ||
+        lead.assignedTo ||
+        (await this.userModel.findOne().exec())?._id;
 
     const newStandaloneSiteVisit = new this.siteVisitModel({
       visitor: dto.visitor,

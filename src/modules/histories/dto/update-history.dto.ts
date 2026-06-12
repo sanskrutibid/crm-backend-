@@ -12,7 +12,8 @@ export class UpdateHistoryDto {
   contactId?: string;
 
   @ApiPropertyOptional({
-    example: 'Discussed pricing for the 3 BHK row house, client requested discount.',
+    example:
+      'Discussed pricing for the 3 BHK row house, client requested discount.',
     description: 'Updated conversation details',
   })
   @IsString()

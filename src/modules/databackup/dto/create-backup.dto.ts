@@ -8,7 +8,8 @@ export class CreateBackupDto {
     description: 'The module/collection to backup',
   })
   @IsEnum(['CONTACT', 'LEAD', 'ENQUIRY', 'PROPERTY', 'PROJECT', 'SITEVISIT'], {
-    message: 'Module must be one of: CONTACT, LEAD, ENQUIRY, PROPERTY, PROJECT, SITEVISIT',
+    message:
+      'Module must be one of: CONTACT, LEAD, ENQUIRY, PROPERTY, PROJECT, SITEVISIT',
   })
   @IsString()
   @IsNotEmpty()

@@ -12,7 +12,7 @@ export class LogoutDto {
   lat?: number;
 
   @ApiProperty({
-    example: 77.2090,
+    example: 77.209,
     description: 'Longitude of the logout location',
     required: false,
   })

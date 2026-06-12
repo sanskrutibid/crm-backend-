@@ -30,7 +30,11 @@ export class BackupLog {
   @Prop({ required: true, trim: true, enum: ['Manual', 'Scheduled'] })
   type: string;
 
-  @Prop({ required: true, trim: true, enum: ['Completed', 'In Progress', 'Failed'] })
+  @Prop({
+    required: true,
+    trim: true,
+    enum: ['Completed', 'In Progress', 'Failed'],
+  })
   status: string;
 
   @Prop({ type: Date, default: Date.now })

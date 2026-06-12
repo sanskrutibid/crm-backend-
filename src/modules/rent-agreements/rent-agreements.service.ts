@@ -1,11 +1,17 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { RentAgreement, RentAgreementDocument } from './schemas/rent-agreement.schema';
+import {
+  RentAgreement,
+  RentAgreementDocument,
+} from './schemas/rent-agreement.schema';
 import { CreateRentAgreementDto } from './dto/create-rent-agreement.dto';
 import { UpdateRentAgreementDto } from './dto/update-rent-agreement.dto';
 import { QueryRentAgreementDto } from './dto/query-rent-agreement.dto';
-import { Property, PropertyDocument } from '../properties/schemas/property.schema';
+import {
+  Property,
+  PropertyDocument,
+} from '../properties/schemas/property.schema';
 import { Contact, ContactDocument } from '../contacts/schemas/contact.schema';
 import { ActivitiesService } from '../activities/activities.service';
 import { ActivityType } from '../activities/schemas/activity.schema';
@@ -56,7 +62,9 @@ export class RentAgreementsService {
 
     // Fetch tenant details for activity log
     const tenant = await this.contactModel.findById(createDto.tenant).exec();
-    const tenantName = tenant ? `${tenant.firstName} ${tenant.lastName || ''}`.trim() : 'a tenant';
+    const tenantName = tenant
+      ? `${tenant.firstName} ${tenant.lastName || ''}`.trim()
+      : 'a tenant';
 
     await this.activitiesService.log(
       `Created Rent Agreement for property at "${building}" with tenant "${tenantName}"`,
@@ -70,18 +78,29 @@ export class RentAgreementsService {
   async findAll(
     query: QueryRentAgreementDto,
   ): Promise<{ rentAgreements: RentAgreementDocument[]; total: number }> {
-    const { search, page = 1, limit = 10, sortBy = 'Create Date', orderBy = 'Desc' } = query;
+    const {
+      search,
+      page = 1,
+      limit = 10,
+      sortBy = 'Create Date',
+      orderBy = 'Desc',
+    } = query;
     const filter: any = {};
 
     if (search) {
       // Find matching contact IDs first to allow searching by tenant name
-      const matchingContacts = await this.contactModel.find({
-        $or: [
-          { firstName: new RegExp(search, 'i') },
-          { lastName: new RegExp(search, 'i') },
-        ]
-      }, { _id: 1 }).exec();
-      const contactIds = matchingContacts.map(c => c._id);
+      const matchingContacts = await this.contactModel
+        .find(
+          {
+            $or: [
+              { firstName: new RegExp(search, 'i') },
+              { lastName: new RegExp(search, 'i') },
+            ],
+          },
+          { _id: 1 },
+        )
+        .exec();
+      const contactIds = matchingContacts.map((c) => c._id);
 
       filter.$or = [
         { tenant: { $in: contactIds } },
@@ -142,7 +161,10 @@ export class RentAgreementsService {
     const updateData: any = { ...updateDto };
 
     // If property is changed, re-sync denormalized building name
-    if (updateDto.property && updateDto.property !== existing.property.toString()) {
+    if (
+      updateDto.property &&
+      updateDto.property !== existing.property.toString()
+    ) {
       updateData.building = await this.getBuildingName(updateDto.property);
     }
 

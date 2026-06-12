@@ -85,10 +85,7 @@ export class DocumentsController {
     type: DocumentResponseDto,
   })
   @ResponseMessage('Document updated successfully')
-  async update(
-    @Param('id') id: string,
-    @Body() updateDto: UpdateDocumentDto,
-  ) {
+  async update(@Param('id') id: string, @Body() updateDto: UpdateDocumentDto) {
     return this.documentsService.update(id, updateDto);
   }
 

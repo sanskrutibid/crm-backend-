@@ -306,11 +306,17 @@ export class ProjectsService {
 
     // RERA Custom time-period sorting/filters (Last 7/30/90 days)
     if (sortBy === 'Last 7 days') {
-      filter.createdAt = { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) };
+      filter.createdAt = {
+        $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+      };
     } else if (sortBy === 'Last 30 days') {
-      filter.createdAt = { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) };
+      filter.createdAt = {
+        $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+      };
     } else if (sortBy === 'Last 90 days') {
-      filter.createdAt = { $gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) };
+      filter.createdAt = {
+        $gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000),
+      };
     }
 
     const total = await this.projectModel.countDocuments(filter).exec();

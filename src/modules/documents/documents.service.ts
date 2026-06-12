@@ -1,7 +1,10 @@
 import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { DocumentClass, DocumentClassDocument } from './schemas/document.schema';
+import {
+  DocumentClass,
+  DocumentClassDocument,
+} from './schemas/document.schema';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
 import { QueryDocumentDto } from './dto/query-document.dto';
@@ -32,7 +35,8 @@ export class DocumentsService implements OnModuleInit {
           {
             type: 'General',
             title: 'Project Details',
-            description: 'Comprehensive overview details and specs of current real estate ventures.',
+            description:
+              'Comprehensive overview details and specs of current real estate ventures.',
             rating: 78.5,
             fileUrl: 'uploads/documents/project_details.pdf',
             folder: 'Project Brochures',
@@ -44,7 +48,8 @@ export class DocumentsService implements OnModuleInit {
           {
             type: 'General',
             title: 'Lower Ground Floor Plan',
-            description: 'Engineering blueprint drawing showing space layout of lower ground parking.',
+            description:
+              'Engineering blueprint drawing showing space layout of lower ground parking.',
             rating: 90.0,
             fileUrl: 'uploads/documents/lower_ground_plan.png',
             folder: 'Blueprints',
@@ -56,8 +61,10 @@ export class DocumentsService implements OnModuleInit {
           // Legal Templates
           {
             type: 'Legal',
-            title: 'Notice by purchaser for specific performance of an agreement',
-            description: 'Standard legal template notice to request specific performance of real estate purchase agreement.',
+            title:
+              'Notice by purchaser for specific performance of an agreement',
+            description:
+              'Standard legal template notice to request specific performance of real estate purchase agreement.',
             rating: 85.0,
             fileUrl: 'uploads/documents/legal/notice_specific_performance.pdf',
             folder: 'Legal Notices',
@@ -69,7 +76,8 @@ export class DocumentsService implements OnModuleInit {
           {
             type: 'Legal',
             title: 'Special Power of Attorney',
-            description: 'Legal authorization format allowing representation for property transactions.',
+            description:
+              'Legal authorization format allowing representation for property transactions.',
             rating: 82.3,
             fileUrl: 'uploads/documents/legal/special_poa.pdf',
             folder: 'Power of Attorney',
@@ -81,7 +89,8 @@ export class DocumentsService implements OnModuleInit {
           {
             type: 'Legal',
             title: 'Appointment of Proxy',
-            description: 'Form to delegate voting or representational authority in building societies/association meetings.',
+            description:
+              'Form to delegate voting or representational authority in building societies/association meetings.',
             rating: 74.0,
             fileUrl: 'uploads/documents/legal/appointment_of_proxy.pdf',
             folder: 'Corporate Templates',
@@ -93,7 +102,8 @@ export class DocumentsService implements OnModuleInit {
           {
             type: 'Legal',
             title: 'Form No. 25 on Rs. 20/- Stamp Paper',
-            description: 'Declaration affidavit format printed on standard stamp paper.',
+            description:
+              'Declaration affidavit format printed on standard stamp paper.',
             rating: 88.5,
             fileUrl: 'uploads/documents/legal/form_25_stamp.pdf',
             folder: 'Affidavits',
@@ -105,7 +115,8 @@ export class DocumentsService implements OnModuleInit {
           {
             type: 'Legal',
             title: 'Certificate Of Title',
-            description: 'Official template format to certify clear and marketable ownership title of land/flats.',
+            description:
+              'Official template format to certify clear and marketable ownership title of land/flats.',
             rating: 95.0,
             fileUrl: 'uploads/documents/legal/certificate_of_title.pdf',
             folder: 'Titles & Ownership',
@@ -117,7 +128,8 @@ export class DocumentsService implements OnModuleInit {
           {
             type: 'Legal',
             title: 'Power of Attorney',
-            description: 'General power of attorney template covering administration and management of asset properties.',
+            description:
+              'General power of attorney template covering administration and management of asset properties.',
             rating: 80.0,
             fileUrl: 'uploads/documents/legal/general_poa.pdf',
             folder: 'Power of Attorney',
@@ -129,9 +141,11 @@ export class DocumentsService implements OnModuleInit {
           {
             type: 'Legal',
             title: 'Agreement to Sell & Purchase (Flats)',
-            description: 'Standard blueprint contract formatting terms and conditions of purchase for multi-family flat units.',
+            description:
+              'Standard blueprint contract formatting terms and conditions of purchase for multi-family flat units.',
             rating: 98.4,
-            fileUrl: 'uploads/documents/legal/agreement_sell_purchase_flats.pdf',
+            fileUrl:
+              'uploads/documents/legal/agreement_sell_purchase_flats.pdf',
             folder: 'Contracts',
             branch: 'Global Team',
             assignee: defaultUser._id as any,
@@ -140,9 +154,13 @@ export class DocumentsService implements OnModuleInit {
           },
         ];
         await this.documentModel.insertMany(seedDocs);
-        console.log('🌱 Successfully seeded initial Documents and Legal templates database collection.');
+        console.log(
+          '🌱 Successfully seeded initial Documents and Legal templates database collection.',
+        );
       } else {
-        console.log('⚠️ No users found in database to assign seed Documents to. Seeding skipped.');
+        console.log(
+          '⚠️ No users found in database to assign seed Documents to. Seeding skipped.',
+        );
       }
     }
   }
@@ -174,7 +192,17 @@ export class DocumentsService implements OnModuleInit {
   async findAll(
     query: QueryDocumentDto,
   ): Promise<{ documents: DocumentClassDocument[]; total: number }> {
-    const { type, search, folder, branch, assignee, page = 1, limit = 10, sortBy = 'Create Date', orderBy = 'Desc' } = query;
+    const {
+      type,
+      search,
+      folder,
+      branch,
+      assignee,
+      page = 1,
+      limit = 10,
+      sortBy = 'Create Date',
+      orderBy = 'Desc',
+    } = query;
     const filter: any = {};
 
     if (type) {
@@ -220,7 +248,9 @@ export class DocumentsService implements OnModuleInit {
       queryChain = queryChain.skip((page - 1) * limit).limit(limit);
     }
 
-    const documents = await queryChain.populate(['assignee', 'createdBy']).exec();
+    const documents = await queryChain
+      .populate(['assignee', 'createdBy'])
+      .exec();
 
     return { documents, total };
   }

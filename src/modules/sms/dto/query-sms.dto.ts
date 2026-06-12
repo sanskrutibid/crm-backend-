@@ -13,7 +13,8 @@ export class QuerySmsDto {
 
   @ApiPropertyOptional({
     example: 'Welcome',
-    description: 'Search keyword matching message content or mobile numbers (alias for search)',
+    description:
+      'Search keyword matching message content or mobile numbers (alias for search)',
   })
   @IsString()
   @IsOptional()
@@ -32,7 +33,8 @@ export class QuerySmsDto {
 
   @ApiPropertyOptional({
     example: 'scheduleTime',
-    description: 'Field name to sort results by (e.g. scheduleTime, message, status, createdAt)',
+    description:
+      'Field name to sort results by (e.g. scheduleTime, message, status, createdAt)',
     default: 'scheduleTime',
   })
   @IsString()

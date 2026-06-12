@@ -8,10 +8,7 @@ import {
   Min,
   IsArray,
 } from 'class-validator';
-import {
-  ProjectVisibility,
-  ProjectStatus,
-} from '../schemas/project.schema';
+import { ProjectVisibility, ProjectStatus } from '../schemas/project.schema';
 
 export class UpdateProjectDto {
   @ApiPropertyOptional({

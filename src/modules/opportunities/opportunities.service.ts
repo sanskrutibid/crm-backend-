@@ -542,10 +542,18 @@ export class OpportunitiesService {
         .countDocuments({ ...todayFilter, purpose: OpportunityPurpose.BUY })
         .exec(),
       this.opportunityModel
-        .countDocuments({ ...todayFilter, purpose: OpportunityPurpose.RENT_LEASE })
+        .countDocuments({
+          ...todayFilter,
+          purpose: OpportunityPurpose.RENT_LEASE,
+        })
         .exec(),
       this.opportunityModel
-        .countDocuments({ ...todayFilter, purpose: { $notin: [OpportunityPurpose.BUY, OpportunityPurpose.RENT_LEASE] } })
+        .countDocuments({
+          ...todayFilter,
+          purpose: {
+            $notin: [OpportunityPurpose.BUY, OpportunityPurpose.RENT_LEASE],
+          },
+        })
         .exec(),
 
       this.opportunityModel.countDocuments(overdueFilter).exec(),
@@ -616,10 +624,18 @@ export class OpportunitiesService {
         .countDocuments({ ...baseFilter, purpose: OpportunityPurpose.BUY })
         .exec(),
       this.opportunityModel
-        .countDocuments({ ...baseFilter, purpose: OpportunityPurpose.RENT_LEASE })
+        .countDocuments({
+          ...baseFilter,
+          purpose: OpportunityPurpose.RENT_LEASE,
+        })
         .exec(),
       this.opportunityModel
-        .countDocuments({ ...baseFilter, purpose: { $notin: [OpportunityPurpose.BUY, OpportunityPurpose.RENT_LEASE] } })
+        .countDocuments({
+          ...baseFilter,
+          purpose: {
+            $notin: [OpportunityPurpose.BUY, OpportunityPurpose.RENT_LEASE],
+          },
+        })
         .exec(),
 
       this.opportunityModel
@@ -707,7 +723,10 @@ export class OpportunitiesService {
     }
 
     // Log the change in activities logs
-    if (updateOpportunityDto.status && originalOpp.status !== updateOpportunityDto.status) {
+    if (
+      updateOpportunityDto.status &&
+      originalOpp.status !== updateOpportunityDto.status
+    ) {
       await this.activitiesService.log(
         `Updated stage of opportunity for customer "${(updatedOpp.contactId as any).firstName}" to "${updatedOpp.status}"`,
         ActivityType.OPPORTUNITY,
@@ -726,7 +745,10 @@ export class OpportunitiesService {
    * Deletes a CRM Opportunity completely.
    */
   async remove(id: string): Promise<void> {
-    const opp = await this.opportunityModel.findById(id).populate('contactId').exec();
+    const opp = await this.opportunityModel
+      .findById(id)
+      .populate('contactId')
+      .exec();
     if (!opp) {
       throw new NotFoundException(`Opportunity with ID "${id}" not found`);
     }

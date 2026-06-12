@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { LoginHistory, LoginHistoryDocument } from './schemas/login-history.schema';
+import {
+  LoginHistory,
+  LoginHistoryDocument,
+} from './schemas/login-history.schema';
 import { QueryLoginHistoryDto } from './dto/query-login-history.dto';
 
 @Injectable()
@@ -75,7 +78,7 @@ export class LoginHistoryService {
 
   private parseUserAgent(userAgent: string): string {
     if (!userAgent) return 'Unknown Device';
-    
+
     let os = 'Unknown OS';
     let browser = 'Unknown Browser';
 
@@ -93,7 +96,11 @@ export class LoginHistoryService {
     }
 
     // Parse Browser
-    if (/chrome|crios/i.test(userAgent) && !/edge|edg/i.test(userAgent) && !/opr/i.test(userAgent)) {
+    if (
+      /chrome|crios/i.test(userAgent) &&
+      !/edge|edg/i.test(userAgent) &&
+      !/opr/i.test(userAgent)
+    ) {
       browser = 'Chrome';
     } else if (/safari/i.test(userAgent) && !/chrome|crios/i.test(userAgent)) {
       browser = 'Safari';

@@ -13,7 +13,8 @@ export class QueryEmailDto {
 
   @ApiPropertyOptional({
     example: 'Welcome',
-    description: 'Search keyword matching subject or recipient emails (alias for search)',
+    description:
+      'Search keyword matching subject or recipient emails (alias for search)',
   })
   @IsString()
   @IsOptional()
@@ -32,7 +33,8 @@ export class QueryEmailDto {
 
   @ApiPropertyOptional({
     example: 'scheduleTime',
-    description: 'Field name to sort results by (e.g. scheduleTime, subject, status, createdAt)',
+    description:
+      'Field name to sort results by (e.g. scheduleTime, subject, status, createdAt)',
     default: 'scheduleTime',
   })
   @IsString()

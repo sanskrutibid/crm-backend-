@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Campaign, CampaignDocument } from './schemas/campaign.schema';
@@ -12,12 +16,17 @@ import { ActivityType } from '../activities/schemas/activity.schema';
 @Injectable()
 export class CampaignsService {
   constructor(
-    @InjectModel(Campaign.name) private readonly campaignModel: Model<CampaignDocument>,
-    @InjectModel(Contact.name) private readonly contactModel: Model<ContactDocument>,
+    @InjectModel(Campaign.name)
+    private readonly campaignModel: Model<CampaignDocument>,
+    @InjectModel(Contact.name)
+    private readonly contactModel: Model<ContactDocument>,
     private readonly activitiesService: ActivitiesService,
   ) {}
 
-  async create(dto: CreateCampaignDto, userId?: string): Promise<CampaignDocument> {
+  async create(
+    dto: CreateCampaignDto,
+    userId?: string,
+  ): Promise<CampaignDocument> {
     // Validate schedule inputs
     this.validateSchedule(dto);
 
@@ -45,7 +54,9 @@ export class CampaignsService {
     return saved.populate(['contacts', 'createdBy']);
   }
 
-  async findAll(query: QueryCampaignDto): Promise<{ campaigns: CampaignDocument[]; total: number }> {
+  async findAll(
+    query: QueryCampaignDto,
+  ): Promise<{ campaigns: CampaignDocument[]; total: number }> {
     const {
       search,
       type,
@@ -97,7 +108,11 @@ export class CampaignsService {
     return campaign;
   }
 
-  async update(id: string, dto: UpdateCampaignDto, userId?: string): Promise<CampaignDocument> {
+  async update(
+    id: string,
+    dto: UpdateCampaignDto,
+    userId?: string,
+  ): Promise<CampaignDocument> {
     const campaign = await this.campaignModel.findById(id).exec();
     if (!campaign) {
       throw new NotFoundException(`Campaign with ID "${id}" not found`);
@@ -109,13 +124,18 @@ export class CampaignsService {
 
     // If filters or contactIds are updated, recalculate contacts
     let contactIds = dto.contactIds;
-    if (dto.recipientFilters && (!dto.contactIds || dto.contactIds.length === 0)) {
+    if (
+      dto.recipientFilters &&
+      (!dto.contactIds || dto.contactIds.length === 0)
+    ) {
       contactIds = await this.resolveContactsFromFilters(dto.recipientFilters);
     }
 
     const updateData: any = {
       ...dto,
-      ...(contactIds ? { contacts: contactIds, totalRecords: contactIds.length } : {}),
+      ...(contactIds
+        ? { contacts: contactIds, totalRecords: contactIds.length }
+        : {}),
       updatedBy: userId,
     };
 
@@ -153,16 +173,23 @@ export class CampaignsService {
   private validateSchedule(dto: any) {
     const { schedule, time, setWeeks, setDays } = dto;
     if (schedule === 'Daily') {
-      if (!time) throw new BadRequestException('Time is required for Daily schedule');
+      if (!time)
+        throw new BadRequestException('Time is required for Daily schedule');
     } else if (schedule === 'Weekly') {
-      if (!time) throw new BadRequestException('Time is required for Weekly schedule');
+      if (!time)
+        throw new BadRequestException('Time is required for Weekly schedule');
       if (!setWeeks || setWeeks.length === 0) {
-        throw new BadRequestException('At least one weekday (setWeeks) is required for Weekly schedule');
+        throw new BadRequestException(
+          'At least one weekday (setWeeks) is required for Weekly schedule',
+        );
       }
     } else if (schedule === 'Monthly') {
-      if (!time) throw new BadRequestException('Time is required for Monthly schedule');
+      if (!time)
+        throw new BadRequestException('Time is required for Monthly schedule');
       if (!setDays || setDays.length === 0) {
-        throw new BadRequestException('At least one calendar date (setDays) is required for Monthly schedule');
+        throw new BadRequestException(
+          'At least one calendar date (setDays) is required for Monthly schedule',
+        );
       }
     }
   }
@@ -188,28 +215,35 @@ export class CampaignsService {
       createDateTo,
     } = filters;
 
-    if (customerType && customerType.trim() !== '') filter.customerType = customerType;
-    if (contactType && contactType.trim() !== '') filter.contactType = contactType;
+    if (customerType && customerType.trim() !== '')
+      filter.customerType = customerType;
+    if (contactType && contactType.trim() !== '')
+      filter.contactType = contactType;
     if (branch && branch.trim() !== '') filter.branch = branch;
     if (assignedTo && assignedTo.trim() !== '') filter.assignedTo = assignedTo;
     if (city && city.trim() !== '') filter.city = new RegExp(city, 'i');
-    
+
     if (location && location.trim() !== '') {
       filter.$or = [
         { locality: new RegExp(location, 'i') },
         { professionalLocality: new RegExp(location, 'i') },
-        { address: new RegExp(location, 'i') }
+        { address: new RegExp(location, 'i') },
       ];
     }
-    
+
     if (folder && folder.trim() !== '') filter.folder = folder;
     if (source && source.trim() !== '') filter.source = source;
     if (dndOptions && dndOptions.trim() !== '') filter.dndStatus = dndOptions;
 
-    if ((createDateFrom && createDateFrom.trim() !== '') || (createDateTo && createDateTo.trim() !== '')) {
+    if (
+      (createDateFrom && createDateFrom.trim() !== '') ||
+      (createDateTo && createDateTo.trim() !== '')
+    ) {
       filter.createdAt = {};
-      if (createDateFrom && createDateFrom.trim() !== '') filter.createdAt.$gte = new Date(createDateFrom);
-      if (createDateTo && createDateTo.trim() !== '') filter.createdAt.$lte = new Date(createDateTo);
+      if (createDateFrom && createDateFrom.trim() !== '')
+        filter.createdAt.$gte = new Date(createDateFrom);
+      if (createDateTo && createDateTo.trim() !== '')
+        filter.createdAt.$lte = new Date(createDateTo);
     }
 
     const matched = await this.contactModel.find(filter, { _id: 1 }).exec();

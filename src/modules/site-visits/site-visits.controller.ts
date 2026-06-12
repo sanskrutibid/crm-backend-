@@ -38,9 +38,12 @@ export class SiteVisitsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'List and filter Site Visits with search, sorting, and pagination' })
+  @ApiOperation({
+    summary: 'List and filter Site Visits with search, sorting, and pagination',
+  })
   @ApiOkResponse({
-    description: 'Site visits matching search and filter parameters retrieved successfully.',
+    description:
+      'Site visits matching search and filter parameters retrieved successfully.',
     type: [SiteVisitResponseDto],
   })
   @ResponseMessage('Site visits retrieved successfully')
@@ -66,10 +69,7 @@ export class SiteVisitsController {
     type: SiteVisitResponseDto,
   })
   @ResponseMessage('Site visit updated successfully')
-  async update(
-    @Param('id') id: string,
-    @Body() updateDto: UpdateSiteVisitDto,
-  ) {
+  async update(@Param('id') id: string, @Body() updateDto: UpdateSiteVisitDto) {
     return this.siteVisitsService.update(id, updateDto);
   }
 

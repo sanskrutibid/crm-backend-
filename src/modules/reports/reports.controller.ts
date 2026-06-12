@@ -66,10 +66,7 @@ export class ReportsController {
     type: ReportResponseDto,
   })
   @ResponseMessage('Report updated successfully')
-  async update(
-    @Param('id') id: string,
-    @Body() updateDto: UpdateReportDto,
-  ) {
+  async update(@Param('id') id: string, @Body() updateDto: UpdateReportDto) {
     return this.reportsService.update(id, updateDto);
   }
 

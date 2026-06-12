@@ -91,7 +91,7 @@ describe('TasksService', () => {
         scheduleTime: '3:00pm',
       };
 
-      await service.create(dto as any);
+      await service.create(dto);
 
       expect(mockTaskModel).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -109,7 +109,7 @@ describe('TasksService', () => {
         scheduleTime: '3:00pm',
       };
 
-      await service.create(dto as any);
+      await service.create(dto);
 
       expect(mockTaskModel).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -142,7 +142,7 @@ describe('TasksService', () => {
         scheduleDate: '2026-06-05',
       };
 
-      await service.update('mock-task-id', dto as any);
+      await service.update('mock-task-id', dto);
 
       expect(mockTaskModel.findByIdAndUpdate).toHaveBeenCalledWith(
         'mock-task-id',
@@ -163,7 +163,7 @@ describe('TasksService', () => {
         scheduleDate: '2026-06-05',
       };
 
-      await service.update('mock-task-id', dto as any);
+      await service.update('mock-task-id', dto);
 
       expect(mockTaskModel.findByIdAndUpdate).toHaveBeenCalledWith(
         'mock-task-id',

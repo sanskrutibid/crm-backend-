@@ -37,7 +37,8 @@ export class SiteVisitsService implements OnModuleInit {
             visitDate: new Date().toISOString().split('T')[0],
             timeIn: '11:26 AM',
             timeOut: '12:10 PM',
-            remark: 'Interested in a 3 BHK flat. Wants to see banking partners.',
+            remark:
+              'Interested in a 3 BHK flat. Wants to see banking partners.',
             siteManager: 'Gourav Raut',
             sourcingManager: 'Vikram Singh',
             closingManager: 'Sneha Nair',
@@ -62,10 +63,13 @@ export class SiteVisitsService implements OnModuleInit {
             module: 'Contact',
             siteName: 'Greenwood Luxury Residency',
             otherName: 'Villa 12',
-            visitDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            visitDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000)
+              .toISOString()
+              .split('T')[0],
             timeIn: '02:00 PM',
             timeOut: '03:30 PM',
-            remark: 'Amenities walkthrough and booking documentation discussion.',
+            remark:
+              'Amenities walkthrough and booking documentation discussion.',
             siteManager: 'Sanjay Shah',
             sourcingManager: 'Amit Roy',
             closingManager: 'Rohan Kapoor',
@@ -87,14 +91,21 @@ export class SiteVisitsService implements OnModuleInit {
         ];
 
         await this.siteVisitModel.insertMany(initialVisits);
-        console.log('🌱 Successfully seeded initial Site Visits database collection.');
+        console.log(
+          '🌱 Successfully seeded initial Site Visits database collection.',
+        );
       } else {
-        console.log('⚠️ No users found in database to assign seed Site Visits to. Seeding skipped.');
+        console.log(
+          '⚠️ No users found in database to assign seed Site Visits to. Seeding skipped.',
+        );
       }
     }
   }
 
-  async create(createDto: CreateSiteVisitDto, defaultUserId?: string): Promise<SiteVisitDocument> {
+  async create(
+    createDto: CreateSiteVisitDto,
+    defaultUserId?: string,
+  ): Promise<SiteVisitDocument> {
     const assignee = createDto.assignee || defaultUserId;
     const createdBy = createDto.createdBy || defaultUserId;
     const newVisit = new this.siteVisitModel({
@@ -114,7 +125,9 @@ export class SiteVisitsService implements OnModuleInit {
     return saved.populate(['assignee', 'createdBy', 'contactId']);
   }
 
-  async findAll(query: QuerySiteVisitDto): Promise<{ siteVisits: SiteVisitDocument[]; total: number }> {
+  async findAll(
+    query: QuerySiteVisitDto,
+  ): Promise<{ siteVisits: SiteVisitDocument[]; total: number }> {
     const {
       search,
       keyword,
@@ -287,16 +300,24 @@ export class SiteVisitsService implements OnModuleInit {
       .exec();
 
     if (!visit) {
-      throw new NotFoundException(`Site visit record with ID "${id}" not found`);
+      throw new NotFoundException(
+        `Site visit record with ID "${id}" not found`,
+      );
     }
 
     return visit;
   }
 
-  async update(id: string, updateDto: UpdateSiteVisitDto, defaultUserId?: string): Promise<SiteVisitDocument> {
+  async update(
+    id: string,
+    updateDto: UpdateSiteVisitDto,
+    defaultUserId?: string,
+  ): Promise<SiteVisitDocument> {
     const original = await this.siteVisitModel.findById(id).exec();
     if (!original) {
-      throw new NotFoundException(`Site visit record with ID "${id}" not found`);
+      throw new NotFoundException(
+        `Site visit record with ID "${id}" not found`,
+      );
     }
 
     const updated = await this.siteVisitModel
@@ -305,7 +326,9 @@ export class SiteVisitsService implements OnModuleInit {
       .exec();
 
     if (!updated) {
-      throw new NotFoundException(`Site visit record with ID "${id}" not found`);
+      throw new NotFoundException(
+        `Site visit record with ID "${id}" not found`,
+      );
     }
 
     // Log the action
@@ -321,7 +344,9 @@ export class SiteVisitsService implements OnModuleInit {
   async remove(id: string, defaultUserId?: string): Promise<void> {
     const visit = await this.siteVisitModel.findById(id).exec();
     if (!visit) {
-      throw new NotFoundException(`Site visit record with ID "${id}" not found`);
+      throw new NotFoundException(
+        `Site visit record with ID "${id}" not found`,
+      );
     }
 
     await this.siteVisitModel.findByIdAndDelete(id).exec();

@@ -4,21 +4,24 @@ import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 export class ScheduleEmailDto {
   @ApiProperty({
     example: 'customer1@example.com, customer2@example.com',
-    description: 'Recipient email address(es). Can be a comma-separated string or an array of emails.',
+    description:
+      'Recipient email address(es). Can be a comma-separated string or an array of emails.',
   })
   @IsNotEmpty({ message: 'Recipient is required' })
   to: string | string[];
 
   @ApiPropertyOptional({
     example: 'cc1@example.com',
-    description: 'CC email address(es). Can be a comma-separated string or an array of emails.',
+    description:
+      'CC email address(es). Can be a comma-separated string or an array of emails.',
   })
   @IsOptional()
   cc?: string | string[];
 
   @ApiPropertyOptional({
     example: 'bcc1@example.com',
-    description: 'BCC email address(es). Can be a comma-separated string or an array of emails.',
+    description:
+      'BCC email address(es). Can be a comma-separated string or an array of emails.',
   })
   @IsOptional()
   bcc?: string | string[];
@@ -41,7 +44,8 @@ export class ScheduleEmailDto {
 
   @ApiPropertyOptional({
     example: '2026-06-04',
-    description: 'Scheduled date to send the email (e.g. YYYY-MM-DD or DD-MMM-YYYY). If empty, today is used.',
+    description:
+      'Scheduled date to send the email (e.g. YYYY-MM-DD or DD-MMM-YYYY). If empty, today is used.',
   })
   @IsOptional()
   @IsString()
@@ -49,7 +53,8 @@ export class ScheduleEmailDto {
 
   @ApiPropertyOptional({
     example: '10:52 am',
-    description: 'Scheduled time to send the email (e.g. HH:mm or HH:mm am/pm). If empty, immediate sending is attempted.',
+    description:
+      'Scheduled time to send the email (e.g. HH:mm or HH:mm am/pm). If empty, immediate sending is attempted.',
   })
   @IsOptional()
   @IsString()

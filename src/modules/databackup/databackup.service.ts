@@ -10,8 +10,9 @@ export class DatabackupService implements OnModuleInit {
   private readonly backupsDir = join(process.cwd(), 'backups');
 
   constructor(
-    @InjectModel(BackupLog.name) private readonly backupLogModel: Model<BackupLogDocument>,
-    @InjectConnection() private readonly connection: Connection
+    @InjectModel(BackupLog.name)
+    private readonly backupLogModel: Model<BackupLogDocument>,
+    @InjectConnection() private readonly connection: Connection,
   ) {}
 
   onModuleInit() {
@@ -26,8 +27,8 @@ export class DatabackupService implements OnModuleInit {
   }
 
   async createBackup(moduleName: string): Promise<BackupLog> {
-    const backupName = "Manual Request";
-    
+    const backupName = 'Manual Request';
+
     // 1. Create a log in progress
     const tempLog = await this.backupLogModel.create({
       version: backupName,
@@ -36,22 +37,23 @@ export class DatabackupService implements OnModuleInit {
       size: 'Calculating...',
       type: 'Manual',
       status: 'In Progress',
-      date: new Date()
+      date: new Date(),
     });
 
     try {
       // 2. Identify collection name
       const collectionMapping: { [key: string]: string } = {
-        'CONTACT': 'contacts',
-        'LEAD': 'leads',
-        'ENQUIRY': 'enquiries',
-        'PROPERTY': 'properties',
-        'PROJECT': 'projects',
-        'SITEVISIT': 'sitevisits'
+        CONTACT: 'contacts',
+        LEAD: 'leads',
+        ENQUIRY: 'enquiries',
+        PROPERTY: 'properties',
+        PROJECT: 'projects',
+        SITEVISIT: 'sitevisits',
       };
-      
-      const targetCollection = collectionMapping[moduleName] || moduleName.toLowerCase() + 's';
-      
+
+      const targetCollection =
+        collectionMapping[moduleName] || moduleName.toLowerCase() + 's';
+
       // 3. Dump the database collection
       if (!this.connection.db) {
         throw new Error('Database connection is not established');
@@ -67,7 +69,7 @@ export class DatabackupService implements OnModuleInit {
 
       if (docs.length > 0) {
         dumpContent += `/* SCHEMA INSERTIONS FOR ${targetCollection.toUpperCase()} */\n`;
-        docs.forEach(doc => {
+        docs.forEach((doc) => {
           const idStr = doc._id.toString();
           const { _id, ...cleanDoc } = doc;
           dumpContent += `INSERT INTO ${targetCollection} (_id, data) VALUES ('${idStr}', '${JSON.stringify(cleanDoc).replace(/'/g, "''")}');\n`;

@@ -1,11 +1,17 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { SaleAgreement, SaleAgreementDocument } from './schemas/sale-agreement.schema';
+import {
+  SaleAgreement,
+  SaleAgreementDocument,
+} from './schemas/sale-agreement.schema';
 import { CreateSaleAgreementDto } from './dto/create-sale-agreement.dto';
 import { UpdateSaleAgreementDto } from './dto/update-sale-agreement.dto';
 import { QuerySaleAgreementDto } from './dto/query-sale-agreement.dto';
-import { Property, PropertyDocument } from '../properties/schemas/property.schema';
+import {
+  Property,
+  PropertyDocument,
+} from '../properties/schemas/property.schema';
 import { Contact, ContactDocument } from '../contacts/schemas/contact.schema';
 import { ActivitiesService } from '../activities/activities.service';
 import { ActivityType } from '../activities/schemas/activity.schema';
@@ -56,7 +62,9 @@ export class SaleAgreementsService {
 
     // Fetch buyer details for activity log
     const buyer = await this.contactModel.findById(createDto.buyer).exec();
-    const buyerName = buyer ? `${buyer.firstName} ${buyer.lastName || ''}`.trim() : 'a client';
+    const buyerName = buyer
+      ? `${buyer.firstName} ${buyer.lastName || ''}`.trim()
+      : 'a client';
 
     await this.activitiesService.log(
       `Created Sale Agreement for property at "${building}" with buyer "${buyerName}"`,
@@ -70,18 +78,29 @@ export class SaleAgreementsService {
   async findAll(
     query: QuerySaleAgreementDto,
   ): Promise<{ saleAgreements: SaleAgreementDocument[]; total: number }> {
-    const { search, page = 1, limit = 10, sortBy = 'Create Date', orderBy = 'Desc' } = query;
+    const {
+      search,
+      page = 1,
+      limit = 10,
+      sortBy = 'Create Date',
+      orderBy = 'Desc',
+    } = query;
     const filter: any = {};
 
     if (search) {
       // Find matching contact IDs first to allow searching by buyer name
-      const matchingContacts = await this.contactModel.find({
-        $or: [
-          { firstName: new RegExp(search, 'i') },
-          { lastName: new RegExp(search, 'i') },
-        ]
-      }, { _id: 1 }).exec();
-      const contactIds = matchingContacts.map(c => c._id);
+      const matchingContacts = await this.contactModel
+        .find(
+          {
+            $or: [
+              { firstName: new RegExp(search, 'i') },
+              { lastName: new RegExp(search, 'i') },
+            ],
+          },
+          { _id: 1 },
+        )
+        .exec();
+      const contactIds = matchingContacts.map((c) => c._id);
 
       filter.$or = [
         { buyer: { $in: contactIds } },
@@ -142,7 +161,10 @@ export class SaleAgreementsService {
     const updateData: any = { ...updateDto };
 
     // If property is changed, re-sync denormalized building name
-    if (updateDto.property && updateDto.property !== existing.property.toString()) {
+    if (
+      updateDto.property &&
+      updateDto.property !== existing.property.toString()
+    ) {
       updateData.building = await this.getBuildingName(updateDto.property);
     }
 

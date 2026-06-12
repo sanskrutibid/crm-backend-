@@ -63,7 +63,10 @@ export class CreateRentAgreementDto {
   @IsOptional()
   rentPerMonth?: number;
 
-  @ApiPropertyOptional({ example: 75000, description: 'Security Deposit amount in INR' })
+  @ApiPropertyOptional({
+    example: 75000,
+    description: 'Security Deposit amount in INR',
+  })
   @IsNumber()
   @Min(0)
   @IsOptional()
@@ -75,19 +78,28 @@ export class CreateRentAgreementDto {
   @IsOptional()
   registrationCost?: number;
 
-  @ApiPropertyOptional({ example: 12500, description: 'Brokerage paid by Licensor/Landlord' })
+  @ApiPropertyOptional({
+    example: 12500,
+    description: 'Brokerage paid by Licensor/Landlord',
+  })
   @IsNumber()
   @Min(0)
   @IsOptional()
   brokerageLicensor?: number;
 
-  @ApiPropertyOptional({ example: 12500, description: 'Brokerage paid by Licensee/Tenant' })
+  @ApiPropertyOptional({
+    example: 12500,
+    description: 'Brokerage paid by Licensee/Tenant',
+  })
   @IsNumber()
   @Min(0)
   @IsOptional()
   brokerageLicensee?: number;
 
-  @ApiPropertyOptional({ example: 25000, description: 'Total Brokerage amount' })
+  @ApiPropertyOptional({
+    example: 25000,
+    description: 'Total Brokerage amount',
+  })
   @IsNumber()
   @Min(0)
   @IsOptional()
@@ -111,18 +123,27 @@ export class CreateRentAgreementDto {
   @IsOptional()
   otherExpense?: number;
 
-  @ApiPropertyOptional({ example: 10000, description: 'Furniture and Fixtures value' })
+  @ApiPropertyOptional({
+    example: 10000,
+    description: 'Furniture and Fixtures value',
+  })
   @IsNumber()
   @Min(0)
   @IsOptional()
   furnitureAndFixtures?: number;
 
-  @ApiPropertyOptional({ example: 'Shared Equally', description: 'Who pays legal charges' })
+  @ApiPropertyOptional({
+    example: 'Shared Equally',
+    description: 'Who pays legal charges',
+  })
   @IsString()
   @IsOptional()
   legalChargesPaidBy?: string;
 
-  @ApiPropertyOptional({ example: 5, description: 'Day of the month for rent reminders (e.g. 5th)' })
+  @ApiPropertyOptional({
+    example: 5,
+    description: 'Day of the month for rent reminders (e.g. 5th)',
+  })
   @IsNumber()
   @Min(1)
   @IsOptional()
@@ -136,17 +157,26 @@ export class CreateRentAgreementDto {
   @IsOptional()
   termsAndConditions?: string;
 
-  @ApiPropertyOptional({ example: false, description: 'Send lease expiry alert to Landlord/Owner' })
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Send lease expiry alert to Landlord/Owner',
+  })
   @IsBoolean()
   @IsOptional()
   sendLeaseExpiryAlertToOwner?: boolean;
 
-  @ApiPropertyOptional({ example: false, description: 'Send lease expiry alert to Tenant' })
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Send lease expiry alert to Tenant',
+  })
   @IsBoolean()
   @IsOptional()
   sendLeaseExpiryAlertToTenant?: boolean;
 
-  @ApiPropertyOptional({ example: false, description: 'Send SMS rent reminder to Tenant' })
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Send SMS rent reminder to Tenant',
+  })
   @IsBoolean()
   @IsOptional()
   sendSmsRentReminderToTenant?: boolean;

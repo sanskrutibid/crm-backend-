@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Delete, Body, Param, Res, NotFoundException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Delete,
+  Body,
+  Param,
+  Res,
+  NotFoundException,
+} from '@nestjs/common';
 import { DatabackupService } from './databackup.service';
 import { CreateBackupDto } from './dto/create-backup.dto';
 import { createReadStream } from 'fs';
@@ -28,7 +37,7 @@ export class DatabackupController {
     try {
       const filePath = this.databackupService.getBackupFilePath(filename);
       const file = createReadStream(filePath);
-      
+
       res.headers({
         'Content-Type': 'application/octet-stream',
         'Content-Disposition': `attachment; filename="${filename}"`,

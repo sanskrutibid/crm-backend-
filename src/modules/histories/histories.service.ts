@@ -1,7 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { History, HistoryDocument, HistoryPriority } from './schemas/history.schema';
+import {
+  History,
+  HistoryDocument,
+  HistoryPriority,
+} from './schemas/history.schema';
 import { Contact, ContactDocument } from '../contacts/schemas/contact.schema';
 import { Project, ProjectDocument } from '../projects/schemas/project.schema';
 import { CreateHistoryDto } from './dto/create-history.dto';
@@ -11,21 +15,32 @@ import { QueryHistoryDto } from './dto/query-history.dto';
 @Injectable()
 export class HistoriesService {
   constructor(
-    @InjectModel(History.name) private readonly historyModel: Model<HistoryDocument>,
-    @InjectModel(Contact.name) private readonly contactModel: Model<ContactDocument>,
-    @InjectModel(Project.name) private readonly projectModel: Model<ProjectDocument>,
+    @InjectModel(History.name)
+    private readonly historyModel: Model<HistoryDocument>,
+    @InjectModel(Contact.name)
+    private readonly contactModel: Model<ContactDocument>,
+    @InjectModel(Project.name)
+    private readonly projectModel: Model<ProjectDocument>,
   ) {}
 
   async create(createHistoryDto: CreateHistoryDto): Promise<HistoryDocument> {
-    const contact = await this.contactModel.findById(createHistoryDto.contactId).exec();
+    const contact = await this.contactModel
+      .findById(createHistoryDto.contactId)
+      .exec();
     if (!contact) {
-      throw new NotFoundException(`Contact with ID "${createHistoryDto.contactId}" not found`);
+      throw new NotFoundException(
+        `Contact with ID "${createHistoryDto.contactId}" not found`,
+      );
     }
 
     if (createHistoryDto.projectId) {
-      const project = await this.projectModel.findById(createHistoryDto.projectId).exec();
+      const project = await this.projectModel
+        .findById(createHistoryDto.projectId)
+        .exec();
       if (!project) {
-        throw new NotFoundException(`Project with ID "${createHistoryDto.projectId}" not found`);
+        throw new NotFoundException(
+          `Project with ID "${createHistoryDto.projectId}" not found`,
+        );
       }
     }
 
@@ -34,7 +49,9 @@ export class HistoriesService {
     return saved.populate(['contactId', 'projectId']);
   }
 
-  async findAll(query: QueryHistoryDto): Promise<{ histories: HistoryDocument[]; total: number }> {
+  async findAll(
+    query: QueryHistoryDto,
+  ): Promise<{ histories: HistoryDocument[]; total: number }> {
     const {
       contactId,
       priority,
@@ -111,9 +128,18 @@ export class HistoriesService {
             priorityWeight: {
               $switch: {
                 branches: [
-                  { case: { $eq: ['$priority', HistoryPriority.LOW] }, then: 1 },
-                  { case: { $eq: ['$priority', HistoryPriority.MEDIUM] }, then: 2 },
-                  { case: { $eq: ['$priority', HistoryPriority.HIGH] }, then: 3 },
+                  {
+                    case: { $eq: ['$priority', HistoryPriority.LOW] },
+                    then: 1,
+                  },
+                  {
+                    case: { $eq: ['$priority', HistoryPriority.MEDIUM] },
+                    then: 2,
+                  },
+                  {
+                    case: { $eq: ['$priority', HistoryPriority.HIGH] },
+                    then: 3,
+                  },
                 ],
                 default: 0,
               },
@@ -163,23 +189,34 @@ export class HistoriesService {
     return history;
   }
 
-  async update(id: string, updateHistoryDto: UpdateHistoryDto): Promise<HistoryDocument> {
+  async update(
+    id: string,
+    updateHistoryDto: UpdateHistoryDto,
+  ): Promise<HistoryDocument> {
     const history = await this.historyModel.findById(id).exec();
     if (!history) {
       throw new NotFoundException(`History log with ID "${id}" not found`);
     }
 
     if (updateHistoryDto.contactId) {
-      const contact = await this.contactModel.findById(updateHistoryDto.contactId).exec();
+      const contact = await this.contactModel
+        .findById(updateHistoryDto.contactId)
+        .exec();
       if (!contact) {
-        throw new NotFoundException(`Contact with ID "${updateHistoryDto.contactId}" not found`);
+        throw new NotFoundException(
+          `Contact with ID "${updateHistoryDto.contactId}" not found`,
+        );
       }
     }
 
     if (updateHistoryDto.projectId) {
-      const project = await this.projectModel.findById(updateHistoryDto.projectId).exec();
+      const project = await this.projectModel
+        .findById(updateHistoryDto.projectId)
+        .exec();
       if (!project) {
-        throw new NotFoundException(`Project with ID "${updateHistoryDto.projectId}" not found`);
+        throw new NotFoundException(
+          `Project with ID "${updateHistoryDto.projectId}" not found`,
+        );
       }
     }
 

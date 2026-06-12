@@ -77,6 +77,26 @@ export class SendSmsDto {
   @IsArray()
   @IsOptional()
   contactIds?: string[];
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  filters?: any;
+
+  @ApiPropertyOptional({ example: 'On Demand' })
+  @IsString()
+  @IsOptional()
+  schedule?: string;
+
+  @ApiPropertyOptional({ type: [String], example: ['Monday', 'Tuesday'] })
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  setWeeks?: string[];
+
+  @ApiPropertyOptional({ type: [Number], example: [1, 15] })
+  @IsArray()
+  @IsOptional()
+  setDays?: number[];
 }
 
 export class SendEmailDto {
@@ -104,6 +124,10 @@ export class SendEmailDto {
   @IsArray()
   @IsOptional()
   contactIds?: string[];
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  filters?: any;
 }
 
 export class GroupDeleteDto {

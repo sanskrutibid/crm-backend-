@@ -22,7 +22,6 @@ export class QueryTaskDto {
   @IsOptional()
   priority?: TaskPriority;
 
-
   @ApiPropertyOptional({
     example: 'Priya',
     description: 'Search string matching task summary title or description',

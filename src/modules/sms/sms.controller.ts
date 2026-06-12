@@ -1,5 +1,10 @@
 import { Controller, Post, Get, Body, Param, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiOkResponse, ApiCreatedResponse } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiOkResponse,
+  ApiCreatedResponse,
+} from '@nestjs/swagger';
 import { SmsService } from './sms.service';
 import { ScheduleSmsDto } from './dto/schedule-sms.dto';
 import { QuerySmsDto } from './dto/query-sms.dto';
@@ -19,7 +24,10 @@ export class SmsController {
   }
 
   @Get('reports')
-  @ApiOperation({ summary: 'List and filter scheduled/sent SMS reports with search, sorting, and pagination' })
+  @ApiOperation({
+    summary:
+      'List and filter scheduled/sent SMS reports with search, sorting, and pagination',
+  })
   @ApiOkResponse({ description: 'SMS reports retrieved successfully.' })
   @ResponseMessage('SMS reports retrieved successfully')
   async findAll(@Query() query: QuerySmsDto) {

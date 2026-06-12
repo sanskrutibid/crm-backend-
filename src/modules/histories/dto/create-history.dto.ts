@@ -1,5 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsEnum, IsOptional, IsString, IsDateString } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsEnum,
+  IsOptional,
+  IsString,
+  IsDateString,
+} from 'class-validator';
 import { HistoryPriority } from '../schemas/history.schema';
 
 export class CreateHistoryDto {
@@ -12,7 +18,8 @@ export class CreateHistoryDto {
   contactId: string;
 
   @ApiProperty({
-    example: 'Discussed pricing for the 3 BHK row house, client requested discount.',
+    example:
+      'Discussed pricing for the 3 BHK row house, client requested discount.',
     description: 'Details of the talk/conversation had with the client',
   })
   @IsString()

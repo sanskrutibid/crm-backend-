@@ -38,7 +38,9 @@ export class TemplatesController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'List and filter Templates with search, sorting, and pagination' })
+  @ApiOperation({
+    summary: 'List and filter Templates with search, sorting, and pagination',
+  })
   @ApiOkResponse({
     description: 'Templates retrieved successfully.',
     type: [TemplateResponseDto],
@@ -66,10 +68,7 @@ export class TemplatesController {
     type: TemplateResponseDto,
   })
   @ResponseMessage('Template updated successfully')
-  async update(
-    @Param('id') id: string,
-    @Body() updateDto: UpdateTemplateDto,
-  ) {
+  async update(@Param('id') id: string, @Body() updateDto: UpdateTemplateDto) {
     return this.templatesService.update(id, updateDto);
   }
 

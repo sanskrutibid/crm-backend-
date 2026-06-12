@@ -14,7 +14,8 @@ export class ReportResponseDto {
   name: string;
 
   @ApiPropertyOptional({
-    example: 'Monthly CRM Productivity Report provides an employee-wise snapshot of leads, follow-ups, calls, site visits, and lead sources.',
+    example:
+      'Monthly CRM Productivity Report provides an employee-wise snapshot of leads, follow-ups, calls, site visits, and lead sources.',
     description: 'Detailed description of the report',
   })
   description?: string;

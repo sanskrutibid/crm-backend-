@@ -214,10 +214,7 @@ export class LeadsController {
     @Param('id') id: string,
     @Body() changeLeadStatusDto: ChangeLeadStatusDto,
   ) {
-    return this.leadsService.changeStatus(
-      id,
-      changeLeadStatusDto,
-    );
+    return this.leadsService.changeStatus(id, changeLeadStatusDto);
   }
 
   @Post(':id/actions/update-requirement')
@@ -235,10 +232,7 @@ export class LeadsController {
     summary: 'Send scheduled or immediate SMS to a lead contact',
   })
   @ResponseMessage('SMS queued/sent successfully')
-  async sendSms(
-    @Param('id') id: string,
-    @Body() dto: SendLeadSmsDto,
-  ) {
+  async sendSms(@Param('id') id: string, @Body() dto: SendLeadSmsDto) {
     return this.leadsService.sendSms(id, dto);
   }
 
@@ -247,20 +241,14 @@ export class LeadsController {
     summary: 'Send scheduled or immediate Email to a lead contact',
   })
   @ResponseMessage('Email queued/sent successfully')
-  async sendEmail(
-    @Param('id') id: string,
-    @Body() dto: SendLeadEmailDto,
-  ) {
+  async sendEmail(@Param('id') id: string, @Body() dto: SendLeadEmailDto) {
     return this.leadsService.sendEmail(id, dto);
   }
 
   @Post(':id/actions/quick-note')
   @ApiOperation({ summary: 'Add quick note comment for lead profile context' })
   @ResponseMessage('Quick note added successfully')
-  async addQuickNote(
-    @Param('id') id: string,
-    @Body() dto: LeadQuickNoteDto,
-  ) {
+  async addQuickNote(@Param('id') id: string, @Body() dto: LeadQuickNoteDto) {
     return this.leadsService.addQuickNote(id, dto);
   }
 
@@ -269,10 +257,7 @@ export class LeadsController {
     summary: 'Send rich proposal document to lead contact email',
   })
   @ResponseMessage('Proposal successfully sent')
-  async sendProposal(
-    @Param('id') id: string,
-    @Body() dto: SendProposalDto,
-  ) {
+  async sendProposal(@Param('id') id: string, @Body() dto: SendProposalDto) {
     return this.leadsService.sendProposal(id, dto);
   }
 

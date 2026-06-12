@@ -32,9 +32,7 @@ export class OpportunitiesController {
     description: 'Opportunity successfully created.',
   })
   @ResponseMessage('Opportunity created successfully')
-  async create(
-    @Body() createOpportunityDto: CreateOpportunityDto,
-  ) {
+  async create(@Body() createOpportunityDto: CreateOpportunityDto) {
     return this.opportunitiesService.create(createOpportunityDto);
   }
 
@@ -106,7 +104,7 @@ export class OpportunitiesController {
   @ApiOperation({
     summary: "Today's Follow-Up Opportunities",
     description:
-      "Returns opportunities scheduled for today, split into on-time and overdue buckets.",
+      'Returns opportunities scheduled for today, split into on-time and overdue buckets.',
   })
   @ApiOkResponse({
     description: "Today's follow-up opportunities retrieved successfully.",

@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  OnModuleInit,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import {
@@ -35,6 +40,8 @@ import {
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { ActivitiesService } from '../activities/activities.service';
 import { ActivityType } from '../activities/schemas/activity.schema';
+import { EmailsService } from '../emails/emails.service';
+import { SmsService } from '../sms/sms.service';
 
 @Injectable()
 export class ContactsService implements OnModuleInit {
@@ -45,7 +52,9 @@ export class ContactsService implements OnModuleInit {
     private readonly audienceModel: Model<AudienceDocument>,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     private readonly activitiesService: ActivitiesService,
-  ) { }
+    private readonly emailsService: EmailsService,
+    private readonly smsService: SmsService,
+  ) {}
 
   /**
    * Seed Dayamati Chirawali's contact details on boot if the database collection is empty.
@@ -458,13 +467,38 @@ export class ContactsService implements OnModuleInit {
   async sendGroupSms(dto: SendSmsDto, defaultUserId?: string) {
     const filter =
       dto.contactIds && dto.contactIds.length > 0
-        ? { _id: { $in: dto.contactIds } }
-        : {};
+        ? { _id: { $in: dto.contactIds }, isDeleted: { $ne: true } }
+        : this.buildFilter(dto.filters);
 
-    const count = await this.contactModel.countDocuments(filter).exec();
+    const contacts = await this.contactModel.find(filter).exec();
+    const contactsWithMobile = contacts.filter(
+      (contact) => contact.mobile && contact.mobile.trim().length > 0,
+    );
+    const count = contactsWithMobile.length;
+
+    for (const contact of contactsWithMobile) {
+      await this.smsService.schedule({
+        mobiles: contact.mobile.trim(),
+        message: dto.message,
+        dltTemplateId: dto.dltTemplateId,
+        scheduleDate: dto.scheduleDate,
+        scheduleTime: dto.scheduleTime,
+        createdBy: defaultUserId,
+      });
+    }
+
+    let scheduleDetail = `Scheduled: ${dto.scheduleDate} at ${dto.scheduleTime}`;
+    if (dto.schedule && dto.schedule !== 'On Demand') {
+      scheduleDetail = `Schedule: ${dto.schedule} at ${dto.scheduleTime}`;
+      if (dto.schedule === 'Weekly' && dto.setWeeks && dto.setWeeks.length > 0) {
+        scheduleDetail += ` on [${dto.setWeeks.join(', ')}]`;
+      } else if (dto.schedule === 'Monthly' && dto.setDays && dto.setDays.length > 0) {
+        scheduleDetail += ` on days [${dto.setDays.join(', ')}]`;
+      }
+    }
 
     await this.activitiesService.log(
-      `Sent Group SMS: "${dto.message}" to ${count} contacts [Template: ${dto.template}, DLT ID: ${dto.dltTemplateId}, Scheduled: ${dto.scheduleDate} at ${dto.scheduleTime}]`,
+      `Sent Group SMS: "${dto.message}" to ${count} contacts [Template: ${dto.template}, DLT ID: ${dto.dltTemplateId}, ${scheduleDetail}]`,
       ActivityType.LEAD,
       defaultUserId,
     );
@@ -475,10 +509,25 @@ export class ContactsService implements OnModuleInit {
   async sendGroupEmail(dto: SendEmailDto, defaultUserId?: string) {
     const filter =
       dto.contactIds && dto.contactIds.length > 0
-        ? { _id: { $in: dto.contactIds } }
-        : {};
+        ? { _id: { $in: dto.contactIds }, isDeleted: { $ne: true } }
+        : this.buildFilter(dto.filters);
 
-    const count = await this.contactModel.countDocuments(filter).exec();
+    const contacts = await this.contactModel.find(filter).exec();
+    const contactsWithEmail = contacts.filter(
+      (contact) => contact.email && contact.email.trim().length > 0,
+    );
+    const count = contactsWithEmail.length;
+
+    for (const contact of contactsWithEmail) {
+      await this.emailsService.schedule({
+        to: contact.email!.trim(),
+        subject: dto.subject,
+        body: dto.message,
+        scheduleDate: dto.scheduleDate,
+        scheduleTime: dto.scheduleTime,
+        createdBy: defaultUserId,
+      });
+    }
 
     await this.activitiesService.log(
       `Sent Group Email: "${dto.subject}" to ${count} contacts [Template: ${dto.template}, Scheduled: ${dto.scheduleDate} at ${dto.scheduleTime}]`,
@@ -613,7 +662,7 @@ export class ContactsService implements OnModuleInit {
 
     await this.activitiesService.log(
       `Merged duplicate contacts: [${duplicateNames.join(', ')}] into primary contact "${primary.firstName} ${primary.lastName || ''}`.trim() +
-      '"',
+        '"',
       ActivityType.LEAD,
       defaultUserId,
     );
@@ -846,9 +895,23 @@ export class ContactsService implements OnModuleInit {
       throw new NotFoundException(`Contact with ID "${id}" not found`);
     }
 
+    const targetMobile = (contact.mobile || '').trim();
+    if (!targetMobile) {
+      throw new BadRequestException('Recipient mobile number is required');
+    }
+
+    await this.smsService.schedule({
+      mobiles: targetMobile,
+      message: dto.message,
+      dltTemplateId: dto.dltTemplateId,
+      scheduleDate: dto.scheduleDate,
+      scheduleTime: dto.scheduleTime,
+      createdBy: defaultUserId,
+    });
+
     const contactName = `${contact.firstName} ${contact.lastName || ''}`.trim();
     await this.activitiesService.log(
-      `Sent SMS to ${contactName}: "${dto.message}" [Template: ${dto.template}, DLT ID: ${dto.dltTemplateId}, Scheduled: ${dto.scheduleDate} at ${dto.scheduleTime}]`,
+      `Sent SMS to ${contactName} (${targetMobile}): "${dto.message}" [Template: ${dto.template}, DLT ID: ${dto.dltTemplateId}, Scheduled: ${dto.scheduleDate} at ${dto.scheduleTime}]`,
       ActivityType.LEAD,
       defaultUserId,
     );
@@ -868,9 +931,25 @@ export class ContactsService implements OnModuleInit {
       throw new NotFoundException(`Contact with ID "${id}" not found`);
     }
 
+    const targetEmail = (dto.to || contact.email || '').trim();
+    if (!targetEmail) {
+      throw new BadRequestException('Recipient email address is required');
+    }
+
+    await this.emailsService.schedule({
+      to: targetEmail,
+      cc: dto.cc ? dto.cc.trim() : undefined,
+      bcc: dto.bcc ? dto.bcc.trim() : undefined,
+      subject: dto.subject,
+      body: dto.message,
+      scheduleDate: dto.scheduleDate,
+      scheduleTime: dto.scheduleTime,
+      createdBy: defaultUserId,
+    });
+
     const contactName = `${contact.firstName} ${contact.lastName || ''}`.trim();
     await this.activitiesService.log(
-      `Sent Email to ${contactName} (${dto.to}): "${dto.subject}" [Template: ${dto.template}, CC: ${dto.cc || 'None'}, BCC: ${dto.bcc || 'None'}, Scheduled: ${dto.scheduleDate} at ${dto.scheduleTime}]`,
+      `Sent Email to ${contactName} (${targetEmail}): "${dto.subject}" [Template: ${dto.template}, CC: ${dto.cc || 'None'}, BCC: ${dto.bcc || 'None'}, Scheduled: ${dto.scheduleDate} at ${dto.scheduleTime}]`,
       ActivityType.LEAD,
       defaultUserId,
     );
@@ -1065,10 +1144,18 @@ export class ContactsService implements OnModuleInit {
     }
 
     const commentStr = dto.comment ? ` | Comment: "${dto.comment}"` : '';
-    const folderStr = dto.folder && dto.folder !== 'Select' ? `, Folder: "${dto.folder}"` : '';
-    const branchStr = dto.branch && dto.branch !== 'Select' ? `, Branch: "${dto.branch}"` : '';
-    const assignedStr = dto.assignedTo && dto.assignedTo !== 'Select' ? `, Assignee: "${dto.assignedTo}"` : '';
-    const permissionStr = dto.permission && dto.permission !== 'Select' ? `, Permission: "${dto.permission}"` : '';
+    const folderStr =
+      dto.folder && dto.folder !== 'Select' ? `, Folder: "${dto.folder}"` : '';
+    const branchStr =
+      dto.branch && dto.branch !== 'Select' ? `, Branch: "${dto.branch}"` : '';
+    const assignedStr =
+      dto.assignedTo && dto.assignedTo !== 'Select'
+        ? `, Assignee: "${dto.assignedTo}"`
+        : '';
+    const permissionStr =
+      dto.permission && dto.permission !== 'Select'
+        ? `, Permission: "${dto.permission}"`
+        : '';
 
     await this.activitiesService.log(
       `Group Transferred ${count} contacts (Type: ${dto.transferType})${folderStr}${branchStr}${assignedStr}${permissionStr}${commentStr}`,

@@ -80,12 +80,8 @@ export class ContactsController {
     summary: 'Create a new marketing Audience from selected/all contacts',
   })
   @ResponseMessage('Audience created successfully')
-  async createAudience(
-    @Body() createAudienceDto: CreateAudienceDto,
-  ) {
-    return this.contactsService.createAudience(
-      createAudienceDto,
-    );
+  async createAudience(@Body() createAudienceDto: CreateAudienceDto) {
+    return this.contactsService.createAudience(createAudienceDto);
   }
 
   @Get('actions/audiences')
@@ -152,9 +148,7 @@ export class ContactsController {
   @Post('actions/verify-emails')
   @ApiOperation({ summary: 'Smarter bulk email verification for contacts' })
   @ResponseMessage('Email verification completed successfully')
-  async verifyEmails(
-    @Body() verifyEmailsDto: VerifyEmailsDto,
-  ) {
+  async verifyEmails(@Body() verifyEmailsDto: VerifyEmailsDto) {
     return this.contactsService.verifyEmails(verifyEmailsDto);
   }
 
@@ -163,9 +157,7 @@ export class ContactsController {
     summary: 'Merge duplicate contacts into primary contact profile',
   })
   @ResponseMessage('Contacts merged successfully')
-  async mergeContacts(
-    @Body() mergeContactsDto: MergeContactsDto,
-  ) {
+  async mergeContacts(@Body() mergeContactsDto: MergeContactsDto) {
     return this.contactsService.mergeContacts(mergeContactsDto);
   }
 
@@ -174,9 +166,7 @@ export class ContactsController {
     summary: 'Update DND status using comma separated mobile numbers (Max 500)',
   })
   @ResponseMessage('DND numbers updated successfully')
-  async markDndComma(
-    @Body() updateDndCommaDto: UpdateDndCommaDto,
-  ) {
+  async markDndComma(@Body() updateDndCommaDto: UpdateDndCommaDto) {
     return this.contactsService.markDndComma(updateDndCommaDto);
   }
 
@@ -198,10 +188,7 @@ export class ContactsController {
     @Param('id') id: string,
     @Body() changeStatusDto: ChangeStatusDto,
   ) {
-    return this.contactsService.changeStatus(
-      id,
-      changeStatusDto,
-    );
+    return this.contactsService.changeStatus(id, changeStatusDto);
   }
 
   @Post(':id/actions/send-sms')
@@ -213,10 +200,7 @@ export class ContactsController {
     @Param('id') id: string,
     @Body() sendSmsSingleDto: SendSmsSingleDto,
   ) {
-    return this.contactsService.sendSmsSingle(
-      id,
-      sendSmsSingleDto,
-    );
+    return this.contactsService.sendSmsSingle(id, sendSmsSingleDto);
   }
 
   @Post(':id/actions/send-email')
@@ -228,10 +212,7 @@ export class ContactsController {
     @Param('id') id: string,
     @Body() sendEmailSingleDto: SendEmailSingleDto,
   ) {
-    return this.contactsService.sendEmailSingle(
-      id,
-      sendEmailSingleDto,
-    );
+    return this.contactsService.sendEmailSingle(id, sendEmailSingleDto);
   }
 
   @Post(':id/actions/quick-note')
@@ -256,10 +237,7 @@ export class ContactsController {
     @Param('id') id: string,
     @Body() transferContactDto: TransferContactDto,
   ) {
-    return this.contactsService.transferContact(
-      id,
-      transferContactDto,
-    );
+    return this.contactsService.transferContact(id, transferContactDto);
   }
 
   @Get(':id/actions/history')
@@ -280,10 +258,7 @@ export class ContactsController {
     @Param('id') id: string,
     @Body() attachDocumentDto: AttachDocumentDto,
   ) {
-    return this.contactsService.attachDocument(
-      id,
-      attachDocumentDto,
-    );
+    return this.contactsService.attachDocument(id, attachDocumentDto);
   }
 
   @Post(':id/actions/terms-conditions')
@@ -295,10 +270,7 @@ export class ContactsController {
     @Param('id') id: string,
     @Body() termsConditionsDto: TermsConditionsDto,
   ) {
-    return this.contactsService.sendTermsConditions(
-      id,
-      termsConditionsDto,
-    );
+    return this.contactsService.sendTermsConditions(id, termsConditionsDto);
   }
 
   @Get(':id')

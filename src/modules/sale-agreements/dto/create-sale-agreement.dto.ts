@@ -65,31 +65,46 @@ export class CreateSaleAgreementDto {
   @IsOptional()
   agreementValue?: number;
 
-  @ApiPropertyOptional({ example: 12000, description: 'Advance Maintenance Charges' })
+  @ApiPropertyOptional({
+    example: 12000,
+    description: 'Advance Maintenance Charges',
+  })
   @IsNumber()
   @Min(0)
   @IsOptional()
   advanceMaintenance?: number;
 
-  @ApiPropertyOptional({ example: 4500000, description: 'Buyer\'s Contribution' })
+  @ApiPropertyOptional({
+    example: 4500000,
+    description: "Buyer's Contribution",
+  })
   @IsNumber()
   @Min(0)
   @IsOptional()
   buyersContribution?: number;
 
-  @ApiPropertyOptional({ example: 50000, description: 'Brokerage paid by Buyer' })
+  @ApiPropertyOptional({
+    example: 50000,
+    description: 'Brokerage paid by Buyer',
+  })
   @IsNumber()
   @Min(0)
   @IsOptional()
   brokerageBuyer?: number;
 
-  @ApiPropertyOptional({ example: 50000, description: 'Brokerage paid by Seller' })
+  @ApiPropertyOptional({
+    example: 50000,
+    description: 'Brokerage paid by Seller',
+  })
   @IsNumber()
   @Min(0)
   @IsOptional()
   brokerageSeller?: number;
 
-  @ApiPropertyOptional({ example: 100000, description: 'Total Brokerage amount' })
+  @ApiPropertyOptional({
+    example: 100000,
+    description: 'Total Brokerage amount',
+  })
   @IsNumber()
   @Min(0)
   @IsOptional()
@@ -107,7 +122,10 @@ export class CreateSaleAgreementDto {
   @IsOptional()
   loanAmount?: number;
 
-  @ApiPropertyOptional({ example: 'NOC Transfer', description: 'Transfer type' })
+  @ApiPropertyOptional({
+    example: 'NOC Transfer',
+    description: 'Transfer type',
+  })
   @IsString()
   @IsOptional()
   transferType?: string;
@@ -142,7 +160,10 @@ export class CreateSaleAgreementDto {
   @IsOptional()
   stampDuty?: number;
 
-  @ApiPropertyOptional({ example: 75000, description: 'Furniture and Fixtures value' })
+  @ApiPropertyOptional({
+    example: 75000,
+    description: 'Furniture and Fixtures value',
+  })
   @IsNumber()
   @Min(0)
   @IsOptional()
@@ -160,7 +181,10 @@ export class CreateSaleAgreementDto {
   @IsOptional()
   vatPercent?: number;
 
-  @ApiPropertyOptional({ example: 8.5, description: 'Interest Rate percentage' })
+  @ApiPropertyOptional({
+    example: 8.5,
+    description: 'Interest Rate percentage',
+  })
   @IsNumber()
   @Min(0)
   @IsOptional()

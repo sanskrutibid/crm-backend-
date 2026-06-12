@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
@@ -48,7 +52,10 @@ export class AuthService {
     };
   }
 
-  async login(loginDto: LoginDto, clientInfo: { ip: string; userAgent: string }) {
+  async login(
+    loginDto: LoginDto,
+    clientInfo: { ip: string; userAgent: string },
+  ) {
     const user = await this.usersService.findByEmail(loginDto.email);
     if (!user) {
       throw new UnauthorizedException('Invalid email or password');

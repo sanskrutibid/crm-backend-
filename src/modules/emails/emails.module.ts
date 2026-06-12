@@ -6,9 +6,7 @@ import { EmailsService } from './emails.service';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([
-      { name: Email.name, schema: EmailSchema },
-    ]),
+    MongooseModule.forFeature([{ name: Email.name, schema: EmailSchema }]),
   ],
   controllers: [EmailsController],
   providers: [EmailsService],

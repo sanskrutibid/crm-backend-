@@ -31,7 +31,8 @@ export class ReportsService implements OnModuleInit {
       const seedReports: Partial<ReportClass>[] = [
         {
           name: 'MONTHLY CRM PRODUCTIVITY REPORT',
-          description: 'Monthly CRM Productivity Report provides an employee-wise snapshot of leads, follow-ups, calls, site visits, and lead sources, helping track daily performance, workload, and overall sales productivity across the CRM.',
+          description:
+            'Monthly CRM Productivity Report provides an employee-wise snapshot of leads, follow-ups, calls, site visits, and lead sources, helping track daily performance, workload, and overall sales productivity across the CRM.',
           type: 'Adhoc Report',
           validity: 'Active',
           nextRun: 'On Demand',
@@ -39,7 +40,8 @@ export class ReportsService implements OnModuleInit {
         },
         {
           name: 'WEEKLY CRM PRODUCTIVITY REPORT',
-          description: 'Weekly CRM Productivity Report provides a weekly snapshot of employee sales efficiency, lead engagement, and task completion metrics.',
+          description:
+            'Weekly CRM Productivity Report provides a weekly snapshot of employee sales efficiency, lead engagement, and task completion metrics.',
           type: 'Adhoc Report',
           validity: 'Active',
           nextRun: 'On Demand',
@@ -47,7 +49,8 @@ export class ReportsService implements OnModuleInit {
         },
         {
           name: 'DAILY CRM PRODUCTIVITY REPORT',
-          description: 'Daily CRM Productivity Report delivers real-time hourly analytics on calls made, site visits conducted, and lead statuses updated.',
+          description:
+            'Daily CRM Productivity Report delivers real-time hourly analytics on calls made, site visits conducted, and lead statuses updated.',
           type: 'Adhoc Report',
           validity: 'Active',
           nextRun: 'On Demand',
@@ -55,7 +58,8 @@ export class ReportsService implements OnModuleInit {
         },
         {
           name: 'EMPLOYEE LEAD ACTIVE REPORT(LAST 7 DAYS)',
-          description: 'Details active leads assigned to employees over the last 7 calendar days with updates on ongoing deal opportunities.',
+          description:
+            'Details active leads assigned to employees over the last 7 calendar days with updates on ongoing deal opportunities.',
           type: 'Adhoc Report',
           validity: 'Active',
           nextRun: 'On Demand',
@@ -63,7 +67,8 @@ export class ReportsService implements OnModuleInit {
         },
         {
           name: 'TOTAL EMPLOYEE SUMMARY REPORT',
-          description: 'Consolidated report tracking employee profiles, attendance status, and overall lead ownership statistics.',
+          description:
+            'Consolidated report tracking employee profiles, attendance status, and overall lead ownership statistics.',
           type: 'Adhoc Report',
           validity: 'Active',
           nextRun: 'On Demand',
@@ -71,7 +76,8 @@ export class ReportsService implements OnModuleInit {
         },
         {
           name: 'DAILY EMPLOYEE SUMMARY REPORTS',
-          description: 'A day-end brief summarizing employee attendance, check-in times, task status, and system actions.',
+          description:
+            'A day-end brief summarizing employee attendance, check-in times, task status, and system actions.',
           type: 'Adhoc Report',
           validity: 'Active',
           nextRun: 'On Demand',
@@ -79,7 +85,8 @@ export class ReportsService implements OnModuleInit {
         },
         {
           name: 'VISIT REPORT SUMMARY',
-          description: 'Logs customer site visits showing check-in location coordinates, feedback notes, and outcome statuses.',
+          description:
+            'Logs customer site visits showing check-in location coordinates, feedback notes, and outcome statuses.',
           type: 'Adhoc Report',
           validity: 'Active',
           nextRun: 'On Demand',
@@ -87,7 +94,8 @@ export class ReportsService implements OnModuleInit {
         },
         {
           name: 'Sales Report 1',
-          description: 'Sales performance metrics report run on a monthly basis.',
+          description:
+            'Sales performance metrics report run on a monthly basis.',
           type: 'Monthly Report',
           validity: 'Active',
           nextRun: '01 Jul 2025 6:00 PM',
@@ -95,7 +103,8 @@ export class ReportsService implements OnModuleInit {
         },
         {
           name: 'DATA REPORT',
-          description: 'Export of system tables including leads, campaigns, and opportunities logs.',
+          description:
+            'Export of system tables including leads, campaigns, and opportunities logs.',
           type: 'Adhoc Report',
           validity: 'Active',
           nextRun: 'On Demand',
@@ -104,11 +113,16 @@ export class ReportsService implements OnModuleInit {
       ];
 
       await this.reportModel.insertMany(seedReports);
-      console.log('🌱 Successfully seeded initial Reports directory database collection.');
+      console.log(
+        '🌱 Successfully seeded initial Reports directory database collection.',
+      );
     }
   }
 
-  async create(createDto: CreateReportDto, userId?: string): Promise<ReportDocument> {
+  async create(
+    createDto: CreateReportDto,
+    userId?: string,
+  ): Promise<ReportDocument> {
     const docData: any = { ...createDto };
 
     // Auto-calculate next run based on type
@@ -141,7 +155,15 @@ export class ReportsService implements OnModuleInit {
   async findAll(
     query: QueryReportDto,
   ): Promise<{ reports: ReportDocument[]; total: number }> {
-    const { type, validity, search, page = 1, limit = 10, sortBy = 'Create Date', orderBy = 'Desc' } = query;
+    const {
+      type,
+      validity,
+      search,
+      page = 1,
+      limit = 10,
+      sortBy = 'Create Date',
+      orderBy = 'Desc',
+    } = query;
     const filter: any = {};
 
     if (type) {
@@ -183,14 +205,21 @@ export class ReportsService implements OnModuleInit {
   }
 
   async findOne(id: string): Promise<ReportDocument> {
-    const report = await this.reportModel.findById(id).populate('createdBy').exec();
+    const report = await this.reportModel
+      .findById(id)
+      .populate('createdBy')
+      .exec();
     if (!report) {
       throw new NotFoundException(`Report with ID "${id}" not found`);
     }
     return report;
   }
 
-  async update(id: string, updateDto: UpdateReportDto, userId?: string): Promise<ReportDocument> {
+  async update(
+    id: string,
+    updateDto: UpdateReportDto,
+    userId?: string,
+  ): Promise<ReportDocument> {
     const updated = await this.reportModel
       .findByIdAndUpdate(id, updateDto, { new: true })
       .populate('createdBy')

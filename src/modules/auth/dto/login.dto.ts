@@ -1,5 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, MinLength, IsOptional, IsNumber } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  MinLength,
+  IsOptional,
+  IsNumber,
+} from 'class-validator';
 
 export class LoginDto {
   @ApiProperty({
@@ -29,7 +35,7 @@ export class LoginDto {
   lat?: number;
 
   @ApiProperty({
-    example: 77.2090,
+    example: 77.209,
     description: 'Longitude of the login location',
     required: false,
   })

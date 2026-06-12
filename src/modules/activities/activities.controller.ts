@@ -1,10 +1,4 @@
-﻿import {
-  Body,
-  Controller,
-  Get,
-  Post,
-  Query,
-} from '@nestjs/common';
+﻿import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -20,7 +14,7 @@ import { ResponseMessage } from '../../common/decorators/response-message.decora
 @ApiTags('Activities')
 @Controller('activities')
 export class ActivitiesController {
-  constructor(private readonly activitiesService: ActivitiesService) { }
+  constructor(private readonly activitiesService: ActivitiesService) {}
 
   @Post()
   @ApiOperation({ summary: 'Log a new Activity event' })
@@ -30,7 +24,6 @@ export class ActivitiesController {
   })
   @ResponseMessage('Activity logged successfully')
   async create(@Body() createActivityDto: CreateActivityDto) {
-
     return this.activitiesService.create(createActivityDto);
   }
 

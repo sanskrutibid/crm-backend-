@@ -48,12 +48,8 @@ export class PropertiesController {
     type: [PropertyResponseDto],
   })
   @ResponseMessage('My Properties retrieved successfully')
-  async getMyProperties(
-    @Query() queryPropertyDto: QueryPropertyDto,
-  ) {
-    return this.propertiesService.getMyProperties(
-      queryPropertyDto,
-    );
+  async getMyProperties(@Query() queryPropertyDto: QueryPropertyDto) {
+    return this.propertiesService.getMyProperties(queryPropertyDto);
   }
 
   @Get('available-properties')

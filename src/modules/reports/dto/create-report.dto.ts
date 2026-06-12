@@ -11,7 +11,8 @@ export class CreateReportDto {
   name: string;
 
   @ApiPropertyOptional({
-    example: 'Monthly CRM Productivity Report provides an employee-wise snapshot of leads, follow-ups, calls, site visits, and lead sources.',
+    example:
+      'Monthly CRM Productivity Report provides an employee-wise snapshot of leads, follow-ups, calls, site visits, and lead sources.',
     description: 'Detailed description of the report',
   })
   @IsString()
@@ -28,7 +29,8 @@ export class CreateReportDto {
 
   @ApiProperty({
     example: 'Adhoc Report',
-    description: 'Report type classification (e.g. Adhoc Report, Daily Report, Weekly Report, Monthly Report)',
+    description:
+      'Report type classification (e.g. Adhoc Report, Daily Report, Weekly Report, Monthly Report)',
     default: 'Adhoc Report',
   })
   @IsString()
@@ -46,7 +48,8 @@ export class CreateReportDto {
 
   @ApiPropertyOptional({
     example: 'On Demand',
-    description: 'Timing scheduled for the next run (e.g. On Demand or 01 Jul 2025 6:00 PM)',
+    description:
+      'Timing scheduled for the next run (e.g. On Demand or 01 Jul 2025 6:00 PM)',
     default: 'On Demand',
   })
   @IsString()

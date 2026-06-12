@@ -9,7 +9,9 @@ export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
 
   @Get('stats')
-  @ApiOperation({ summary: 'Get aggregated dashboard statistics and yearly trends' })
+  @ApiOperation({
+    summary: 'Get aggregated dashboard statistics and yearly trends',
+  })
   @ApiOkResponse({
     description: 'Dashboard statistics retrieved successfully.',
   })

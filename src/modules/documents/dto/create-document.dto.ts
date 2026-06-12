@@ -12,7 +12,8 @@ import {
 export class CreateDocumentDto {
   @ApiProperty({
     example: 'General',
-    description: 'Document category/classification type (e.g. General, Brochure, Legal, Other)',
+    description:
+      'Document category/classification type (e.g. General, Brochure, Legal, Other)',
     default: 'General',
   })
   @IsString()
@@ -28,7 +29,8 @@ export class CreateDocumentDto {
   title: string;
 
   @ApiPropertyOptional({
-    example: 'Detailed plans and specifications for the new commercial residency.',
+    example:
+      'Detailed plans and specifications for the new commercial residency.',
     description: 'Detailed description of the document contents',
   })
   @IsString()

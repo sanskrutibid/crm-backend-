@@ -1,4 +1,10 @@
-import { Injectable, Logger, NotFoundException, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  OnModuleInit,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ConfigService } from '@nestjs/config';
@@ -21,7 +27,7 @@ export class EmailsService implements OnModuleInit, OnModuleDestroy {
   onModuleInit() {
     this.logger.log('✉️ Initializing Scheduled Emails Polling Loop...');
     this.schedulerInterval = setInterval(() => {
-      this.processScheduledEmails().catch(err => {
+      this.processScheduledEmails().catch((err) => {
         this.logger.error('Error in scheduled email polling loop:', err);
       });
     }, 30000); // Polling every 30 seconds
@@ -39,10 +45,13 @@ export class EmailsService implements OnModuleInit, OnModuleDestroy {
    */
   private parseRecipients(recipients: string | string[]): string[] {
     if (Array.isArray(recipients)) {
-      return recipients.map(r => r.trim()).filter(Boolean);
+      return recipients.map((r) => r.trim()).filter(Boolean);
     }
     if (typeof recipients === 'string') {
-      return recipients.split(',').map(r => r.trim()).filter(Boolean);
+      return recipients
+        .split(',')
+        .map((r) => r.trim())
+        .filter(Boolean);
     }
     return [];
   }
@@ -55,7 +64,7 @@ export class EmailsService implements OnModuleInit, OnModuleDestroy {
       return new Date();
     }
 
-    let time = timeStr ? timeStr.trim().toLowerCase() : '00:00';
+    const time = timeStr ? timeStr.trim().toLowerCase() : '00:00';
     let hours = 0;
     let minutes = 0;
 
@@ -92,7 +101,9 @@ export class EmailsService implements OnModuleInit, OnModuleDestroy {
     let day = 0;
 
     const ymdMatch = dateStr.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
-    const dmyMatch = dateStr.match(/^(\d{1,2})-(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-(\d{4})$/i);
+    const dmyMatch = dateStr.match(
+      /^(\d{1,2})-(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-(\d{4})$/i,
+    );
     const dmySlashMatch = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
 
     if (ymdMatch) {
@@ -102,7 +113,20 @@ export class EmailsService implements OnModuleInit, OnModuleDestroy {
     } else if (dmyMatch) {
       day = parseInt(dmyMatch[1], 10);
       year = parseInt(dmyMatch[3], 10);
-      const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+      const months = [
+        'jan',
+        'feb',
+        'mar',
+        'apr',
+        'may',
+        'jun',
+        'jul',
+        'aug',
+        'sep',
+        'oct',
+        'nov',
+        'dec',
+      ];
       month = months.indexOf(dmyMatch[2].toLowerCase());
       if (month === -1) month = 0;
     } else if (dmySlashMatch) {
@@ -142,7 +166,10 @@ export class EmailsService implements OnModuleInit, OnModuleDestroy {
     const cc = dto.cc ? this.parseRecipients(dto.cc) : [];
     const bcc = dto.bcc ? this.parseRecipients(dto.bcc) : [];
 
-    const scheduleTime = this.parseScheduleDateTime(dto.scheduleDate, dto.scheduleTime);
+    const scheduleTime = this.parseScheduleDateTime(
+      dto.scheduleDate,
+      dto.scheduleTime,
+    );
 
     const newEmail = new this.emailModel({
       to,
@@ -156,11 +183,13 @@ export class EmailsService implements OnModuleInit, OnModuleDestroy {
     });
 
     const saved = await newEmail.save();
-    this.logger.log(`✉️ Email scheduled with ID ${saved._id} for ${scheduleTime.toISOString()}`);
+    this.logger.log(
+      `✉️ Email scheduled with ID ${saved._id} for ${scheduleTime.toISOString()}`,
+    );
 
     // If scheduled for immediate send (scheduleTime is now or in the past), run asynchronously
     if (scheduleTime <= new Date()) {
-      this.sendEmail(saved).catch(err => {
+      this.sendEmail(saved).catch((err) => {
         this.logger.error(`Failed to send immediate email ${saved._id}:`, err);
       });
     }
@@ -171,7 +200,9 @@ export class EmailsService implements OnModuleInit, OnModuleDestroy {
   /**
    * Fetch all emails matching filter parameters for reporting
    */
-  async findAll(query: QueryEmailDto): Promise<{ emails: EmailDocument[]; total: number }> {
+  async findAll(
+    query: QueryEmailDto,
+  ): Promise<{ emails: EmailDocument[]; total: number }> {
     const {
       search,
       keyword,
@@ -218,7 +249,10 @@ export class EmailsService implements OnModuleInit, OnModuleDestroy {
    * Fetch details of a single email
    */
   async findOne(id: string): Promise<EmailDocument> {
-    const email = await this.emailModel.findById(id).populate('createdBy').exec();
+    const email = await this.emailModel
+      .findById(id)
+      .populate('createdBy')
+      .exec();
     if (!email) {
       throw new NotFoundException(`Email record with ID "${id}" not found`);
     }
@@ -241,7 +275,9 @@ export class EmailsService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
-    this.logger.log(`✉️ Found ${pendingEmails.length} pending scheduled email(s) to send.`);
+    this.logger.log(
+      `✉️ Found ${pendingEmails.length} pending scheduled email(s) to send.`,
+    );
     for (const email of pendingEmails) {
       await this.sendEmail(email);
     }
@@ -252,12 +288,17 @@ export class EmailsService implements OnModuleInit, OnModuleDestroy {
    */
   async sendEmail(email: EmailDocument) {
     const gmailUser = this.configService.get<string>('GMAIL_USER');
-    const gmailAppPassword = this.configService.get<string>('GMAIL_APP_PASSWORD');
-    const fromName = this.configService.get<string>('MAIL_FROM_NAME') || 'VaultStone CRM';
-    const backendUrl = this.configService.get<string>('BACKEND_URL') || 'http://localhost:3000';
+    const gmailAppPassword =
+      this.configService.get<string>('GMAIL_APP_PASSWORD');
+    const fromName =
+      this.configService.get<string>('MAIL_FROM_NAME') || 'VaultStone CRM';
+    const backendUrl =
+      this.configService.get<string>('BACKEND_URL') || 'http://localhost:3000';
 
     if (!gmailUser || !gmailAppPassword) {
-      this.logger.warn('⚠️ SMTP settings are missing GMAIL_USER or GMAIL_APP_PASSWORD. Email sending will fail.');
+      this.logger.warn(
+        '⚠️ SMTP settings are missing GMAIL_USER or GMAIL_APP_PASSWORD. Email sending will fail.',
+      );
       email.status = 'Failed';
       email.errorMessage = 'SMTP configuration is incomplete in .env';
       await email.save();
@@ -286,7 +327,8 @@ export class EmailsService implements OnModuleInit, OnModuleDestroy {
         from: `"${fromName}" <${gmailUser}>`,
         to: email.to.join(', '),
         cc: email.cc && email.cc.length > 0 ? email.cc.join(', ') : undefined,
-        bcc: email.bcc && email.bcc.length > 0 ? email.bcc.join(', ') : undefined,
+        bcc:
+          email.bcc && email.bcc.length > 0 ? email.bcc.join(', ') : undefined,
         subject: email.subject,
         html: finalBody,
       };
@@ -297,7 +339,9 @@ export class EmailsService implements OnModuleInit, OnModuleDestroy {
       email.sentAt = new Date();
       await email.save();
 
-      this.logger.log(`✉️ Successfully sent email ID ${email._id} to ${email.to.join(', ')}`);
+      this.logger.log(
+        `✉️ Successfully sent email ID ${email._id} to ${email.to.join(', ')}`,
+      );
     } catch (err: any) {
       this.logger.error(`❌ Failed to send email ID ${email._id}:`, err);
       email.status = 'Failed';
@@ -324,7 +368,9 @@ export class EmailsService implements OnModuleInit, OnModuleDestroy {
       });
 
       await email.save();
-      this.logger.log(`✉️ Email ID ${id} opened. Total opens: ${email.openCount}`);
+      this.logger.log(
+        `✉️ Email ID ${id} opened. Total opens: ${email.openCount}`,
+      );
     } catch (err) {
       this.logger.error(`Failed to track open for email ID ${id}:`, err);
     }

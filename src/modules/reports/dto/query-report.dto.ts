@@ -5,7 +5,8 @@ import { Type } from 'class-transformer';
 export class QueryReportDto {
   @ApiPropertyOptional({
     example: 'Adhoc Report',
-    description: 'Filter reports by type (e.g. Adhoc Report, Daily Report, Weekly Report, Monthly Report)',
+    description:
+      'Filter reports by type (e.g. Adhoc Report, Daily Report, Weekly Report, Monthly Report)',
   })
   @IsString()
   @IsOptional()
@@ -40,7 +41,8 @@ export class QueryReportDto {
 
   @ApiPropertyOptional({
     example: 10,
-    description: 'Number of results to retrieve per page. Set to 99999 to bypass pagination.',
+    description:
+      'Number of results to retrieve per page. Set to 99999 to bypass pagination.',
     default: 10,
   })
   @Type(() => Number)

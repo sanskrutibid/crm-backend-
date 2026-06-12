@@ -1,11 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  IsEnum,
-  IsOptional,
-  IsString,
-  IsInt,
-  Min,
-} from 'class-validator';
+import { IsEnum, IsOptional, IsString, IsInt, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class QueryOpportunityDto {
@@ -34,7 +28,8 @@ export class QueryOpportunityDto {
 
   @ApiPropertyOptional({
     example: '60d5ecb8b394142e88a38c21',
-    description: 'Filter opportunities assigned to a specific CRM Agent User ID',
+    description:
+      'Filter opportunities assigned to a specific CRM Agent User ID',
   })
   @IsString()
   @IsOptional()

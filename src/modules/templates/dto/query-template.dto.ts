@@ -13,7 +13,8 @@ export class QueryTemplateDto {
 
   @ApiPropertyOptional({
     example: 'Onboarding',
-    description: 'Search keyword matching template name or templateId (alias for search)',
+    description:
+      'Search keyword matching template name or templateId (alias for search)',
   })
   @IsString()
   @IsOptional()
@@ -37,7 +38,8 @@ export class QueryTemplateDto {
 
   @ApiPropertyOptional({
     example: 'createdAt',
-    description: 'Field name to sort results by (e.g. createdAt, name, templateType)',
+    description:
+      'Field name to sort results by (e.g. createdAt, name, templateType)',
     default: 'createdAt',
   })
   @IsString()

@@ -5,7 +5,8 @@ import { Type } from 'class-transformer';
 export class QueryRentAgreementDto {
   @ApiPropertyOptional({
     example: 'John Doe',
-    description: 'Search string matching tenant name, building name, or CR number',
+    description:
+      'Search string matching tenant name, building name, or CR number',
   })
   @IsString()
   @IsOptional()
@@ -24,7 +25,8 @@ export class QueryRentAgreementDto {
 
   @ApiPropertyOptional({
     example: 10,
-    description: 'Number of results to retrieve per page. Set to 99999 to bypass pagination.',
+    description:
+      'Number of results to retrieve per page. Set to 99999 to bypass pagination.',
     default: 10,
   })
   @Type(() => Number)

@@ -25,7 +25,8 @@ export class QueryProjectDto {
 
   @ApiPropertyOptional({
     example: 'Patil',
-    description: 'Search matching project name, developer name, locality, keywords or description',
+    description:
+      'Search matching project name, developer name, locality, keywords or description',
   })
   @IsString()
   @IsOptional()
@@ -160,7 +161,8 @@ export class QueryProjectDto {
 
   @ApiPropertyOptional({
     example: '60d5ecb8b394142e88a38c21',
-    description: 'Filter projects assigned to a specific CRM Agent User ID (Assign to)',
+    description:
+      'Filter projects assigned to a specific CRM Agent User ID (Assign to)',
   })
   @IsString()
   @IsOptional()
@@ -168,7 +170,8 @@ export class QueryProjectDto {
 
   @ApiPropertyOptional({
     example: '60d5ecb8b394142e88a38c21',
-    description: 'Filter projects assigned to a specific CRM Agent User ID (alternative query)',
+    description:
+      'Filter projects assigned to a specific CRM Agent User ID (alternative query)',
   })
   @IsString()
   @IsOptional()

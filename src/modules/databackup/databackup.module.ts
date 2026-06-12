@@ -6,7 +6,9 @@ import { BackupLog, BackupLogSchema } from './schemas/backup-log.schema';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: BackupLog.name, schema: BackupLogSchema }]),
+    MongooseModule.forFeature([
+      { name: BackupLog.name, schema: BackupLogSchema },
+    ]),
   ],
   controllers: [DatabackupController],
   providers: [DatabackupService],

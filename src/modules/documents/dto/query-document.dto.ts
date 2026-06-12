@@ -5,7 +5,8 @@ import { Type } from 'class-transformer';
 export class QueryDocumentDto {
   @ApiPropertyOptional({
     example: 'General',
-    description: 'Filter by document category type (e.g. General, Brochure, Legal, Other)',
+    description:
+      'Filter by document category type (e.g. General, Brochure, Legal, Other)',
   })
   @IsString()
   @IsOptional()
@@ -56,7 +57,8 @@ export class QueryDocumentDto {
 
   @ApiPropertyOptional({
     example: 10,
-    description: 'Number of results per page. Set to 99999 to bypass pagination.',
+    description:
+      'Number of results per page. Set to 99999 to bypass pagination.',
     default: 10,
   })
   @Type(() => Number)

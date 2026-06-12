@@ -33,7 +33,8 @@ export class TemplatesService implements OnModuleInit {
             templateId: 'welcome_email_v1',
             templateType: 'Email',
             layoutType: 'editor',
-            editorContent: '<h3>Welcome to Vaultstone!</h3><p>Dear customer, we are excited to help you manage your CRM workflows. Let us know if you need anything.</p>',
+            editorContent:
+              '<h3>Welcome to Vaultstone!</h3><p>Dear customer, we are excited to help you manage your CRM workflows. Let us know if you need anything.</p>',
             createdBy: defaultUser._id as any,
           },
           {
@@ -41,7 +42,8 @@ export class TemplatesService implements OnModuleInit {
             templateId: 'otp_sms_verif',
             templateType: 'SMS',
             layoutType: 'editor',
-            editorContent: 'Your Vaultstone CRM verification code is 884729. Valid for 10 minutes.',
+            editorContent:
+              'Your Vaultstone CRM verification code is 884729. Valid for 10 minutes.',
             createdBy: defaultUser._id as any,
           },
           {
@@ -49,20 +51,28 @@ export class TemplatesService implements OnModuleInit {
             templateId: 'site_visit_wa_v1',
             templateType: 'WhatsApp',
             layoutType: 'editor',
-            editorContent: 'Hello {{1}}, your site visit to {{2}} is scheduled for {{3}} at {{4}}. See you soon!',
+            editorContent:
+              'Hello {{1}}, your site visit to {{2}} is scheduled for {{3}} at {{4}}. See you soon!',
             createdBy: defaultUser._id as any,
           },
         ];
 
         await this.templateModel.insertMany(initialTemplates);
-        console.log('🌱 Successfully seeded initial Templates database collection.');
+        console.log(
+          '🌱 Successfully seeded initial Templates database collection.',
+        );
       } else {
-        console.log('⚠️ No users found in database to assign seed Templates to. Seeding skipped.');
+        console.log(
+          '⚠️ No users found in database to assign seed Templates to. Seeding skipped.',
+        );
       }
     }
   }
 
-  async create(createDto: CreateTemplateDto, defaultUserId?: string): Promise<TemplateDocument> {
+  async create(
+    createDto: CreateTemplateDto,
+    defaultUserId?: string,
+  ): Promise<TemplateDocument> {
     const creator = createDto.createdBy || defaultUserId;
     const newTemplate = new this.templateModel({
       ...createDto,
@@ -80,7 +90,9 @@ export class TemplatesService implements OnModuleInit {
     return saved.populate(['createdBy', 'updatedBy']);
   }
 
-  async findAll(query: QueryTemplateDto): Promise<{ templates: TemplateDocument[]; total: number }> {
+  async findAll(
+    query: QueryTemplateDto,
+  ): Promise<{ templates: TemplateDocument[]; total: number }> {
     const {
       search,
       keyword,
@@ -142,7 +154,11 @@ export class TemplatesService implements OnModuleInit {
     return template;
   }
 
-  async update(id: string, updateDto: UpdateTemplateDto, defaultUserId?: string): Promise<TemplateDocument> {
+  async update(
+    id: string,
+    updateDto: UpdateTemplateDto,
+    defaultUserId?: string,
+  ): Promise<TemplateDocument> {
     const original = await this.templateModel.findById(id).exec();
     if (!original) {
       throw new NotFoundException(`Template with ID "${id}" not found`);

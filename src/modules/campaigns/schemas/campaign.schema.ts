@@ -75,7 +75,10 @@ export class Campaign {
     searchType?: string;
   };
 
-  @Prop({ type: [{ type: MongooseSchema.Types.ObjectId, ref: 'Contact' }], default: [] })
+  @Prop({
+    type: [{ type: MongooseSchema.Types.ObjectId, ref: 'Contact' }],
+    default: [],
+  })
   contacts: Contact[];
 
   @Prop({ type: Number, default: 0 })

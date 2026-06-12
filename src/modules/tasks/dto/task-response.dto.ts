@@ -59,7 +59,6 @@ export class TaskResponseDto {
   })
   assignedTo: AuthUserDto;
 
-
   @ApiProperty({
     example: '2026-05-26T14:04:03.000Z',
     description: 'Timestamp of creation',

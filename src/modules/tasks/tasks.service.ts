@@ -1,7 +1,17 @@
-import { BadRequestException, Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  OnModuleInit,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Task, TaskDocument, TaskStatus, TaskPriority } from './schemas/task.schema';
+import {
+  Task,
+  TaskDocument,
+  TaskStatus,
+  TaskPriority,
+} from './schemas/task.schema';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { QueryTaskDto } from './dto/query-task.dto';
@@ -91,7 +101,8 @@ export class TasksService implements OnModuleInit {
     createTaskDto: CreateTaskDto,
     defaultUserId?: string,
   ): Promise<TaskDocument> {
-    const scheduledDate = createTaskDto.scheduledDate || createTaskDto.scheduleDate;
+    const scheduledDate =
+      createTaskDto.scheduledDate || createTaskDto.scheduleDate;
     if (!scheduledDate) {
       throw new BadRequestException('Scheduled Date is required');
     }
@@ -187,7 +198,10 @@ export class TasksService implements OnModuleInit {
               $switch: {
                 branches: [
                   { case: { $eq: ['$priority', TaskPriority.LOW] }, then: 1 },
-                  { case: { $eq: ['$priority', TaskPriority.MEDIUM] }, then: 2 },
+                  {
+                    case: { $eq: ['$priority', TaskPriority.MEDIUM] },
+                    then: 2,
+                  },
                   { case: { $eq: ['$priority', TaskPriority.HIGH] }, then: 3 },
                 ],
                 default: 2, // Default weight for Medium
@@ -232,7 +246,6 @@ export class TasksService implements OnModuleInit {
     return { tasks, total };
   }
 
-
   async findOne(id: string): Promise<TaskDocument> {
     const task = await this.taskModel
       .findById(id)
@@ -255,8 +268,9 @@ export class TasksService implements OnModuleInit {
 
     const { scheduleDate, ...rest } = updateTaskDto;
     const updateData: any = { ...rest };
-    
-    const updatedDate = updateTaskDto.scheduledDate || updateTaskDto.scheduleDate;
+
+    const updatedDate =
+      updateTaskDto.scheduledDate || updateTaskDto.scheduleDate;
     if (updatedDate) {
       updateData.scheduledDate = updatedDate;
     }
@@ -301,7 +315,10 @@ export class TasksService implements OnModuleInit {
     );
   }
 
-  async addHistory(id: string, historyData: AddHistoryDto): Promise<TaskDocument> {
+  async addHistory(
+    id: string,
+    historyData: AddHistoryDto,
+  ): Promise<TaskDocument> {
     const task = await this.taskModel.findById(id).exec();
     if (!task) {
       throw new NotFoundException(`Task item with ID "${id}" not found`);

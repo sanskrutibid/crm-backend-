@@ -5,11 +5,7 @@ import { SmsController } from './sms.controller';
 import { SmsService } from './sms.service';
 
 @Module({
-  imports: [
-    MongooseModule.forFeature([
-      { name: Sms.name, schema: SmsSchema },
-    ]),
-  ],
+  imports: [MongooseModule.forFeature([{ name: Sms.name, schema: SmsSchema }])],
   controllers: [SmsController],
   providers: [SmsService],
   exports: [SmsService],
