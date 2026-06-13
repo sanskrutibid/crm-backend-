@@ -149,6 +149,14 @@ export class PropertiesService implements OnModuleInit {
       }
     }
 
+    if (
+      mapped.assignee &&
+      typeof mapped.assignee === 'string' &&
+      /^[0-9a-fA-F]{24}$/.test(mapped.assignee)
+    ) {
+      mapped.assignedTo = mapped.assignee;
+    }
+
     return mapped;
   }
 

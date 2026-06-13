@@ -41,6 +41,7 @@ import {
   TermsConditionsDto,
 } from './dto/single-actions.dto';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
+import { SendEmailOtpDto, VerifyEmailOtpDto } from './dto/email-verification.dto';
 
 @ApiTags('Contacts')
 @Controller('contacts')
@@ -177,6 +178,24 @@ export class ContactsController {
   @ResponseMessage('Duplicate contacts auto merged successfully')
   async autoMergeDuplicates() {
     return this.contactsService.autoMergeDuplicates();
+  }
+
+  @Post('email-verification/send')
+  @ApiOperation({
+    summary: 'Send a 6-digit OTP to the email address for verification',
+  })
+  @ResponseMessage('OTP sent successfully')
+  async sendEmailOtp(@Body() sendEmailOtpDto: SendEmailOtpDto) {
+    return this.contactsService.sendEmailOtp(sendEmailOtpDto.email);
+  }
+
+  @Post('email-verification/verify')
+  @ApiOperation({
+    summary: 'Verify the 6-digit OTP sent to the email address',
+  })
+  @ResponseMessage('Email verified successfully')
+  async verifyEmailOtp(@Body() verifyEmailOtpDto: VerifyEmailOtpDto) {
+    return this.contactsService.verifyEmailOtp(verifyEmailOtpDto.email, verifyEmailOtpDto.otp);
   }
 
   @Post(':id/actions/change-status')

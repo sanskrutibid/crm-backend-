@@ -5,6 +5,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { CrmCacheModule } from './common/cache/cache.module';
 import { UsersModule } from './modules/users/users.module';
+import { RolesModule } from './modules/roles/roles.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { LeadsModule } from './modules/leads/leads.module';
 import { AttendanceModule } from './modules/attendance/attendance.module';
@@ -27,6 +28,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { HistoriesModule } from './modules/histories/histories.module';
 import { LoginHistoryModule } from './modules/login-history/login-history.module';
 import { DatabackupModule } from './modules/databackup/databackup.module';
+import { LocationsModule } from './modules/locations/locations.module';
 
 @Module({
   imports: [
@@ -46,6 +48,7 @@ import { DatabackupModule } from './modules/databackup/databackup.module';
     CrmCacheModule,
 
     UsersModule,
+    RolesModule,
     AuthModule,
     LeadsModule,
     AttendanceModule,
@@ -68,6 +71,7 @@ import { DatabackupModule } from './modules/databackup/databackup.module';
     HistoriesModule,
     LoginHistoryModule,
     DatabackupModule,
+    LocationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

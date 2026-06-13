@@ -9,12 +9,47 @@ import {
   Min,
   Max,
   IsEmail,
+  registerDecorator,
+  ValidationOptions,
+  ValidationArguments,
+  Matches,
+  Length,
 } from 'class-validator';
 import {
   DNDStatus,
   EmailStatus,
   ContactVisibility,
 } from '../schemas/contact.schema';
+
+export function IsMobileValid(validationOptions?: ValidationOptions) {
+  return function (object: Object, propertyName: string) {
+    registerDecorator({
+      name: 'isMobileValid',
+      target: object.constructor,
+      propertyName: propertyName,
+      options: validationOptions,
+      validator: {
+        validate(value: any, args: ValidationArguments) {
+          if (typeof value !== 'string') return false;
+          const parts = value.trim().split(' ');
+          if (parts.length !== 2) return false;
+          const countryCode = parts[0];
+          const number = parts[1];
+          if (!/^\+\d+$/.test(countryCode)) return false;
+          if (!/^\d+$/.test(number)) return false;
+          
+          if (countryCode === '+91' && number.length !== 10) return false;
+          if (countryCode === '+1' && number.length !== 10) return false;
+          if (number.length < 7 || number.length > 15) return false;
+          return true;
+        },
+        defaultMessage(args: ValidationArguments) {
+          return 'Mobile number must be a valid format (e.g. +91 9876543210) with correct digit count for the country';
+        }
+      },
+    });
+  };
+}
 
 export class CreateContactDto {
   // ==========================================
@@ -28,6 +63,7 @@ export class CreateContactDto {
   @ApiProperty({ example: 'Dayamati', description: 'Contact first name' })
   @IsString()
   @IsNotEmpty({ message: 'First name is required' })
+  @Matches(/^[a-zA-Z\s]+$/, { message: 'First name must contain only alphabetic characters' })
   firstName: string;
 
   @ApiPropertyOptional({
@@ -36,6 +72,7 @@ export class CreateContactDto {
   })
   @IsString()
   @IsOptional()
+  @Matches(/^[a-zA-Z\s]+$/, { message: 'Last name must contain only alphabetic characters' })
   lastName?: string;
 
   @ApiProperty({
@@ -61,6 +98,7 @@ export class CreateContactDto {
   })
   @IsString()
   @IsNotEmpty({ message: 'Mobile number is required' })
+  @IsMobileValid()
   mobile: string;
 
   @ApiPropertyOptional({
@@ -134,6 +172,8 @@ export class CreateContactDto {
   })
   @IsString()
   @IsOptional()
+  @Length(6, 6, { message: 'Pin code must be exactly 6 digits' })
+  @Matches(/^\d{6}$/, { message: 'Pin code must contain only 6 digits' })
   pincode?: string;
 
   // ==========================================
@@ -374,6 +414,7 @@ export class CreateContactDto {
   })
   @IsString()
   @IsOptional()
+  @Matches(/^(data:image\/|https?:\/\/)/i, { message: 'Photograph must be a valid base64 image data URI or a valid URL' })
   photograph?: string;
 
   @ApiPropertyOptional({

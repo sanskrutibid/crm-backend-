@@ -34,8 +34,11 @@ export class User {
   @Prop({ required: false, trim: true, default: '' })
   lastName?: string;
 
-  @Prop({ required: true, enum: UserRole, default: UserRole.AGENT })
-  role: UserRole;
+  @Prop({ required: true, default: 'Agent/Broker' })
+  role: string;
+
+  @Prop({ type: Map, of: Boolean, default: {} })
+  customPermissions: Map<string, boolean>;
 
   @Prop({ default: true })
   isActive: boolean;

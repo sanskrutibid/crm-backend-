@@ -595,46 +595,52 @@ export class CreatePropertyDto {
   // Step 5: Other Details
   // ==========================================
   @ApiPropertyOptional({
-    example: true,
-    description: 'Presence of master bedroom',
+    example: 2,
+    description: 'Number of master bedrooms',
   })
-  @IsBoolean()
+  @IsNumber()
+  @Min(0)
   @IsOptional()
-  masterBedroom?: boolean;
+  masterBedroom?: number;
 
   @ApiPropertyOptional({
-    example: true,
-    description: 'Presence of guest bedroom',
+    example: 1,
+    description: 'Number of guest bedrooms',
   })
-  @IsBoolean()
+  @IsNumber()
+  @Min(0)
   @IsOptional()
-  guestRoom?: boolean;
+  guestRoom?: number;
 
   @ApiPropertyOptional({
-    example: false,
-    description: 'Presence of children room',
+    example: 1,
+    description: 'Number of children rooms',
   })
-  @IsBoolean()
+  @IsNumber()
+  @Min(0)
   @IsOptional()
-  childRoom?: boolean;
+  childRoom?: number;
 
-  @ApiPropertyOptional({ example: true, description: 'Presence of bathroom' })
-  @IsBoolean()
+  @ApiPropertyOptional({ example: 2, description: 'Number of bathrooms' })
+  @IsNumber()
+  @Min(0)
   @IsOptional()
-  bathroom?: boolean;
+  bathroom?: number;
 
-  @ApiPropertyOptional({ example: true, description: 'Is the bathroom common' })
-  @IsBoolean()
+  @ApiPropertyOptional({ example: 1, description: 'Number of common bathrooms' })
+  @IsNumber()
+  @Min(0)
   @IsOptional()
-  bathroomCommon?: boolean;
+  bathroomCommon?: number;
 
   @ApiPropertyOptional({
-    example: true,
-    description: 'Is there an attached bathroom',
+    example: 1,
+    description: 'Number of attached/ensuite bathrooms',
   })
-  @IsBoolean()
+  @IsNumber()
+  @Min(0)
   @IsOptional()
-  bathroomAttach?: boolean;
+  bathroomAttach?: number;
 
   @ApiPropertyOptional({
     example: 'Study Room',

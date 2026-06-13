@@ -53,12 +53,11 @@ export class RegisterDto {
   agreeTerms: boolean;
 
   @ApiPropertyOptional({
-    example: UserRole.AGENT,
-    enum: UserRole,
+    example: 'Agent/Broker',
     description: 'CRM permission level role',
-    default: UserRole.AGENT,
+    default: 'Agent/Broker',
   })
-  @IsEnum(UserRole, { message: 'Role must be either ADMIN or AGENT' })
+  @IsString()
   @IsOptional()
-  role?: UserRole;
+  role?: string;
 }

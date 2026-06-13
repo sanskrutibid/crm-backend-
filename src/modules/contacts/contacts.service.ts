@@ -14,6 +14,10 @@ import {
   ContactVisibility,
 } from './schemas/contact.schema';
 import { Audience, AudienceDocument } from './schemas/audience.schema';
+import {
+  EmailVerification,
+  EmailVerificationDocument,
+} from './schemas/email-verification.schema';
 import { CreateContactDto } from './dto/create-contact.dto';
 import { UpdateContactDto } from './dto/update-contact.dto';
 import { QueryContactDto } from './dto/query-contact.dto';
@@ -51,6 +55,8 @@ export class ContactsService implements OnModuleInit {
     @InjectModel(Audience.name)
     private readonly audienceModel: Model<AudienceDocument>,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
+    @InjectModel(EmailVerification.name)
+    private readonly emailVerificationModel: Model<EmailVerificationDocument>,
     private readonly activitiesService: ActivitiesService,
     private readonly emailsService: EmailsService,
     private readonly smsService: SmsService,
@@ -490,9 +496,17 @@ export class ContactsService implements OnModuleInit {
     let scheduleDetail = `Scheduled: ${dto.scheduleDate} at ${dto.scheduleTime}`;
     if (dto.schedule && dto.schedule !== 'On Demand') {
       scheduleDetail = `Schedule: ${dto.schedule} at ${dto.scheduleTime}`;
-      if (dto.schedule === 'Weekly' && dto.setWeeks && dto.setWeeks.length > 0) {
+      if (
+        dto.schedule === 'Weekly' &&
+        dto.setWeeks &&
+        dto.setWeeks.length > 0
+      ) {
         scheduleDetail += ` on [${dto.setWeeks.join(', ')}]`;
-      } else if (dto.schedule === 'Monthly' && dto.setDays && dto.setDays.length > 0) {
+      } else if (
+        dto.schedule === 'Monthly' &&
+        dto.setDays &&
+        dto.setDays.length > 0
+      ) {
         scheduleDetail += ` on days [${dto.setDays.join(', ')}]`;
       }
     }
@@ -1164,5 +1178,68 @@ export class ContactsService implements OnModuleInit {
     );
 
     return { success: true, count };
+  }
+
+  async sendEmailOtp(email: string) {
+    if (!email) {
+      throw new BadRequestException('Email address is required');
+    }
+    const cleanEmail = email.trim().toLowerCase();
+    
+    // Generate a 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
+
+    // Upsert verification record
+    await this.emailVerificationModel.findOneAndUpdate(
+      { email: cleanEmail },
+      { otp, expiresAt, verified: false },
+      { upsert: true, new: true }
+    ).exec();
+
+    // Send the email with the OTP using EmailsService
+    await this.emailsService.schedule({
+      to: cleanEmail,
+      subject: 'Email Verification OTP',
+      body: `
+        <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 8px; max-width: 500px;">
+          <h2 style="color: #062b1b;">VaultStone CRM Email Verification</h2>
+          <p>Hello,</p>
+          <p>Please use the following 6-digit One-Time Password (OTP) to verify your email address. This OTP is valid for 10 minutes.</p>
+          <div style="background-color: #f5f5f5; padding: 15px; border-radius: 6px; font-size: 24px; font-weight: bold; text-align: center; letter-spacing: 4px; color: #062b1b; margin: 20px 0;">
+            ${otp}
+          </div>
+          <p style="color: #666; font-size: 12px; margin-top: 30px;">If you did not request this verification, you can safely ignore this email.</p>
+        </div>
+      `,
+    });
+
+    return { success: true, message: 'OTP sent successfully' };
+  }
+
+  async verifyEmailOtp(email: string, otp: string) {
+    if (!email || !otp) {
+      throw new BadRequestException('Email and OTP are required');
+    }
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanOtp = otp.trim();
+
+    const verification = await this.emailVerificationModel.findOne({
+      email: cleanEmail,
+      otp: cleanOtp,
+    }).exec();
+
+    if (!verification) {
+      throw new BadRequestException('Invalid OTP entered');
+    }
+
+    if (verification.expiresAt < new Date()) {
+      throw new BadRequestException('OTP has expired. Please request a new one.');
+    }
+
+    verification.verified = true;
+    await verification.save();
+
+    return { success: true, message: 'Email verified successfully' };
   }
 }

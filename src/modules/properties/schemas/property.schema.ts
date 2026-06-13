@@ -297,23 +297,23 @@ export class Property {
   // ==========================================
   // Step 5: Other Details
   // ==========================================
-  @Prop({ required: false, type: Boolean, default: false })
-  masterBedroom?: boolean;
+  @Prop({ required: false, type: Number })
+  masterBedroom?: number;
 
-  @Prop({ required: false, type: Boolean, default: false })
-  guestRoom?: boolean;
+  @Prop({ required: false, type: Number })
+  guestRoom?: number;
 
-  @Prop({ required: false, type: Boolean, default: false })
-  childRoom?: boolean;
+  @Prop({ required: false, type: Number })
+  childRoom?: number;
 
-  @Prop({ required: false, type: Boolean, default: false })
-  bathroom?: boolean;
+  @Prop({ required: false, type: Number })
+  bathroom?: number;
 
-  @Prop({ required: false, type: Boolean, default: false })
-  bathroomCommon?: boolean;
+  @Prop({ required: false, type: Number })
+  bathroomCommon?: number;
 
-  @Prop({ required: false, type: Boolean, default: false })
-  bathroomAttach?: boolean;
+  @Prop({ required: false, type: Number })
+  bathroomAttach?: number;
 
   @Prop({ required: false, trim: true })
   otherRoom?: string;

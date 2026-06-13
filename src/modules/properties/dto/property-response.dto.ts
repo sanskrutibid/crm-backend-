@@ -429,34 +429,34 @@ export class PropertyResponseDto {
   // Step 5: Other Details
   // ==========================================
   @ApiPropertyOptional({
-    example: true,
-    description: 'Presence of master bedroom',
+    example: 2,
+    description: 'Number of master bedrooms',
   })
-  masterBedroom?: boolean;
+  masterBedroom?: number;
 
   @ApiPropertyOptional({
-    example: true,
-    description: 'Presence of guest bedroom',
+    example: 1,
+    description: 'Number of guest bedrooms',
   })
-  guestRoom?: boolean;
+  guestRoom?: number;
 
   @ApiPropertyOptional({
-    example: false,
-    description: 'Presence of children room',
+    example: 1,
+    description: 'Number of children rooms',
   })
-  childRoom?: boolean;
+  childRoom?: number;
 
-  @ApiPropertyOptional({ example: true, description: 'Presence of bathroom' })
-  bathroom?: boolean;
+  @ApiPropertyOptional({ example: 2, description: 'Number of bathrooms' })
+  bathroom?: number;
 
-  @ApiPropertyOptional({ example: true, description: 'Is the bathroom common' })
-  bathroomCommon?: boolean;
+  @ApiPropertyOptional({ example: 1, description: 'Number of common bathrooms' })
+  bathroomCommon?: number;
 
   @ApiPropertyOptional({
-    example: true,
-    description: 'Is there an attached bathroom',
+    example: 1,
+    description: 'Number of attached/ensuite bathrooms',
   })
-  bathroomAttach?: boolean;
+  bathroomAttach?: number;
 
   @ApiPropertyOptional({
     example: 'Study Room',
