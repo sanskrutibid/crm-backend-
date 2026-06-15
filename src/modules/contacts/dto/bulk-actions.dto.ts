@@ -18,6 +18,11 @@ export class CreateAudienceDto {
   @IsString()
   template: string;
 
+  @ApiPropertyOptional({ example: 'OFFER-2026' })
+  @IsString()
+  @IsOptional()
+  templateId?: string;
+
   @ApiProperty({ example: ScheduleType.ON_DEMAND, enum: ScheduleType })
   @IsEnum(ScheduleType, {
     message:
@@ -30,10 +35,20 @@ export class CreateAudienceDto {
   @IsOptional()
   time?: string;
 
+  @ApiPropertyOptional({ example: '11:57am' })
+  @IsString()
+  @IsOptional()
+  scheduleTime?: string;
+
   @ApiPropertyOptional({ example: '25-Mar-2027' })
   @IsString()
   @IsOptional()
   startDate?: string;
+
+  @ApiPropertyOptional({ example: '2026-06-15' })
+  @IsString()
+  @IsOptional()
+  scheduleDate?: string;
 
   @ApiPropertyOptional({ type: [String], example: ['Monday', 'Wednesday'] })
   @IsArray()
@@ -50,6 +65,10 @@ export class CreateAudienceDto {
   @IsArray()
   @IsOptional()
   contactIds?: string[];
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  filters?: any;
 }
 
 export class SendSmsDto {

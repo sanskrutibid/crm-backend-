@@ -432,12 +432,13 @@ export class ContactsService implements OnModuleInit {
   }
 
   private validateSchedule(dto: any) {
-    const { schedule, time, setWeeks, setDays } = dto;
+    const { schedule, time, scheduleTime, setWeeks, setDays } = dto;
+    const targetTime = time || scheduleTime;
     if (schedule === 'Daily') {
-      if (!time)
+      if (!targetTime)
         throw new BadRequestException('Time is required for Daily schedule');
     } else if (schedule === 'Weekly') {
-      if (!time)
+      if (!targetTime)
         throw new BadRequestException('Time is required for Weekly schedule');
       if (!setWeeks || setWeeks.length === 0) {
         throw new BadRequestException(
@@ -445,7 +446,7 @@ export class ContactsService implements OnModuleInit {
         );
       }
     } else if (schedule === 'Monthly') {
-      if (!time)
+      if (!targetTime)
         throw new BadRequestException('Time is required for Monthly schedule');
       if (!setDays || setDays.length === 0) {
         throw new BadRequestException(
@@ -460,12 +461,13 @@ export class ContactsService implements OnModuleInit {
 
     let contactIds = dto.contactIds;
 
-    // If no specific contact IDs are provided, select all contacts by default!
+    // If no specific contact IDs are provided, select contacts matching filters, or fall back to all contacts
     if (!contactIds || contactIds.length === 0) {
-      const allContacts = await this.contactModel
-        .find({ isDeleted: { $ne: true } }, { _id: 1 })
+      const filter = this.buildFilter(dto.filters);
+      const matchedContacts = await this.contactModel
+        .find(filter, { _id: 1 })
         .exec();
-      contactIds = allContacts.map((c) => c._id.toString());
+      contactIds = matchedContacts.map((c) => c._id.toString());
     }
 
     const createdAudience = new this.audienceModel({
@@ -473,8 +475,8 @@ export class ContactsService implements OnModuleInit {
       type: dto.type,
       template: dto.template,
       schedule: dto.schedule,
-      time: dto.time,
-      startDate: dto.startDate,
+      time: dto.time || dto.scheduleTime,
+      startDate: dto.startDate || dto.scheduleDate,
       setWeeks: dto.setWeeks,
       setDays: dto.setDays,
       contacts: contactIds,
