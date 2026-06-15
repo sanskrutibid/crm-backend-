@@ -132,6 +132,15 @@ export class ContactsController {
     return this.contactsService.downloadExcel(query);
   }
 
+  @Post('actions/google-drive')
+  @ApiOperation({ summary: 'Export and upload CRM Contacts to Google Drive' })
+  @ResponseMessage('Contacts exported to Google Drive successfully')
+  async uploadToGoogleDrive(
+    @Body() body: { limit?: number; filters?: any },
+  ) {
+    return this.contactsService.uploadToGoogleDrive(body.filters, body.limit);
+  }
+
   @Post('actions/import')
   @ApiOperation({ summary: 'Import contacts in bulk from spreadsheet data' })
   @ResponseMessage('Contacts imported successfully')

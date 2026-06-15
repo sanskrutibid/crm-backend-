@@ -44,16 +44,33 @@ export class SmsService implements OnModuleInit, OnModuleDestroy {
    * Parse mobiles list from comma-separated string or array
    */
   private parseMobiles(mobiles: string | string[]): string[] {
+    let list: string[] = [];
     if (Array.isArray(mobiles)) {
-      return mobiles.map((m) => m.trim()).filter(Boolean);
-    }
-    if (typeof mobiles === 'string') {
-      return mobiles
+      list = mobiles.map((m) => m.trim()).filter(Boolean);
+    } else if (typeof mobiles === 'string') {
+      list = mobiles
         .split(',')
         .map((m) => m.trim())
         .filter(Boolean);
     }
-    return [];
+
+    return list.map((item) => {
+      // Strip any whitespace, dashes, parentheses or brackets except '+'
+      const m = item.replace(/[^\d+]/g, '');
+      if (m.startsWith('+')) {
+        return m;
+      }
+      if (/^\d{10}$/.test(m)) {
+        return `+91${m}`;
+      }
+      if (/^\d{12}$/.test(m) && m.startsWith('91')) {
+        return `+${m}`;
+      }
+      if (/^\d+$/.test(m)) {
+        return `+${m}`;
+      }
+      return m;
+    });
   }
 
   /**

@@ -512,8 +512,11 @@ export class ContactsService implements OnModuleInit {
     const count = contactsWithMobile.length;
 
     for (const contact of contactsWithMobile) {
+      const countryCode = (contact.countryCode || '').trim();
+      const mobileVal = contact.mobile.trim();
+      const combinedMobile = countryCode ? `${countryCode}${mobileVal}` : mobileVal;
       await this.smsService.schedule({
-        mobiles: contact.mobile.trim(),
+        mobiles: combinedMobile,
         message: dto.message,
         dltTemplateId: dto.dltTemplateId,
         scheduleDate: dto.scheduleDate,
@@ -772,6 +775,164 @@ export class ContactsService implements OnModuleInit {
     return csvContent;
   }
 
+  async uploadToGoogleDrive(query: any, inputLimit?: number): Promise<any> {
+    // 1. Fetch contacts and generate CSV
+    const filter = this.buildFilter(query);
+    const limit = inputLimit && inputLimit > 0 && inputLimit <= 4000 ? inputLimit : 4000;
+    const contacts = await this.contactModel
+      .find(filter)
+      .populate('assignedTo')
+      .limit(limit)
+      .exec();
+
+    const headers = [
+      'Unique Number',
+      'Salutation',
+      'First Name',
+      'Last Name',
+      'Customer Type',
+      'Contact Type',
+      'Mobile',
+      'DND Status',
+      'Email',
+      'Email Status',
+      'Company',
+      'Branch',
+      'City',
+      'Locality',
+      'Created At',
+    ];
+
+    const rows = contacts.map((c) => [
+      c.uniqueNumber || '',
+      c.salutation || '',
+      c.firstName || '',
+      c.lastName || '',
+      c.customerType || '',
+      c.contactType || '',
+      c.mobile || '',
+      c.dndStatus || '',
+      c.email || '',
+      c.emailStatus || '',
+      c.companyName || '',
+      c.branch || '',
+      c.city || '',
+      c.locality || '',
+      (c as any).createdAt ? (c as any).createdAt.toISOString() : '',
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map((r) =>
+        r.map((val) => `"${val.replace(/"/g, '""')}"`).join(','),
+      ),
+    ].join('\n');
+
+    const fileName = `contacts_export_${new Date().toISOString().slice(0, 10)}.csv`;
+
+    // 2. Read google credentials from environment
+    const clientId = process.env.GOOGLE_DRIVE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_DRIVE_CLIENT_SECRET;
+    const refreshToken = process.env.GOOGLE_DRIVE_REFRESH_TOKEN;
+
+    if (clientId && clientSecret && refreshToken) {
+      try {
+        // Fetch OAuth Access Token
+        const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            client_id: clientId,
+            client_secret: clientSecret,
+            refresh_token: refreshToken,
+            grant_type: 'refresh_token',
+          }),
+        });
+
+        if (!tokenResponse.ok) {
+          const errText = await tokenResponse.text();
+          throw new Error(`Google OAuth token refresh failed: ${errText}`);
+        }
+
+        const tokenData = await tokenResponse.json() as any;
+        const accessToken = tokenData.access_token;
+
+        // Multipart Upload to Google Drive
+        const boundary = 'contacts_upload_boundary_12345';
+        const metadata = {
+          name: fileName,
+          mimeType: 'text/csv',
+        };
+
+        const multipartBody = [
+          `--${boundary}`,
+          'Content-Type: application/json; charset=UTF-8',
+          '',
+          JSON.stringify(metadata),
+          `--${boundary}`,
+          'Content-Type: text/csv',
+          '',
+          csvContent,
+          `--${boundary}--`,
+          ''
+        ].join('\r\n');
+
+        const uploadResponse = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': `multipart/related; boundary=${boundary}`,
+          },
+          body: multipartBody,
+        });
+
+        if (!uploadResponse.ok) {
+          const errText = await uploadResponse.text();
+          throw new Error(`Google Drive upload failed: ${errText}`);
+        }
+
+        const uploadData = await uploadResponse.json() as any;
+        return {
+          success: true,
+          fileId: uploadData.id,
+          fileName: uploadData.name,
+          webViewLink: `https://drive.google.com/open?id=${uploadData.id}`,
+          isMock: false,
+        };
+      } catch (err) {
+        console.error('Real Google Drive upload failed, falling back to mock:', err);
+      }
+    }
+
+    // 3. Fallback - save file to local backups directory
+    try {
+      const fs = await import('fs');
+      const path = await import('path');
+      const backupsDir = path.join(process.cwd(), 'backups');
+      if (!fs.existsSync(backupsDir)) {
+        fs.mkdirSync(backupsDir, { recursive: true });
+      }
+
+      const backupFileName = `contacts_drive_backup_${new Date().toISOString().replace(/[:.]/g, '-')}.csv`;
+      const filePath = path.join(backupsDir, backupFileName);
+      fs.writeFileSync(filePath, csvContent, 'utf-8');
+
+      const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
+      const downloadLink = `${backendUrl}/api/databackup/download/${backupFileName}`;
+
+      return {
+        success: true,
+        message: 'Google Drive credentials not set in .env. Saved locally in backups folder instead.',
+        fileName: backupFileName,
+        webViewLink: downloadLink,
+        isMock: true,
+      };
+    } catch (err) {
+      console.error('Google Drive export simulation failed:', err);
+      throw new Error(`Export to Google Drive failed: ${err.message}`);
+    }
+  }
+
   async importContacts(contacts: any[], defaultUserId?: string) {
     const limit = 2000; // Kindly limit the upload to 2000 records per Excel sheet
     const slice = contacts.slice(0, limit);
@@ -938,13 +1099,15 @@ export class ContactsService implements OnModuleInit {
       throw new NotFoundException(`Contact with ID "${id}" not found`);
     }
 
-    const targetMobile = (contact.mobile || '').trim();
-    if (!targetMobile) {
+    const countryCode = (contact.countryCode || '').trim();
+    const mobileVal = (contact.mobile || '').trim();
+    if (!mobileVal) {
       throw new BadRequestException('Recipient mobile number is required');
     }
+    const combinedMobile = countryCode ? `${countryCode}${mobileVal}` : mobileVal;
 
     await this.smsService.schedule({
-      mobiles: targetMobile,
+      mobiles: combinedMobile,
       message: dto.message,
       dltTemplateId: dto.dltTemplateId,
       scheduleDate: dto.scheduleDate,
@@ -954,7 +1117,7 @@ export class ContactsService implements OnModuleInit {
 
     const contactName = `${contact.firstName} ${contact.lastName || ''}`.trim();
     await this.activitiesService.log(
-      `Sent SMS to ${contactName} (${targetMobile}): "${dto.message}" [Template: ${dto.template}, DLT ID: ${dto.dltTemplateId}, Scheduled: ${dto.scheduleDate} at ${dto.scheduleTime}]`,
+      `Sent SMS to ${contactName} (${combinedMobile}): "${dto.message}" [Template: ${dto.template}, DLT ID: ${dto.dltTemplateId}, Scheduled: ${dto.scheduleDate} at ${dto.scheduleTime}]`,
       ActivityType.LEAD,
       defaultUserId,
     );
