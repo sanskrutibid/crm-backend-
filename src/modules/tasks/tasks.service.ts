@@ -48,7 +48,7 @@ export class TasksService implements OnModuleInit {
             branch: 'Mumbai Bandra',
             status: TaskStatus.OPEN,
             priority: TaskPriority.MEDIUM,
-            assignedTo: defaultUser._id as any,
+            assignedTo: [defaultUser._id] as any,
           },
           {
             task: 'Share booking forms & quotation draft',
@@ -60,7 +60,7 @@ export class TasksService implements OnModuleInit {
             branch: 'Noida Hub',
             status: TaskStatus.CLOSED,
             priority: TaskPriority.LOW,
-            assignedTo: defaultUser._id as any,
+            assignedTo: [defaultUser._id] as any,
           },
           {
             task: 'Follow-up call on token advance payment',
@@ -70,7 +70,7 @@ export class TasksService implements OnModuleInit {
             branch: 'Whitefield Bangalore',
             status: TaskStatus.OPEN,
             priority: TaskPriority.HIGH,
-            assignedTo: defaultUser._id as any,
+            assignedTo: [defaultUser._id] as any,
           },
           {
             task: 'Collect structural updates details from site manager',
@@ -82,7 +82,7 @@ export class TasksService implements OnModuleInit {
             branch: 'Pune Solitaire',
             status: TaskStatus.OPEN,
             priority: TaskPriority.MEDIUM,
-            assignedTo: defaultUser._id as any,
+            assignedTo: [defaultUser._id] as any,
           },
         ];
         await this.taskModel.insertMany(initialTasks);
@@ -100,14 +100,19 @@ export class TasksService implements OnModuleInit {
   async create(
     createTaskDto: CreateTaskDto,
     defaultUserId?: string,
-  ): Promise<TaskDocument> {
+  ): Promise<any> {
     const scheduledDate =
       createTaskDto.scheduledDate || createTaskDto.scheduleDate;
     if (!scheduledDate) {
       throw new BadRequestException('Scheduled Date is required');
     }
 
-    const assignedTo = createTaskDto.assignedTo || defaultUserId;
+    let assignedTo = createTaskDto.assignedTo;
+    if (!assignedTo) {
+      assignedTo = defaultUserId ? [defaultUserId] : [];
+    } else if (!Array.isArray(assignedTo)) {
+      assignedTo = [assignedTo];
+    }
     const { scheduleDate, ...rest } = createTaskDto;
 
     const newTask = new this.taskModel({
@@ -124,12 +129,14 @@ export class TasksService implements OnModuleInit {
       defaultUserId,
     );
 
-    return savedTask.populate('assignedTo');
+    const populated = await savedTask.populate('assignedTo');
+    return this.formatTaskResponse(populated);
   }
 
   async findAll(
     query: QueryTaskDto,
-  ): Promise<{ tasks: TaskDocument[]; total: number }> {
+    currentUser?: { id: string; role: string },
+  ): Promise<{ tasks: any[]; total: number }> {
     const {
       status,
       priority,
@@ -154,7 +161,9 @@ export class TasksService implements OnModuleInit {
       filter.priority = priority;
     }
 
-    if (assignedTo) {
+    if (currentUser && currentUser.role === 'AGENT') {
+      filter.assignedTo = currentUser.id;
+    } else if (assignedTo) {
       filter.assignedTo = assignedTo;
     }
 
@@ -222,7 +231,8 @@ export class TasksService implements OnModuleInit {
       const populated = await this.taskModel.populate(rawTasks, [
         { path: 'assignedTo' },
       ]);
-      return { tasks: populated as any, total };
+      const mappedTasks = populated.map((t) => this.formatTaskResponse(t));
+      return { tasks: mappedTasks, total };
     }
 
     // Dynamic sorting with typecast bypass for Mongoose interface compatibility
@@ -243,10 +253,11 @@ export class TasksService implements OnModuleInit {
     }
 
     const tasks = await queryChain.exec();
-    return { tasks, total };
+    const mappedTasks = tasks.map((t) => this.formatTaskResponse(t));
+    return { tasks: mappedTasks, total };
   }
 
-  async findOne(id: string): Promise<TaskDocument> {
+  async findOne(id: string): Promise<any> {
     const task = await this.taskModel
       .findById(id)
       .populate('assignedTo')
@@ -254,13 +265,13 @@ export class TasksService implements OnModuleInit {
     if (!task) {
       throw new NotFoundException(`Task item with ID "${id}" not found`);
     }
-    return task;
+    return this.formatTaskResponse(task);
   }
 
   async update(
     id: string,
     updateTaskDto: UpdateTaskDto,
-  ): Promise<TaskDocument> {
+  ): Promise<any> {
     const originalTask = await this.taskModel.findById(id).exec();
     if (!originalTask) {
       throw new NotFoundException(`Task item with ID "${id}" not found`);
@@ -268,6 +279,14 @@ export class TasksService implements OnModuleInit {
 
     const { scheduleDate, ...rest } = updateTaskDto;
     const updateData: any = { ...rest };
+
+    if (updateTaskDto.assignedTo) {
+      if (!Array.isArray(updateTaskDto.assignedTo)) {
+        updateData.assignedTo = [updateTaskDto.assignedTo];
+      } else {
+        updateData.assignedTo = updateTaskDto.assignedTo;
+      }
+    }
 
     const updatedDate =
       updateTaskDto.scheduledDate || updateTaskDto.scheduleDate;
@@ -297,7 +316,7 @@ export class TasksService implements OnModuleInit {
       );
     }
 
-    return updatedTask;
+    return this.formatTaskResponse(updatedTask);
   }
 
   async remove(id: string): Promise<void> {
@@ -318,7 +337,7 @@ export class TasksService implements OnModuleInit {
   async addHistory(
     id: string,
     historyData: AddHistoryDto,
-  ): Promise<TaskDocument> {
+  ): Promise<any> {
     const task = await this.taskModel.findById(id).exec();
     if (!task) {
       throw new NotFoundException(`Task item with ID "${id}" not found`);
@@ -359,6 +378,61 @@ export class TasksService implements OnModuleInit {
       ActivityType.TASK,
     );
 
-    return updatedTask.populate('assignedTo');
+    const populated = await updatedTask.populate('assignedTo');
+    return this.formatTaskResponse(populated);
+  }
+
+  async getCounts(currentUser: { id: string; role: string }): Promise<{ all: number; open: number; closed: number }> {
+    const filter: any = {};
+    if (currentUser && currentUser.role === 'AGENT') {
+      filter.assignedTo = currentUser.id;
+    }
+    const [all, open, closed] = await Promise.all([
+      this.taskModel.countDocuments(filter).exec(),
+      this.taskModel.countDocuments({ ...filter, status: TaskStatus.OPEN }).exec(),
+      this.taskModel.countDocuments({ ...filter, status: TaskStatus.CLOSED }).exec(),
+    ]);
+    return { all, open, closed };
+  }
+
+  private formatTaskResponse(task: any): any {
+    if (!task) return null;
+
+    let taskObj = task;
+    if (typeof task.toObject === 'function') {
+      taskObj = task.toObject();
+    } else if (typeof task.toJSON === 'function') {
+      taskObj = task.toJSON();
+    } else {
+      taskObj = { ...task };
+    }
+
+    if (taskObj._id) {
+      taskObj.id = taskObj._id.toString();
+      delete taskObj._id;
+    }
+    if (taskObj.__v !== undefined) {
+      delete taskObj.__v;
+    }
+
+    if (Array.isArray(taskObj.assignedTo)) {
+      taskObj.assignedTo = taskObj.assignedTo.length > 0 
+        ? taskObj.assignedTo[taskObj.assignedTo.length - 1] 
+        : null;
+
+      if (taskObj.assignedTo && typeof taskObj.assignedTo === 'object') {
+        if (taskObj.assignedTo._id && !taskObj.assignedTo.id) {
+          taskObj.assignedTo.id = taskObj.assignedTo._id.toString();
+          delete taskObj.assignedTo._id;
+        }
+        if (taskObj.assignedTo.password !== undefined) {
+          delete taskObj.assignedTo.password;
+        }
+        if (taskObj.assignedTo.__v !== undefined) {
+          delete taskObj.assignedTo.__v;
+        }
+      }
+    }
+    return taskObj;
   }
 }

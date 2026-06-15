@@ -26,26 +26,47 @@ export function IsMobileValid(validationOptions?: ValidationOptions) {
     registerDecorator({
       name: 'isMobileValid',
       target: object.constructor,
-      propertyName: propertyName,
+      propertyName,
       options: validationOptions,
       validator: {
         validate(value: any, args: ValidationArguments) {
-          if (typeof value !== 'string') return false;
-          const parts = value.trim().split(' ');
-          if (parts.length !== 2) return false;
-          const countryCode = parts[0];
-          const number = parts[1];
-          if (!/^\+\d+$/.test(countryCode)) return false;
-          if (!/^\d+$/.test(number)) return false;
-          
-          if (countryCode === '+91' && number.length !== 10) return false;
-          if (countryCode === '+1' && number.length !== 10) return false;
-          if (number.length < 7 || number.length > 15) return false;
-          return true;
+          if (!value || typeof value !== 'string') {
+            return false;
+          }
+
+          const dto: any = args.object;
+
+          const mobile = value.trim();
+          const countryCode = dto.countryCode;
+
+          // Mobile should contain digits only
+          if (!/^\d+$/.test(mobile)) {
+            return false;
+          }
+
+          switch (countryCode) {
+            case '+91': // India
+              return mobile.length === 10;
+
+            case '+1': // USA/Canada
+              return mobile.length === 10;
+
+            case '+44': // UK
+              return mobile.length >= 10 && mobile.length <= 11;
+
+            case '+61': // Australia
+              return mobile.length === 9;
+
+            default:
+              return mobile.length >= 7 && mobile.length <= 15;
+          }
         },
+
         defaultMessage(args: ValidationArguments) {
-          return 'Mobile number must be a valid format (e.g. +91 9876543210) with correct digit count for the country';
-        }
+          const dto: any = args.object;
+
+          return `Invalid mobile number for country code ${dto.countryCode || ''}`;
+        },
       },
     });
   };
@@ -93,12 +114,25 @@ export class CreateContactDto {
   contactType: string;
 
   @ApiProperty({
-    example: '+91 9876543210',
-    description: 'Primary mobile number including country code',
+    example: '+91',
+    description: 'Country code',
   })
   @IsString()
-  @IsNotEmpty({ message: 'Mobile number is required' })
-  @IsMobileValid()
+  @IsNotEmpty()
+  @Matches(/^\+\d{1,4}$/, {
+    message: 'Country code must be valid (e.g. +91, +1, +44)',
+  })
+  countryCode: string;
+
+  @ApiProperty({
+    example: '9876543210',
+    description: 'Primary mobile number',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Matches(/^\d{7,15}$/, {
+    message: 'Mobile number must contain 7 to 15 digits only',
+  })
   mobile: string;
 
   @ApiPropertyOptional({

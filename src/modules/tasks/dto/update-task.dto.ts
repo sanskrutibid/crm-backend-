@@ -70,12 +70,10 @@ export class UpdateTaskDto {
   priority?: TaskPriority;
 
   @ApiPropertyOptional({
-    example: '60d5ecb8b394142e88a38c21',
-    description: 'Reassigned CRM User ID',
+    description: 'Reassigned CRM User ID(s). Can be a single ID string or an array of ID strings.',
   })
-  @IsString()
   @IsOptional()
-  assignedTo?: string;
+  assignedTo?: string | string[];
 
   @ApiPropertyOptional({
     description: 'Task history records',

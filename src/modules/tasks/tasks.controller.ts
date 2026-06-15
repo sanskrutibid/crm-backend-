@@ -7,6 +7,8 @@ import {
   Patch,
   Post,
   Query,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -21,8 +23,10 @@ import { QueryTaskDto } from './dto/query-task.dto';
 import { AddHistoryDto } from './dto/add-history.dto';
 import { TaskResponseDto } from './dto/task-response.dto';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('Tasks')
+@UseGuards(JwtAuthGuard)
 @Controller('tasks')
 export class TasksController {
   constructor(private readonly tasksService: TasksService) {}
@@ -34,8 +38,8 @@ export class TasksController {
     type: TaskResponseDto,
   })
   @ResponseMessage('Task created successfully')
-  async create(@Body() createTaskDto: CreateTaskDto) {
-    return this.tasksService.create(createTaskDto);
+  async create(@Body() createTaskDto: CreateTaskDto, @Req() req: any) {
+    return this.tasksService.create(createTaskDto, req.user?.id);
   }
 
   @Get()
@@ -45,8 +49,15 @@ export class TasksController {
     type: [TaskResponseDto],
   })
   @ResponseMessage('Tasks retrieved successfully')
-  async findAll(@Query() queryTaskDto: QueryTaskDto) {
-    return this.tasksService.findAll(queryTaskDto);
+  async findAll(@Query() queryTaskDto: QueryTaskDto, @Req() req: any) {
+    return this.tasksService.findAll(queryTaskDto, req.user);
+  }
+
+  @Get('counts')
+  @ApiOperation({ summary: 'Get task counts for all/open/closed' })
+  @ResponseMessage('Counts retrieved successfully')
+  async getCounts(@Req() req: any) {
+    return this.tasksService.getCounts(req.user);
   }
 
   @Get(':id')

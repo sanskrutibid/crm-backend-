@@ -26,6 +26,44 @@ export enum TaskPriority {
       ret.id = ret._id.toString();
       delete ret._id;
       delete ret.__v;
+      if (Array.isArray(ret.assignedTo)) {
+        ret.assignedTo = ret.assignedTo.length > 0 ? ret.assignedTo[ret.assignedTo.length - 1] : null;
+        if (ret.assignedTo && typeof ret.assignedTo === 'object') {
+          if (ret.assignedTo._id && !ret.assignedTo.id) {
+            ret.assignedTo.id = ret.assignedTo._id.toString();
+            delete ret.assignedTo._id;
+          }
+          if (ret.assignedTo.password !== undefined) {
+            delete ret.assignedTo.password;
+          }
+          if (ret.assignedTo.__v !== undefined) {
+            delete ret.assignedTo.__v;
+          }
+        }
+      }
+      return ret;
+    },
+  },
+  toObject: {
+    transform: (doc, ret: any) => {
+      ret.id = ret._id.toString();
+      delete ret._id;
+      delete ret.__v;
+      if (Array.isArray(ret.assignedTo)) {
+        ret.assignedTo = ret.assignedTo.length > 0 ? ret.assignedTo[ret.assignedTo.length - 1] : null;
+        if (ret.assignedTo && typeof ret.assignedTo === 'object') {
+          if (ret.assignedTo._id && !ret.assignedTo.id) {
+            ret.assignedTo.id = ret.assignedTo._id.toString();
+            delete ret.assignedTo._id;
+          }
+          if (ret.assignedTo.password !== undefined) {
+            delete ret.assignedTo.password;
+          }
+          if (ret.assignedTo.__v !== undefined) {
+            delete ret.assignedTo.__v;
+          }
+        }
+      }
       return ret;
     },
   },
@@ -63,12 +101,11 @@ export class Task {
   priority: TaskPriority;
 
   @Prop({
-    type: MongooseSchema.Types.ObjectId,
-    ref: 'User',
-    required: true,
+    type: [{ type: MongooseSchema.Types.ObjectId, ref: 'User' }],
+    default: [],
     index: true,
   })
-  assignedTo: User;
+  assignedTo: User[];
 
   @Prop({
     type: [

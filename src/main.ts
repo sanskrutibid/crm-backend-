@@ -15,13 +15,20 @@ import { AppModule } from './app.module';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
+console.time('Nest Startup');
+
 async function bootstrap() {
+
+  console.time('NestFactory.create');
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter({
-      logger: false, // Turn off verbose system logs to highlight custom startup logs
+      logger: false,
+
     }),
   );
+
+  console.timeEnd('NestFactory.create');
 
   // Security headers & compression
   await app.register(helmet);
@@ -83,15 +90,20 @@ async function bootstrap() {
     )
     .build();
 
+  console.time('Swagger');
+
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('docs', app, document, {
     swaggerOptions: {
       persistAuthorization: true,
     },
   });
+  console.timeEnd('Swagger');
 
+  console.time('Listen');
   const PORT = process.env.PORT || 3000;
   await app.listen(PORT, '0.0.0.0');
+  console.timeEnd('Listen');
 
   const bannerColor = '\x1b[36m'; // Cyan
   const successColor = '\x1b[32m'; // Green
@@ -109,6 +121,9 @@ ${bannerColor}==================================================================
 🌍  ${infoColor}Environment Mode${resetColor}:  ${process.env.NODE_ENV?.toUpperCase() || 'DEVELOPMENT'}
 ==================================================================
   `);
+
+  console.timeEnd('Nest Startup');
+
 }
 
 bootstrap();

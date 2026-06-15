@@ -60,7 +60,15 @@ export class UpdateContactDto {
   contactType?: string;
 
   @ApiPropertyOptional({
-    example: '+91 9876543210',
+    example: '+91',
+    description: 'Updated Country code',
+  })
+  @IsString()
+  @IsOptional()
+  countryCode?: string;
+
+  @ApiPropertyOptional({
+    example: '9876543210',
     description: 'Updated Primary mobile number',
   })
   @IsString()

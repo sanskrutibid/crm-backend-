@@ -64,6 +64,30 @@ export class LeadsService implements OnModuleInit {
     }
   }
 
+  private serializeLean(doc: any): any {
+    if (!doc) return doc;
+    if (Array.isArray(doc)) {
+      return doc.map(d => this.serializeLean(d));
+    }
+    if (typeof doc === 'object') {
+      const ret = { ...doc };
+      if (ret._id) {
+        ret.id = ret._id.toString();
+        delete ret._id;
+      }
+      if (ret.__v !== undefined) {
+        delete ret.__v;
+      }
+      for (const key of Object.keys(ret)) {
+        if (ret[key] && typeof ret[key] === 'object' && !(ret[key] instanceof Date)) {
+          ret[key] = this.serializeLean(ret[key]);
+        }
+      }
+      return ret;
+    }
+    return doc;
+  }
+
   /**
    * Seed Chirag Ashtankar's lead profile linked to Dayamati's contact profile on boot if collection is empty.
    */
@@ -295,6 +319,7 @@ export class LeadsService implements OnModuleInit {
           ],
         })
         .select('_id')
+        .lean()
         .exec();
 
       const contactIds = matchedContacts.map((c) => c._id);
@@ -333,6 +358,7 @@ export class LeadsService implements OnModuleInit {
       const matchedContacts = await this.contactModel
         .find(contactFilter)
         .select('_id')
+        .lean()
         .exec();
       const contactIds = matchedContacts.map((c) => c._id.toString());
       if (filter.contactId && filter.contactId.$in) {
@@ -517,7 +543,8 @@ export class LeadsService implements OnModuleInit {
       queryChain.skip((page - 1) * limit).limit(limit);
     }
 
-    const leads = await queryChain.exec();
+    const rawLeads = await queryChain.lean().exec();
+    const leads = this.serializeLean(rawLeads);
 
     // In-memory sorting for populated customer contact name if needed
     if (sortBy === 'Name') {
@@ -553,13 +580,14 @@ export class LeadsService implements OnModuleInit {
     const lead = await this.leadModel
       .findById(id)
       .populate(['contactId', 'assignedTo', 'createdBy', 'updatedBy'])
+      .lean()
       .exec();
 
     if (!lead) {
       throw new NotFoundException(`Lead with ID "${id}" not found`);
     }
 
-    const leadObj = lead.toJSON();
+    const leadObj = this.serializeLean(lead);
 
     // Enforce virtual fields to match frontend layout shown in screenshot
     const assignDate = lead.assignDate || new Date();
@@ -747,6 +775,7 @@ export class LeadsService implements OnModuleInit {
         .sort(isNameSort ? { createdAt: -1 } : sortObj)
         .skip((page - 1) * limit)
         .limit(limit)
+        .lean()
         .exec(),
 
       // Paginated overdue leads — always sorted oldest-first (most urgent)
@@ -756,6 +785,7 @@ export class LeadsService implements OnModuleInit {
         .sort({ scheduleDate: 1 })
         .skip((page - 1) * limit)
         .limit(limit)
+        .lean()
         .exec(),
 
       // Summary counts — temperature breakdown for TODAY's leads
@@ -774,10 +804,10 @@ export class LeadsService implements OnModuleInit {
     ]);
 
     // In-memory name sort for today leads (populated field)
-    let finalTodayLeads: any[] = todayLeads;
+    let finalTodayLeads: any[] = this.serializeLean(todayLeads);
     if (isNameSort) {
       const dir = orderBy === 'Asc' ? 1 : -1;
-      finalTodayLeads = [...todayLeads].sort((a, b) => {
+      finalTodayLeads = [...finalTodayLeads].sort((a, b) => {
         const nameA = (a.contactId as any)?.firstName || '';
         const nameB = (b.contactId as any)?.firstName || '';
         return dir === 1
@@ -795,7 +825,7 @@ export class LeadsService implements OnModuleInit {
         overdue: overdueCount,
       },
       todayLeads: finalTodayLeads,
-      overdueLeads,
+      overdueLeads: this.serializeLean(overdueLeads),
     };
     try {
       await this.cacheManager.set(cacheKey, result, 300 * 1000); // Cache for 5 minutes
@@ -843,6 +873,7 @@ export class LeadsService implements OnModuleInit {
         .sort(isNameSort ? { createdAt: -1 } : sortObj)
         .skip((page - 1) * limit)
         .limit(limit)
+        .lean()
         .exec(),
 
       this.leadModel.countDocuments(baseFilter).exec(),
@@ -874,10 +905,10 @@ export class LeadsService implements OnModuleInit {
     ]);
 
     // In-memory name sort for open leads (populated field)
-    let finalLeads: any[] = leads;
+    let finalLeads: any[] = this.serializeLean(leads);
     if (isNameSort) {
       const dir = orderBy === 'Asc' ? 1 : -1;
-      finalLeads = [...leads].sort((a, b) => {
+      finalLeads = [...finalLeads].sort((a, b) => {
         const nameA = (a.contactId as any)?.firstName || '';
         const nameB = (b.contactId as any)?.firstName || '';
         return dir === 1

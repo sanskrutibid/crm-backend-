@@ -54,6 +54,9 @@ export class Contact {
   @Prop({ required: true, trim: true, index: true })
   contactType: string; // e.g. Employee, Broker
 
+  @Prop({ required: true, trim: true })
+  countryCode: string;
+
   @Prop({ required: true, trim: true, index: true })
   mobile: string; // Labeled Country Code + 10 digit mobile
 

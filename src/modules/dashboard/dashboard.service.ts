@@ -27,80 +27,68 @@ export class DashboardService {
   ) {}
 
   async getStats() {
-    // 1. Contacts
-    const contactTotal = await this.contactModel
-      .countDocuments({ isDeleted: false })
-      .exec();
-    const contactActive = await this.contactModel
-      .countDocuments({ status: 'Active', isDeleted: false })
-      .exec();
-    const contactInactive = await this.contactModel
-      .countDocuments({ status: 'Inactive', isDeleted: false })
-      .exec();
-
-    // 2. Leads
-    const leadTotal = await this.leadModel.countDocuments().exec();
-    const leadOpen = await this.leadModel
-      .countDocuments({ status: LeadStatus.IN_PROGRESS })
-      .exec();
-    const leadClosed = await this.leadModel
-      .countDocuments({ status: { $in: [LeadStatus.WON, LeadStatus.LOST] } })
-      .exec();
-
-    // 3. Opportunities
-    const oppTotal = await this.opportunityModel.countDocuments().exec();
-    const oppActive = await this.opportunityModel
-      .countDocuments({ status: OpportunityStatus.IN_PROGRESS })
-      .exec();
-    const oppLost = await this.opportunityModel
-      .countDocuments({ status: OpportunityStatus.LOST })
-      .exec();
-
-    // 4. Won
-    const wonTotal = await this.opportunityModel
-      .countDocuments({ status: OpportunityStatus.WON })
-      .exec();
-    const wonClosed = wonTotal;
-    const wonLost = 0;
-
-    // 5. Property breakdown (Donut)
-    // Commercial, Residential, Purchased, Rented
-    const propCommercial = await this.propertyModel
-      .countDocuments({
-        $or: [{ propertyType: /Commercial/i }, { type: /Commercial/i }],
-      })
-      .exec();
-
-    const propResidential = await this.propertyModel
-      .countDocuments({
-        $or: [
-          { propertyType: /Residential/i },
-          { type: /Residential|Flat|Apartment|Villa/i },
-        ],
-      })
-      .exec();
-
-    const propPurchased = await this.propertyModel
-      .countDocuments({
-        $or: [
-          { status: PropertyStatus.SOLD_OUT },
-          { transaction: /Sale|Buy/i },
-        ],
-      })
-      .exec();
-
-    const propRented = await this.propertyModel
-      .countDocuments({
-        transaction: /Rent|Lease/i,
-      })
-      .exec();
-
     // 6. Graph this year (Buying vs Selling)
     const startOfYear = new Date(new Date().getFullYear(), 0, 1);
     const endOfYear = new Date(new Date().getFullYear(), 11, 31, 23, 59, 59);
 
-    const buyingAgg = await this.opportunityModel
-      .aggregate([
+    const [
+      contactTotal,
+      contactActive,
+      contactInactive,
+      leadTotal,
+      leadOpen,
+      leadClosed,
+      oppTotal,
+      oppActive,
+      oppLost,
+      wonTotal,
+      propCommercial,
+      propResidential,
+      propPurchased,
+      propRented,
+      buyingAgg,
+      sellingAgg,
+    ] = await Promise.all([
+      // 1. Contacts
+      this.contactModel.countDocuments({ isDeleted: false }).exec(),
+      this.contactModel.countDocuments({ status: 'Active', isDeleted: false }).exec(),
+      this.contactModel.countDocuments({ status: 'Inactive', isDeleted: false }).exec(),
+
+      // 2. Leads
+      this.leadModel.countDocuments().exec(),
+      this.leadModel.countDocuments({ status: LeadStatus.IN_PROGRESS }).exec(),
+      this.leadModel.countDocuments({ status: { $in: [LeadStatus.WON, LeadStatus.LOST] } }).exec(),
+
+      // 3. Opportunities
+      this.opportunityModel.countDocuments().exec(),
+      this.opportunityModel.countDocuments({ status: OpportunityStatus.IN_PROGRESS }).exec(),
+      this.opportunityModel.countDocuments({ status: OpportunityStatus.LOST }).exec(),
+
+      // 4. Won
+      this.opportunityModel.countDocuments({ status: OpportunityStatus.WON }).exec(),
+
+      // 5. Property breakdown (Donut)
+      this.propertyModel.countDocuments({
+        $or: [{ propertyType: /Commercial/i }, { type: /Commercial/i }],
+      }).exec(),
+      this.propertyModel.countDocuments({
+        $or: [
+          { propertyType: /Residential/i },
+          { type: /Residential|Flat|Apartment|Villa/i },
+        ],
+      }).exec(),
+      this.propertyModel.countDocuments({
+        $or: [
+          { status: PropertyStatus.SOLD_OUT },
+          { transaction: /Sale|Buy/i },
+        ],
+      }).exec(),
+      this.propertyModel.countDocuments({
+        transaction: /Rent|Lease/i,
+      }).exec(),
+
+      // Aggregations
+      this.opportunityModel.aggregate([
         {
           $match: {
             createdAt: { $gte: startOfYear, $lte: endOfYear },
@@ -113,11 +101,8 @@ export class DashboardService {
             count: { $sum: 1 },
           },
         },
-      ])
-      .exec();
-
-    const sellingAgg = await this.opportunityModel
-      .aggregate([
+      ]).exec(),
+      this.opportunityModel.aggregate([
         {
           $match: {
             createdAt: { $gte: startOfYear, $lte: endOfYear },
@@ -130,8 +115,11 @@ export class DashboardService {
             count: { $sum: 1 },
           },
         },
-      ])
-      .exec();
+      ]).exec(),
+    ]);
+
+    const wonClosed = wonTotal;
+    const wonLost = 0;
 
     const buyingData = Array(12).fill(0);
     const sellingData = Array(12).fill(0);
