@@ -431,7 +431,33 @@ export class ContactsService implements OnModuleInit {
     return filter;
   }
 
+  private validateSchedule(dto: any) {
+    const { schedule, time, setWeeks, setDays } = dto;
+    if (schedule === 'Daily') {
+      if (!time)
+        throw new BadRequestException('Time is required for Daily schedule');
+    } else if (schedule === 'Weekly') {
+      if (!time)
+        throw new BadRequestException('Time is required for Weekly schedule');
+      if (!setWeeks || setWeeks.length === 0) {
+        throw new BadRequestException(
+          'At least one weekday (setWeeks) is required for Weekly schedule',
+        );
+      }
+    } else if (schedule === 'Monthly') {
+      if (!time)
+        throw new BadRequestException('Time is required for Monthly schedule');
+      if (!setDays || setDays.length === 0) {
+        throw new BadRequestException(
+          'At least one calendar date (setDays) is required for Monthly schedule',
+        );
+      }
+    }
+  }
+
   async createAudience(dto: CreateAudienceDto, defaultUserId?: string) {
+    this.validateSchedule(dto);
+
     let contactIds = dto.contactIds;
 
     // If no specific contact IDs are provided, select all contacts by default!
@@ -456,6 +482,7 @@ export class ContactsService implements OnModuleInit {
     });
 
     const savedAudience = await createdAudience.save();
+    await savedAudience.populate('contacts');
 
     await this.activitiesService.log(
       `Created audience list: "${dto.name}" [Type: ${dto.type}, Template: ${dto.template}, Schedule: ${dto.schedule}] for ${contactIds.length} contacts`,

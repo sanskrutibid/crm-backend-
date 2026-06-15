@@ -105,9 +105,9 @@ export class TemplatesService implements OnModuleInit {
     } = query;
 
     const filter: any = {};
-
-    if (templateType) {
-      filter.templateType = templateType;
+    const targetType = templateType || (query as any).type;
+    if (targetType) {
+      filter.templateType = new RegExp(`^${targetType}$`, 'i');
     }
 
     if (layoutType) {

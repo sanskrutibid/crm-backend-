@@ -29,6 +29,14 @@ export class QueryTemplateDto {
   templateType?: string;
 
   @ApiPropertyOptional({
+    example: 'Email',
+    description: 'Filter by template type (alias for templateType)',
+  })
+  @IsString()
+  @IsOptional()
+  type?: string;
+
+  @ApiPropertyOptional({
     example: 'editor',
     description: 'Filter by layout type (editor, file, url)',
   })
