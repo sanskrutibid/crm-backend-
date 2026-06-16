@@ -49,7 +49,7 @@ export class ActivitiesService implements OnModuleInit {
           performedBy: userId as any,
         },
         {
-          description: 'B2BBricks Real Estate Sync Engine online',
+          description: 'Vaultstone Real Estate Sync Engine online',
           type: ActivityType.SYSTEM,
           timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
         },

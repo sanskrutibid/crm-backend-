@@ -34,9 +34,14 @@ import {
   SendProposalDto,
   LeadTermsConditionsDto,
   CreateSiteVisitDto,
+  ConvertContactsToLeadsDto,
 } from './dto/lead-actions.dto';
 import { ActivitiesService } from '../activities/activities.service';
 import { ActivityType } from '../activities/schemas/activity.schema';
+import {
+  LeadConversionLog,
+  LeadConversionLogDocument,
+} from './schemas/lead-conversion-log.schema';
 
 @Injectable()
 export class LeadsService implements OnModuleInit {
@@ -48,6 +53,8 @@ export class LeadsService implements OnModuleInit {
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     @InjectModel(SiteVisit.name)
     private readonly siteVisitModel: Model<SiteVisitDocument>,
+    @InjectModel(LeadConversionLog.name)
+    private readonly leadConversionLogModel: Model<LeadConversionLogDocument>,
     private readonly activitiesService: ActivitiesService,
   ) {}
 
@@ -250,6 +257,101 @@ export class LeadsService implements OnModuleInit {
 
     await this.invalidateCache();
     return savedLead.populate(['contactId', 'assignedTo']);
+  }
+
+  async convertContactsToLeads(
+    dto: ConvertContactsToLeadsDto,
+    defaultUserId?: string,
+  ): Promise<{ success: boolean; count: number; leads: LeadDocument[] }> {
+    const defaultUser = await this.userModel.findOne().exec();
+    const userId = defaultUserId || (defaultUser ? defaultUser._id.toString() : undefined);
+
+    const leads: LeadDocument[] = [];
+
+    for (const contactId of dto.contactIds) {
+      const contact = await this.contactModel.findById(contactId).exec();
+      if (!contact) {
+        throw new NotFoundException(`Contact with ID "${contactId}" not found`);
+      }
+
+      const assigneeUserId = dto.assignedTo || userId;
+
+      // 1. Update contact's assignedTo and save
+      if (assigneeUserId) {
+        contact.assignedTo = assigneeUserId as any;
+        await contact.save();
+      }
+
+      const newLead = new this.leadModel({
+        contactId: contact._id,
+        requirement: dto.requirement,
+        followupNote: dto.requirement, // maps to requirement and followupNote
+        scheduleDate: dto.scheduleDate,
+        scheduleTime: dto.scheduleTime,
+        score: dto.score !== undefined ? dto.score : 50,
+        folder: dto.folder,
+        source: dto.source,
+        branch: dto.branch,
+        assignedTo: assigneeUserId,
+        sendWhatsAppToAssignee: dto.sendWhatsAppToAssignee || false,
+        sendEmailToAssignee: dto.sendEmailToAssignee || false,
+        sendWhatsAppToCustomer: dto.sendWhatsAppToCustomer || false,
+        sendEmailToCustomer: dto.sendEmailToCustomer || false,
+        visibility: dto.visibility || LeadVisibility.PRIVATE,
+        termsShared: dto.termsShared || false,
+        interestedIn: dto.interestedIn,
+        temperature: LeadTemperature.COLD,
+        status: LeadStatus.IN_PROGRESS,
+        nextRemark: 'no response',
+        outcome: 'Said Not Looking Any Property Now',
+        purpose: 'Follow-Up Scheduled',
+        assignDate: new Date(),
+        createdBy: userId,
+        updatedBy: userId,
+      });
+
+      const saved = await newLead.save();
+      leads.push(saved);
+
+      // 2. Create Lead Conversion Log
+      if (userId && assigneeUserId) {
+        const conversionLog = new this.leadConversionLogModel({
+          contactId: contact._id,
+          leadId: saved._id,
+          convertedBy: userId,
+          assignedTo: assigneeUserId,
+        });
+        await conversionLog.save();
+      }
+
+      // Fetch names for detailed logging
+      let assigneeName = 'Unknown';
+      if (assigneeUserId) {
+        const assigneeUser = await this.userModel.findById(assigneeUserId).exec();
+        assigneeName = assigneeUser ? `${assigneeUser.firstName} ${assigneeUser.lastName || ''}`.trim() : 'Unknown';
+      }
+
+      let converterName = 'System';
+      if (userId) {
+        const converterUser = await this.userModel.findById(userId).exec();
+        converterName = converterUser ? `${converterUser.firstName} ${converterUser.lastName || ''}`.trim() : 'System';
+      }
+
+      const customerName = `${contact.firstName} ${contact.lastName || ''}`.trim();
+      await this.activitiesService.log(
+        `Converted contact "${customerName}" to Lead, assigned to "${assigneeName}" by "${converterName}" for requirement: "${dto.requirement.substring(0, 30)}..."`,
+        ActivityType.LEAD,
+        userId,
+      );
+    }
+
+    await this.invalidateCache();
+
+    return {
+      success: true,
+      count: leads.length,
+      leads,
+    };
   }
 
   async findAll(
@@ -1200,5 +1302,17 @@ export class LeadsService implements OnModuleInit {
 
     await this.invalidateCache(id);
     return saved;
+  }
+
+  async getConversionHistory(contactId?: string): Promise<LeadConversionLog[]> {
+    const filter: any = {};
+    if (contactId) {
+      filter.contactId = contactId;
+    }
+    return this.leadConversionLogModel
+      .find(filter)
+      .populate(['contactId', 'leadId', 'convertedBy', 'assignedTo'])
+      .sort({ createdAt: -1 })
+      .exec();
   }
 }

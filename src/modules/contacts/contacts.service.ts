@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
   OnModuleInit,
+  Logger,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -49,6 +50,8 @@ import { SmsService } from '../sms/sms.service';
 
 @Injectable()
 export class ContactsService implements OnModuleInit {
+  private readonly logger = new Logger(ContactsService.name);
+
   constructor(
     @InjectModel(Contact.name)
     private readonly contactModel: Model<ContactDocument>,
@@ -716,54 +719,62 @@ export class ContactsService implements OnModuleInit {
     return { success: true, primaryContact: primary };
   }
 
-  async downloadExcel(query: any): Promise<string> {
+  private async generateContactsCsv(query: any): Promise<string> {
     const filter = this.buildFilter(query);
-    // Page size / Limit max 4000
-    const limit =
-      query.limit && query.limit > 0 && query.limit <= 4000
-        ? query.limit
-        : 4000;
-    const contacts = await this.contactModel
+    const queryChain = this.contactModel
       .find(filter)
-      .populate('assignedTo')
-      .limit(limit)
-      .exec();
+      .populate('assignedTo');
+
+    if (query.limit) {
+      const limitVal = parseInt(query.limit, 10);
+      if (!isNaN(limitVal) && limitVal > 0) {
+        queryChain.limit(limitVal);
+      }
+    }
+
+    const contacts = await queryChain.exec();
 
     const headers = [
-      'Unique Number',
-      'Salutation',
-      'First Name',
-      'Last Name',
+      'Customer ID',
+      'Name',
+      'Mobile Number',
+      'Email',
+      'Address',
+      'Alternate Number',
       'Customer Type',
       'Contact Type',
-      'Mobile',
-      'DND Status',
-      'Email',
-      'Email Status',
-      'Company',
       'Branch',
-      'City',
-      'Locality',
       'Created At',
     ];
 
-    const rows = contacts.map((c) => [
-      c.uniqueNumber || '',
-      c.salutation || '',
-      c.firstName || '',
-      c.lastName || '',
-      c.customerType || '',
-      c.contactType || '',
-      c.mobile || '',
-      c.dndStatus || '',
-      c.email || '',
-      c.emailStatus || '',
-      c.companyName || '',
-      c.branch || '',
-      c.city || '',
-      c.locality || '',
-      (c as any).createdAt ? (c as any).createdAt.toISOString() : '',
-    ]);
+    const rows = contacts.map((c) => {
+      const nameParts = [c.salutation, c.firstName, c.lastName]
+        .map((p) => (p || '').trim())
+        .filter(Boolean);
+      const combinedName = nameParts.length > 0 ? nameParts.join(' ') : '';
+
+      const countryCode = (c.countryCode || '').trim();
+      const mobileVal = (c.mobile || '').trim();
+      const combinedMobile = countryCode ? `${countryCode}${mobileVal}` : mobileVal;
+
+      const addressParts = [c.address, c.locality, c.city, c.pincode]
+        .map((p) => (p || '').trim())
+        .filter(Boolean);
+      const combinedAddress = addressParts.join(', ');
+
+      return [
+        c.uniqueNumber || '',
+        combinedName,
+        combinedMobile,
+        c.email || '',
+        combinedAddress,
+        c.otherNumbers || '',
+        c.customerType || '',
+        c.contactType || '',
+        c.branch || '',
+        (c as any).createdAt ? (c as any).createdAt.toISOString() : '',
+      ];
+    });
 
     const csvContent = [
       headers.join(','),
@@ -775,69 +786,13 @@ export class ContactsService implements OnModuleInit {
     return csvContent;
   }
 
-  async uploadToGoogleDrive(query: any, inputLimit?: number): Promise<any> {
-    // 1. Fetch contacts and generate CSV
-    const filter = this.buildFilter(query);
-    const limit = inputLimit && inputLimit > 0 && inputLimit <= 4000 ? inputLimit : 4000;
-    const contacts = await this.contactModel
-      .find(filter)
-      .populate('assignedTo')
-      .limit(limit)
-      .exec();
-
-    const headers = [
-      'Unique Number',
-      'Salutation',
-      'First Name',
-      'Last Name',
-      'Customer Type',
-      'Contact Type',
-      'Mobile',
-      'DND Status',
-      'Email',
-      'Email Status',
-      'Company',
-      'Branch',
-      'City',
-      'Locality',
-      'Created At',
-    ];
-
-    const rows = contacts.map((c) => [
-      c.uniqueNumber || '',
-      c.salutation || '',
-      c.firstName || '',
-      c.lastName || '',
-      c.customerType || '',
-      c.contactType || '',
-      c.mobile || '',
-      c.dndStatus || '',
-      c.email || '',
-      c.emailStatus || '',
-      c.companyName || '',
-      c.branch || '',
-      c.city || '',
-      c.locality || '',
-      (c as any).createdAt ? (c as any).createdAt.toISOString() : '',
-    ]);
-
-    const csvContent = [
-      headers.join(','),
-      ...rows.map((r) =>
-        r.map((val) => `"${val.replace(/"/g, '""')}"`).join(','),
-      ),
-    ].join('\n');
-
-    const fileName = `contacts_export_${new Date().toISOString().slice(0, 10)}.csv`;
-
-    // 2. Read google credentials from environment
+  private async uploadCsvToGoogleDrive(csvContent: string, fileName: string): Promise<any> {
     const clientId = process.env.GOOGLE_DRIVE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_DRIVE_CLIENT_SECRET;
     const refreshToken = process.env.GOOGLE_DRIVE_REFRESH_TOKEN;
 
     if (clientId && clientSecret && refreshToken) {
       try {
-        // Fetch OAuth Access Token
         const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -854,10 +809,9 @@ export class ContactsService implements OnModuleInit {
           throw new Error(`Google OAuth token refresh failed: ${errText}`);
         }
 
-        const tokenData = await tokenResponse.json() as any;
+        const tokenData = (await tokenResponse.json()) as any;
         const accessToken = tokenData.access_token;
 
-        // Multipart Upload to Google Drive
         const boundary = 'contacts_upload_boundary_12345';
         const metadata = {
           name: fileName,
@@ -874,7 +828,7 @@ export class ContactsService implements OnModuleInit {
           '',
           csvContent,
           `--${boundary}--`,
-          ''
+          '',
         ].join('\r\n');
 
         const uploadResponse = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
@@ -891,7 +845,7 @@ export class ContactsService implements OnModuleInit {
           throw new Error(`Google Drive upload failed: ${errText}`);
         }
 
-        const uploadData = await uploadResponse.json() as any;
+        const uploadData = (await uploadResponse.json()) as any;
         return {
           success: true,
           fileId: uploadData.id,
@@ -900,11 +854,10 @@ export class ContactsService implements OnModuleInit {
           isMock: false,
         };
       } catch (err) {
-        console.error('Real Google Drive upload failed, falling back to mock:', err);
+        this.logger.error('Real Google Drive upload failed, falling back to mock:', err);
       }
     }
 
-    // 3. Fallback - save file to local backups directory
     try {
       const fs = await import('fs');
       const path = await import('path');
@@ -927,10 +880,25 @@ export class ContactsService implements OnModuleInit {
         webViewLink: downloadLink,
         isMock: true,
       };
-    } catch (err) {
-      console.error('Google Drive export simulation failed:', err);
+    } catch (err: any) {
+      this.logger.error('Google Drive export simulation failed:', err);
       throw new Error(`Export to Google Drive failed: ${err.message}`);
     }
+  }
+
+  async downloadExcel(query: any): Promise<string> {
+    const csvContent = await this.generateContactsCsv(query);
+    const fileName = `contacts_export_${new Date().toISOString().slice(0, 10)}.csv`;
+    this.uploadCsvToGoogleDrive(csvContent, fileName).catch((err) => {
+      this.logger.error('Background Google Drive upload failed:', err);
+    });
+    return csvContent;
+  }
+
+  async uploadToGoogleDrive(query: any, inputLimit?: number): Promise<any> {
+    const csvContent = await this.generateContactsCsv(query);
+    const fileName = `contacts_export_${new Date().toISOString().slice(0, 10)}.csv`;
+    return this.uploadCsvToGoogleDrive(csvContent, fileName);
   }
 
   async importContacts(contacts: any[], defaultUserId?: string) {

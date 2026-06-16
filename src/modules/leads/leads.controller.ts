@@ -1,4 +1,4 @@
-﻿import {
+import {
   Body,
   Controller,
   Delete,
@@ -29,6 +29,7 @@ import {
   SendProposalDto,
   LeadTermsConditionsDto,
   CreateSiteVisitDto,
+  ConvertContactsToLeadsDto,
 } from './dto/lead-actions.dto';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
 
@@ -46,6 +47,20 @@ export class LeadsController {
   @ResponseMessage('Lead created successfully')
   async create(@Body() createLeadDto: CreateLeadDto) {
     return this.leadsService.create(createLeadDto);
+  }
+
+  @Post('actions/convert-contacts')
+  @ApiOperation({ summary: 'Convert one or more contacts to CRM Leads' })
+  @ResponseMessage('Contacts successfully converted to Leads')
+  async convertContactsToLeads(@Body() convertContactsToLeadsDto: ConvertContactsToLeadsDto) {
+    return this.leadsService.convertContactsToLeads(convertContactsToLeadsDto);
+  }
+
+  @Get('actions/convert-history')
+  @ApiOperation({ summary: 'Get history of contact-to-lead conversions' })
+  @ResponseMessage('Conversion history retrieved successfully')
+  async getConversionHistory(@Query('contactId') contactId?: string) {
+    return this.leadsService.getConversionHistory(contactId);
   }
 
   @Get()

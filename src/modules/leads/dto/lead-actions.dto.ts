@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsEnum, IsOptional, IsString } from 'class-validator';
-import { LeadStatus } from '../schemas/lead.schema';
+import { IsBoolean, IsEnum, IsOptional, IsString, IsArray, IsNumber, Min, Max } from 'class-validator';
+import { LeadStatus, LeadVisibility } from '../schemas/lead.schema';
 
 export class ChangeLeadStatusDto {
   @ApiProperty({
@@ -316,10 +316,144 @@ export class CreateSiteVisitDto {
   visibility?: string;
 
   @ApiPropertyOptional({
-    example: 'https://cdn.b2bbricks.com/uploads/photo.jpg',
+    example: 'https://cdn.vaultstone.com/uploads/photo.jpg',
     description: 'Upload path URL path',
   })
   @IsString()
   @IsOptional()
   photograph?: string;
+}
+
+export class ConvertContactsToLeadsDto {
+  @ApiProperty({
+    example: ['60d5ed7ab394142e88a38c29'],
+    description: 'Array of Contact IDs to convert to leads',
+  })
+  @IsArray()
+  contactIds: string[];
+
+  @ApiProperty({
+    example: 'Rs. 1.38 Crore, 3 Bed, for Sale in Riddhi Siddhi, Pande Layout',
+    description: 'Basic requirements description for the leads',
+  })
+  @IsString()
+  requirement: string;
+
+  @ApiPropertyOptional({
+    example: 'Duplex',
+    description: 'Interested in property type/specifications',
+  })
+  @IsString()
+  @IsOptional()
+  interestedIn?: string;
+
+  @ApiProperty({
+    example: '26-May-2026',
+    description: 'Followup scheduled date',
+  })
+  @IsString()
+  scheduleDate: string;
+
+  @ApiProperty({
+    example: '4:34pm',
+    description: 'Followup scheduled time',
+  })
+  @IsString()
+  scheduleTime: string;
+
+  @ApiPropertyOptional({
+    example: 'Select',
+    description: 'Target CRM lead storage folder name',
+  })
+  @IsString()
+  @IsOptional()
+  folder?: string;
+
+  @ApiProperty({
+    example: 'Website Form',
+    description: 'Discovery lead channel source',
+  })
+  @IsString()
+  source: string;
+
+  @ApiProperty({
+    example: 'Global Team',
+    description: 'Assigned office branch location name',
+  })
+  @IsString()
+  branch: string;
+
+  @ApiPropertyOptional({
+    example: '60d5ecb8b394142e88a38c21',
+    description: 'Assigned agent user ID',
+  })
+  @IsString()
+  @IsOptional()
+  assignedTo?: string;
+
+  @ApiPropertyOptional({
+    example: 50,
+    description: 'Lead score percentage (0-100)',
+    default: 50,
+  })
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  @IsOptional()
+  score?: number;
+
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Send alert SMS/WhatsApp message to assignee agent',
+    default: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  sendWhatsAppToAssignee?: boolean;
+
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Send alert Email message to assignee agent',
+    default: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  sendEmailToAssignee?: boolean;
+
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Send confirmation SMS/WhatsApp message to customer',
+    default: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  sendWhatsAppToCustomer?: boolean;
+
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Send confirmation Email message to customer',
+    default: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  sendEmailToCustomer?: boolean;
+
+  @ApiPropertyOptional({
+    example: LeadVisibility.PRIVATE,
+    enum: LeadVisibility,
+    description: 'Visibility scope permissions',
+    default: LeadVisibility.PRIVATE,
+  })
+  @IsEnum(LeadVisibility)
+  @IsOptional()
+  visibility?: LeadVisibility;
+
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Confirms terms and conditions have been shared',
+    default: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  termsShared?: boolean;
 }

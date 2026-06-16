@@ -289,7 +289,7 @@ export class UpdateContactDto {
   faxNumber?: string;
 
   @ApiPropertyOptional({
-    example: 'https://b2bbricks.com',
+    example: 'https://vaultstone.com',
     description: 'Updated Website URL',
   })
   @IsString()
@@ -374,7 +374,7 @@ export class UpdateContactDto {
   assignedTo?: string;
 
   @ApiPropertyOptional({
-    example: 'https://cdn.b2bbricks.com/profiles/avatar.png',
+    example: 'https://cdn.vaultstone.com/profiles/avatar.png',
     description: 'Updated photograph URL path',
   })
   @IsString()

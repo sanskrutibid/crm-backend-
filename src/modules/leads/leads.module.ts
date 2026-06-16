@@ -7,6 +7,10 @@ import {
   SiteVisit,
   SiteVisitSchema,
 } from '../site-visits/schemas/site-visit.schema';
+import {
+  LeadConversionLog,
+  LeadConversionLogSchema,
+} from './schemas/lead-conversion-log.schema';
 import { LeadsController } from './leads.controller';
 import { LeadsService } from './leads.service';
 import { LeadsAIService } from './leads-ai.service';
@@ -21,6 +25,7 @@ import { ActivitiesModule } from '../activities/activities.module';
       { name: Contact.name, schema: ContactSchema },
       { name: User.name, schema: UserSchema },
       { name: SiteVisit.name, schema: SiteVisitSchema },
+      { name: LeadConversionLog.name, schema: LeadConversionLogSchema },
     ]),
     AuthModule,
     ConfigModule,

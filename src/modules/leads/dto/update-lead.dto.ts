@@ -59,12 +59,12 @@ export class UpdateLeadDto {
   scheduleTime?: string;
 
   @ApiPropertyOptional({
-    example: 4.5,
-    description: 'Updated lead score',
+    example: 50,
+    description: 'Updated lead score percentage',
   })
   @IsNumber()
-  @Min(1.0)
-  @Max(5.0)
+  @Min(0)
+  @Max(100)
   @IsOptional()
   score?: number;
 

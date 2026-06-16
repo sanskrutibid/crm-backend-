@@ -205,7 +205,7 @@ export class ContactResponseDto {
   faxNumber?: string;
 
   @ApiPropertyOptional({
-    example: 'https://b2bbricks.com',
+    example: 'https://vaultstone.com',
     description: 'Personal or business website URL',
   })
   website?: string;
@@ -268,7 +268,7 @@ export class ContactResponseDto {
   assignedTo: AuthUserDto;
 
   @ApiPropertyOptional({
-    example: 'https://cdn.b2bbricks.com/profiles/avatar.png',
+    example: 'https://cdn.vaultstone.com/profiles/avatar.png',
     description: 'Upload path URL for customer portrait',
   })
   photograph?: string;

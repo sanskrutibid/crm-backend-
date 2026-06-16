@@ -355,7 +355,7 @@ export class CreateContactDto {
   faxNumber?: string;
 
   @ApiPropertyOptional({
-    example: 'https://b2bbricks.com',
+    example: 'https://vaultstone.com',
     description: 'Personal or business website URL',
   })
   @IsString()
@@ -443,7 +443,7 @@ export class CreateContactDto {
   assignedTo?: string;
 
   @ApiPropertyOptional({
-    example: 'https://cdn.b2bbricks.com/profiles/avatar.png',
+    example: 'https://cdn.vaultstone.com/profiles/avatar.png',
     description: 'Upload path URL for customer portrait',
   })
   @IsString()

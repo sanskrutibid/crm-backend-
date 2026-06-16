@@ -8,6 +8,7 @@ import {
   Post,
   Query,
   Header,
+  Res,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -128,8 +129,9 @@ export class ContactsController {
   @Header('Content-Type', 'text/csv')
   @Header('Content-Disposition', 'attachment; filename="contacts.csv"')
   @ApiOperation({ summary: 'Export and download CRM Contacts in CSV format' })
-  async downloadExcel(@Query() query: QueryContactDto) {
-    return this.contactsService.downloadExcel(query);
+  async downloadExcel(@Query() query: QueryContactDto, @Res() reply: any) {
+    const csvContent = await this.contactsService.downloadExcel(query);
+    reply.send(csvContent);
   }
 
   @Post('actions/google-drive')
