@@ -47,6 +47,10 @@ import { ActivitiesService } from '../activities/activities.service';
 import { ActivityType } from '../activities/schemas/activity.schema';
 import { EmailsService } from '../emails/emails.service';
 import { SmsService } from '../sms/sms.service';
+import {
+  LeadConversionLog,
+  LeadConversionLogDocument,
+} from '../leads/schemas/lead-conversion-log.schema';
 
 @Injectable()
 export class ContactsService implements OnModuleInit {
@@ -60,6 +64,8 @@ export class ContactsService implements OnModuleInit {
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     @InjectModel(EmailVerification.name)
     private readonly emailVerificationModel: Model<EmailVerificationDocument>,
+    @InjectModel(LeadConversionLog.name)
+    private readonly leadConversionLogModel: Model<LeadConversionLogDocument>,
     private readonly activitiesService: ActivitiesService,
     private readonly emailsService: EmailsService,
     private readonly smsService: SmsService,
@@ -144,6 +150,7 @@ export class ContactsService implements OnModuleInit {
   async create(
     createContactDto: CreateContactDto,
     defaultUserId?: string,
+    ipAddress?: string,
   ): Promise<ContactDocument> {
     const assignedTo = createContactDto.assignedTo || defaultUserId;
     const uniqueNumber =
@@ -154,6 +161,7 @@ export class ContactsService implements OnModuleInit {
       assignedTo,
       uniqueNumber,
       createdBy: defaultUserId,
+      createdIp: ipAddress,
     });
     const savedContact = await newContact.save();
 
@@ -1401,5 +1409,137 @@ export class ContactsService implements OnModuleInit {
     await verification.save();
 
     return { success: true, message: 'Email verified successfully' };
+  }
+
+  async getDetailedHistory(id: string): Promise<any[]> {
+    const contact = await this.contactModel
+      .findOne({ _id: id, isDeleted: { $ne: true } })
+      .populate('createdBy')
+      .exec();
+    if (!contact) {
+      throw new NotFoundException(`Contact with ID "${id}" not found`);
+    }
+
+    const timeline: any[] = [];
+
+    // 1. Creation Event
+    const creatorName = contact.createdBy
+      ? `${(contact.createdBy as any).firstName} ${(contact.createdBy as any).lastName || ''}`.trim()
+      : 'System';
+    timeline.push({
+      action: 'Created',
+      performedBy: creatorName,
+      date: (contact as any).createdAt || new Date(),
+      details: 'Customer profile has been created',
+      ip: contact.createdIp || '127.0.0.1',
+      purpose: 'Contact Creation',
+    });
+
+    // 2. Conversion Event(s)
+    const conversions = await this.leadConversionLogModel
+      .find({ contactId: id as any })
+      .populate(['convertedBy', 'assignedTo'])
+      .sort({ createdAt: 1 })
+      .exec();
+
+    for (const log of conversions) {
+      const converterName = log.convertedBy
+        ? `${(log.convertedBy as any).firstName} ${(log.convertedBy as any).lastName || ''}`.trim()
+        : 'System';
+      const assigneeName = log.assignedTo
+        ? `${(log.assignedTo as any).firstName} ${(log.assignedTo as any).lastName || ''}`.trim()
+        : 'Unknown';
+      timeline.push({
+        action: 'Converted to Lead',
+        performedBy: converterName,
+        date: (log as any).createdAt,
+        details: `Converted contact to Lead, assigned to "${assigneeName}"`,
+        ip: log.ipAddress || '127.0.0.1',
+        purpose: log.purpose || 'Lead Assignment',
+      });
+    }
+
+    // 3. Activity Logs
+    const contactName = `${contact.firstName} ${contact.lastName || ''}`.trim();
+    const activityLogs = await this.activitiesService.findLogsForContact(
+      contactName,
+      id,
+      contact.uniqueNumber,
+    );
+
+    for (const activity of activityLogs) {
+      // Exclude generic creation/conversion messages to avoid duplicates
+      if (
+        activity.description.includes('Created contact:') ||
+        activity.description.includes('Converted contact')
+      ) {
+        continue;
+      }
+      const perfName = activity.performedBy
+        ? `${(activity.performedBy as any).firstName} ${(activity.performedBy as any).lastName || ''}`.trim()
+        : 'System';
+
+      let label = 'General';
+      let cleanDesc = activity.description;
+
+      if (activity.description.includes('Modified details for contact:')) {
+        label = 'Modified';
+        cleanDesc = 'Contact details modified';
+      } else if (activity.description.includes('Changed status of contact')) {
+        label = 'Status';
+      } else if (activity.description.includes('Transferred contact')) {
+        label = 'Transferred';
+      } else if (activity.description.includes('Attached document')) {
+        label = 'Document';
+      } else if (activity.description.includes('Sent Terms & Conditions')) {
+        label = 'T&C Sent';
+      } else if (activity.description.includes('Sent SMS')) {
+        label = 'SMS Sent';
+      } else if (activity.description.includes('Sent Email')) {
+        label = 'Email Sent';
+      } else if (activity.description.includes('Added Quick Note')) {
+        label = 'Quick Note';
+      }
+
+      let remark = '—';
+
+      if (activity.description.includes('[Remark:')) {
+        const match = activity.description.match(/\[Remark:\s*([^\]]+)\]/);
+        if (match && match[1]) {
+          remark = match[1].trim();
+          cleanDesc = cleanDesc.replace(/\[Remark:\s*[^\]]+\]/, '').trim();
+        }
+      } else if (activity.description.includes('| Comment:')) {
+        const match = activity.description.match(/\|\s*Comment:\s*"([^"]+)"/);
+        if (match && match[1]) {
+          remark = match[1].trim();
+          cleanDesc = cleanDesc.replace(/\|\s*Comment:\s*"[^"]+"/, '').trim();
+        }
+      } else if (activity.description.includes('Added Quick Note')) {
+        const match = activity.description.match(/\]:\s*"([^"]+)"/);
+        if (match && match[1]) {
+          remark = match[1].trim();
+          const idx = activity.description.indexOf(']:');
+          if (idx !== -1) {
+            cleanDesc = activity.description.substring(0, idx + 2).trim();
+          }
+        }
+      }
+
+      timeline.push({
+        action: label,
+        performedBy: perfName,
+        date: activity.timestamp,
+        details: cleanDesc,
+        ip: '—',
+        purpose: '—',
+        remark: remark,
+      });
+    }
+
+    // Sort timeline descending by date
+    timeline.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    return timeline;
   }
 }

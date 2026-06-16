@@ -49,6 +49,12 @@ export class LeadConversionLog {
     index: true,
   })
   assignedTo: User;
+
+  @Prop({ trim: true, required: false })
+  ipAddress?: string;
+
+  @Prop({ trim: true, required: false })
+  purpose?: string;
 }
 
 export const LeadConversionLogSchema = SchemaFactory.createForClass(LeadConversionLog);

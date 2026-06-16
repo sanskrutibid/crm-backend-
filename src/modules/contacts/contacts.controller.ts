@@ -9,6 +9,7 @@ import {
   Query,
   Header,
   Res,
+  Req,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -59,8 +60,9 @@ export class ContactsController {
     type: ContactResponseDto,
   })
   @ResponseMessage('Contact created successfully')
-  async create(@Body() createContactDto: CreateContactDto) {
-    return this.contactsService.create(createContactDto);
+  async create(@Body() createContactDto: CreateContactDto, @Req() req: any) {
+    const ip = req.ip || req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '127.0.0.1';
+    return this.contactsService.create(createContactDto, undefined, ip);
   }
 
   @Get()
@@ -277,6 +279,15 @@ export class ContactsController {
   @ResponseMessage('Contact activity history retrieved successfully')
   async getContactHistory(@Param('id') id: string) {
     return this.contactsService.getContactHistory(id);
+  }
+
+  @Get(':id/detailed-history')
+  @ApiOperation({
+    summary: 'Retrieve detailed creation, conversion, and activity history for a contact',
+  })
+  @ResponseMessage('Detailed contact history retrieved successfully')
+  async getDetailedHistory(@Param('id') id: string) {
+    return this.contactsService.getDetailedHistory(id);
   }
 
   @Post(':id/actions/attach-document')

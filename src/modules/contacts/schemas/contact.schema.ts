@@ -189,6 +189,9 @@ export class Contact {
   })
   createdBy?: User;
 
+  @Prop({ trim: true, required: false })
+  createdIp?: string;
+
   @Prop({ trim: true })
   photograph?: string; // URL path of profile image upload
 

@@ -262,6 +262,7 @@ export class LeadsService implements OnModuleInit {
   async convertContactsToLeads(
     dto: ConvertContactsToLeadsDto,
     defaultUserId?: string,
+    ipAddress?: string,
   ): Promise<{ success: boolean; count: number; leads: LeadDocument[] }> {
     const defaultUser = await this.userModel.findOne().exec();
     const userId = defaultUserId || (defaultUser ? defaultUser._id.toString() : undefined);
@@ -320,6 +321,8 @@ export class LeadsService implements OnModuleInit {
           leadId: saved._id,
           convertedBy: userId,
           assignedTo: assigneeUserId,
+          ipAddress: ipAddress,
+          purpose: dto.requirement,
         });
         await conversionLog.save();
       }

@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Query,
+  Req,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -52,8 +53,12 @@ export class LeadsController {
   @Post('actions/convert-contacts')
   @ApiOperation({ summary: 'Convert one or more contacts to CRM Leads' })
   @ResponseMessage('Contacts successfully converted to Leads')
-  async convertContactsToLeads(@Body() convertContactsToLeadsDto: ConvertContactsToLeadsDto) {
-    return this.leadsService.convertContactsToLeads(convertContactsToLeadsDto);
+  async convertContactsToLeads(
+    @Body() convertContactsToLeadsDto: ConvertContactsToLeadsDto,
+    @Req() req: any,
+  ) {
+    const ip = req.ip || req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '127.0.0.1';
+    return this.leadsService.convertContactsToLeads(convertContactsToLeadsDto, undefined, ip);
   }
 
   @Get('actions/convert-history')
