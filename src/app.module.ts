@@ -29,6 +29,9 @@ import { HistoriesModule } from './modules/histories/histories.module';
 import { LoginHistoryModule } from './modules/login-history/login-history.module';
 import { DatabackupModule } from './modules/databackup/databackup.module';
 import { LocationsModule } from './modules/locations/locations.module';
+import { BranchesModule } from './modules/branches/branches.module';
+import { FoldersModule } from './modules/folders/folders.module';
+import { SourcesModule } from './modules/sources/sources.module';
 
 @Module({
   imports: [
@@ -72,6 +75,9 @@ import { LocationsModule } from './modules/locations/locations.module';
     LoginHistoryModule,
     DatabackupModule,
     LocationsModule,
+    BranchesModule,
+    FoldersModule,
+    SourcesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
