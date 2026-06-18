@@ -208,6 +208,9 @@ export class Contact {
   @Prop({ type: Boolean, default: true })
   subscribePromotions: boolean;
 
+  @Prop({ type: Boolean, default: false, index: true })
+  isStarred: boolean;
+
   @Prop({ trim: true })
   status?: string; // e.g. Active, Inactive, DND
 

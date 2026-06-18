@@ -405,4 +405,12 @@ export class UpdateContactDto {
   @IsBoolean()
   @IsOptional()
   subscribePromotions?: boolean;
+
+  @ApiPropertyOptional({
+    example: true,
+    description: 'Toggle star/favorite status',
+  })
+  @IsBoolean()
+  @IsOptional()
+  isStarred?: boolean;
 }

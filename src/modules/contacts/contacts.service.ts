@@ -179,7 +179,7 @@ export class ContactsService implements OnModuleInit {
 
   async findAll(
     query: QueryContactDto,
-  ): Promise<{ contacts: ContactDocument[]; total: number }> {
+  ): Promise<{ contacts: ContactDocument[]; total: number; todayCount: number; shortlistedCount: number }> {
     const {
       customerType,
       contactType,
@@ -308,9 +308,27 @@ export class ContactsService implements OnModuleInit {
     // Dynamic sorting
     const sortField = sortBy || 'createdAt';
     const sortDirection = sortOrder === 'asc' ? 1 : -1;
-    const sortOption: any = { [sortField]: sortDirection };
+    let sortOption: any = { [sortField]: sortDirection };
+    if (sortField === 'isStarred') {
+      sortOption = { isStarred: sortDirection, createdAt: -1 };
+    }
 
     const total = await this.contactModel.countDocuments(filter).exec();
+
+    // Calculate dynamic counts for today's and shortlisted contacts
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    
+    const todayCount = await this.contactModel.countDocuments({
+      isDeleted: { $ne: true },
+      createdAt: { $gte: startOfToday, $lte: endOfToday }
+    }).exec();
+
+    const shortlistedCount = await this.contactModel.countDocuments({
+      isDeleted: { $ne: true },
+      isStarred: true
+    }).exec();
 
     // Pagination bypass logic: If limit is not specified, return all matching records at once.
     // If limit is specified and is >= 99999, return all matching records.
@@ -325,7 +343,7 @@ export class ContactsService implements OnModuleInit {
     }
 
     const contacts = await queryChain.exec();
-    return { contacts, total };
+    return { contacts, total, todayCount, shortlistedCount };
   }
 
   async findOne(id: string): Promise<ContactDocument> {

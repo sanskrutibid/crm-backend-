@@ -478,4 +478,13 @@ export class CreateContactDto {
   @IsBoolean()
   @IsOptional()
   subscribePromotions?: boolean;
+
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Marks contact as starred/favorite',
+    default: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  isStarred?: boolean;
 }
