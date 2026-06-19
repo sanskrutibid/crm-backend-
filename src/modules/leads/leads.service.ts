@@ -42,6 +42,13 @@ import {
   LeadConversionLog,
   LeadConversionLogDocument,
 } from './schemas/lead-conversion-log.schema';
+import {
+  SendGroupSmsDto,
+  SendGroupEmailDto,
+  GroupDeleteDto,
+} from './dto/bulk-actions.dto';
+import { SmsService } from '../sms/sms.service';
+import { EmailsService } from '../emails/emails.service';
 
 @Injectable()
 export class LeadsService implements OnModuleInit {
@@ -56,6 +63,8 @@ export class LeadsService implements OnModuleInit {
     @InjectModel(LeadConversionLog.name)
     private readonly leadConversionLogModel: Model<LeadConversionLogDocument>,
     private readonly activitiesService: ActivitiesService,
+    private readonly smsService: SmsService,
+    private readonly emailsService: EmailsService,
   ) {}
 
   private async invalidateCache(id?: string) {
@@ -411,6 +420,15 @@ export class LeadsService implements OnModuleInit {
     } = query;
 
     const filter: any = {};
+
+    if ((query as any).leadIds) {
+      const ids = Array.isArray((query as any).leadIds)
+        ? (query as any).leadIds
+        : (query as any).leadIds.split(',').map((id: any) => id.trim()).filter(Boolean);
+      if (ids.length > 0) {
+        filter._id = { $in: ids };
+      }
+    }
 
     // 1. Referenced Search mapping: Search across Contact name, email, mobile
     if (search) {
@@ -1317,5 +1335,396 @@ export class LeadsService implements OnModuleInit {
       .populate(['contactId', 'leadId', 'convertedBy', 'assignedTo'])
       .sort({ createdAt: -1 })
       .exec();
+  }
+
+  async groupDelete(dto: GroupDeleteDto, defaultUserId?: string) {
+    const filter =
+      dto.leadIds && dto.leadIds.length > 0
+        ? { _id: { $in: dto.leadIds } }
+        : {};
+
+    const leads = await this.leadModel.find(filter).exec();
+    const count = leads.length;
+
+    await this.leadModel.deleteMany(filter).exec();
+
+    await this.activitiesService.log(
+      `Bulk deleted ${count} leads from CRM database`,
+      ActivityType.LEAD,
+      defaultUserId,
+    );
+
+    await this.invalidateCache();
+    return { success: true, count };
+  }
+
+  async sendGroupSms(dto: SendGroupSmsDto, defaultUserId?: string) {
+    const filter =
+      dto.leadIds && dto.leadIds.length > 0
+        ? { _id: { $in: dto.leadIds } }
+        : {};
+
+    const leads = await this.leadModel.find(filter).populate('contactId').exec();
+    const contactsWithMobile = leads
+      .map((lead) => lead.contactId)
+      .filter((contact) => contact && contact.mobile && contact.mobile.trim().length > 0);
+
+    const count = contactsWithMobile.length;
+    for (const contact of contactsWithMobile) {
+      const countryCode = (contact.countryCode || '').trim();
+      const mobileVal = contact.mobile.trim();
+      const combinedMobile = countryCode ? `${countryCode}${mobileVal}` : mobileVal;
+
+      await this.smsService.schedule({
+        mobiles: combinedMobile,
+        message: dto.message,
+        dltTemplateId: dto.dltTemplateId,
+        scheduleDate: dto.scheduleDate,
+        scheduleTime: dto.scheduleTime,
+        createdBy: defaultUserId,
+      });
+    }
+
+    await this.activitiesService.log(
+      `Sent Group SMS: "${dto.message}" to ${count} leads [Template: ${dto.template}, DLT ID: ${dto.dltTemplateId}]`,
+      ActivityType.LEAD,
+      defaultUserId,
+    );
+
+    return { success: true, count };
+  }
+
+  async sendGroupEmail(dto: SendGroupEmailDto, defaultUserId?: string) {
+    const filter =
+      dto.leadIds && dto.leadIds.length > 0
+        ? { _id: { $in: dto.leadIds } }
+        : {};
+
+    const leads = await this.leadModel.find(filter).populate('contactId').exec();
+    const contactsWithEmail = leads
+      .map((lead) => lead.contactId)
+      .filter((contact) => contact && contact.email && contact.email.trim().length > 0);
+
+    const count = contactsWithEmail.length;
+    for (const contact of contactsWithEmail) {
+      await this.emailsService.schedule({
+        to: contact.email!.trim(),
+        subject: dto.subject,
+        body: dto.message,
+        scheduleDate: dto.scheduleDate,
+        scheduleTime: dto.scheduleTime,
+        createdBy: defaultUserId,
+      });
+    }
+
+    await this.activitiesService.log(
+      `Sent Group Email: "${dto.subject}" to ${count} leads [Template: ${dto.template}]`,
+      ActivityType.LEAD,
+      defaultUserId,
+    );
+
+    return { success: true, count };
+  }
+
+  private async generateLeadsCsv(query: any): Promise<string> {
+    const { leads } = await this.findAll({ ...query, limit: query.limit || 99999 });
+
+    const headers = [
+      'Lead ID',
+      'Customer Name',
+      'Mobile Number',
+      'Email',
+      'Requirement',
+      'Follow-up Note',
+      'Schedule Date',
+      'Schedule Time',
+      'Score',
+      'Keywords',
+      'Folder',
+      'Source',
+      'Branch',
+      'Assigned To',
+      'Temperature',
+      'Status',
+      'Next Remark',
+      'Outcome',
+      'Interested In',
+      'Purpose',
+      'Created At'
+    ];
+
+    const rows = leads.map((l: any) => {
+      const contact = l.contactId || {};
+      const customerName = `${contact.salutation ? contact.salutation + ' ' : ''}${contact.firstName || ''} ${contact.lastName || ''}`.trim();
+      const mobileVal = contact.mobile || '';
+      const emailVal = contact.email || '';
+      const assignedToVal = l.assignedTo?.firstName || '';
+
+      return [
+        l.id || l._id?.toString() || '',
+        customerName || 'Unknown Customer',
+        mobileVal,
+        emailVal,
+        l.requirement || '',
+        l.followupNote || '',
+        l.scheduleDate || '',
+        l.scheduleTime || '',
+        l.score !== undefined ? l.score.toString() : '1.0',
+        l.keywords || '',
+        l.folder || '',
+        l.source || '',
+        l.branch || '',
+        assignedToVal,
+        l.temperature || '',
+        l.status || '',
+        l.nextRemark || '',
+        l.outcome || '',
+        l.interestedIn || '',
+        l.purpose || '',
+        l.createdAt ? new Date(l.createdAt).toISOString() : '',
+      ];
+    });
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map((r) =>
+        r.map((val) => `"${val.replace(/"/g, '""')}"`).join(','),
+      ),
+    ].join('\n');
+
+    return csvContent;
+  }
+
+  private async uploadCsvToGoogleDrive(csvContent: string, fileName: string): Promise<any> {
+    const clientId = process.env.GOOGLE_DRIVE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_DRIVE_CLIENT_SECRET;
+    const refreshToken = process.env.GOOGLE_DRIVE_REFRESH_TOKEN;
+
+    if (clientId && clientSecret && refreshToken) {
+      try {
+        const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            client_id: clientId,
+            client_secret: clientSecret,
+            refresh_token: refreshToken,
+            grant_type: 'refresh_token',
+          }),
+        });
+
+        if (!tokenResponse.ok) {
+          const errText = await tokenResponse.text();
+          throw new Error(`Google OAuth token refresh failed: ${errText}`);
+        }
+
+        const tokenData = (await tokenResponse.json()) as any;
+        const accessToken = tokenData.access_token;
+
+        const boundary = 'leads_upload_boundary_12345';
+        const metadata = {
+          name: fileName,
+          mimeType: 'text/csv',
+        };
+
+        const multipartBody = [
+          `--${boundary}`,
+          'Content-Type: application/json; charset=UTF-8',
+          '',
+          JSON.stringify(metadata),
+          `--${boundary}`,
+          'Content-Type: text/csv',
+          '',
+          csvContent,
+          `--${boundary}--`,
+          '',
+        ].join('\r\n');
+
+        const uploadResponse = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': `multipart/related; boundary=${boundary}`,
+          },
+          body: multipartBody,
+        });
+
+        if (!uploadResponse.ok) {
+          const errText = await uploadResponse.text();
+          throw new Error(`Google Drive upload failed: ${errText}`);
+        }
+
+        const uploadData = (await uploadResponse.json()) as any;
+        return {
+          success: true,
+          fileId: uploadData.id,
+          fileName: uploadData.name,
+          webViewLink: `https://drive.google.com/open?id=${uploadData.id}`,
+          isMock: false,
+        };
+      } catch (err) {
+        console.error('Real Google Drive upload failed, falling back to mock:', err);
+      }
+    }
+
+    try {
+      const fs = await import('fs');
+      const path = await import('path');
+      const backupsDir = path.join(process.cwd(), 'backups');
+      if (!fs.existsSync(backupsDir)) {
+        fs.mkdirSync(backupsDir, { recursive: true });
+      }
+
+      const backupFileName = `leads_drive_backup_${new Date().toISOString().replace(/[:.]/g, '-')}.csv`;
+      const filePath = path.join(backupsDir, backupFileName);
+      fs.writeFileSync(filePath, csvContent, 'utf-8');
+
+      const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
+      const downloadLink = `${backendUrl}/api/databackup/download/${backupFileName}`;
+
+      return {
+        success: true,
+        message: 'Google Drive credentials not set in .env. Saved locally in backups folder instead.',
+        fileName: backupFileName,
+        webViewLink: downloadLink,
+        isMock: true,
+      };
+    } catch (err: any) {
+      console.error('Google Drive export simulation failed:', err);
+      throw new Error(`Export to Google Drive failed: ${err.message}`);
+    }
+  }
+
+  async downloadExcel(query: any): Promise<string> {
+    const csvContent = await this.generateLeadsCsv(query);
+    const fileName = `leads_export_${new Date().toISOString().slice(0, 10)}.csv`;
+    this.uploadCsvToGoogleDrive(csvContent, fileName).catch((err) => {
+      console.error('Background Google Drive upload failed:', err);
+    });
+    return csvContent;
+  }
+
+  async uploadToGoogleDrive(query: any, inputLimit?: number): Promise<any> {
+    const csvContent = await this.generateLeadsCsv(query);
+    const fileName = `leads_export_${new Date().toISOString().slice(0, 10)}.csv`;
+    return this.uploadCsvToGoogleDrive(csvContent, fileName);
+  }
+
+  async importLeads(leads: any[], defaultUserId?: string) {
+    const limit = 2000;
+    const slice = leads.slice(0, limit);
+    const createdLeads: any[] = [];
+
+    const defaultUser = await this.userModel.findOne().exec();
+    const fallbackUserId = defaultUserId || (defaultUser ? defaultUser._id.toString() : undefined);
+
+    const users = await this.userModel.find().exec();
+    const findUserId = (assignedVal: any): string | undefined => {
+      if (!assignedVal) return fallbackUserId;
+      const valStr = assignedVal.toString().trim();
+      if (!valStr) return fallbackUserId;
+
+      // Check if it's a valid 24-character hex ObjectId
+      const isValidObjectId = /^[0-9a-fA-F]{24}$/.test(valStr);
+      if (isValidObjectId) {
+        return valStr;
+      }
+
+      // Look up by firstName, email, or full name
+      const cleanVal = valStr.toLowerCase();
+      const foundUser = users.find(
+        (u) =>
+          u.firstName.toLowerCase() === cleanVal ||
+          u.email.toLowerCase() === cleanVal ||
+          `${u.firstName} ${u.lastName || ''}`.trim().toLowerCase() === cleanVal
+      );
+
+      return foundUser ? foundUser._id.toString() : fallbackUserId;
+    };
+
+    for (const item of slice) {
+      const mobile = (item.Customer_Mobile || item.mobile || item['Mobile Number'] || '').toString().trim();
+      const firstName = (item.Customer_Name || item.firstName || item.name || item['Customer Name'] || '').toString().trim();
+
+      if (!firstName || !mobile) continue;
+
+      const assignedToId = findUserId(item.assignedTo || item['Assigned To']);
+
+      let contact = await this.contactModel.findOne({ mobile, isDeleted: { $ne: true } }).exec();
+      if (!contact) {
+        let salutation: string | undefined = undefined;
+        let fName = firstName;
+        let lName: string | undefined = undefined;
+
+        const nameParts = firstName.split(/\s+/);
+        if (nameParts.length > 0) {
+          const firstPart = nameParts[0].replace(/\./g, '');
+          const salutations = ['mr', 'mrs', 'ms', 'dr', 'prof', 'sir'];
+          if (salutations.includes(firstPart.toLowerCase())) {
+            salutation = nameParts[0];
+            nameParts.shift();
+          }
+        }
+        if (nameParts.length > 0) {
+          fName = nameParts[0];
+          nameParts.shift();
+        }
+        if (nameParts.length > 0) {
+          lName = nameParts.join(' ');
+        }
+
+        contact = new this.contactModel({
+          salutation,
+          firstName: fName,
+          lastName: lName,
+          mobile,
+          email: item.Customer_Email || item.email || item.Email,
+          customerType: item.Customer_CustomerType || item.customerType || item['Customer Type'] || 'Customer',
+          contactType: item.Customer_ContactType || item.contactType || item['Contact Type'] || 'Employee',
+          branch: item.Lead_Branch || item.branch || item.Branch || 'Global Team',
+          source: item.Lead_Source || item.source || item.Source || 'Spreadsheet Import',
+          assignedTo: assignedToId,
+        });
+        await contact.save();
+      }
+
+      const requirement = item.Lead_Requirement || item.requirement || item.Requirement || 'Imported Lead Requirement';
+      const followupNote = item.Lead_FollowupNote || item.followupNote || item['Follow-up Note'] || requirement;
+      const scheduleDate = item.Lead_ScheduleDate || item.scheduleDate || item['Schedule Date'] || new Date().toISOString().split('T')[0];
+      const scheduleTime = item.Lead_ScheduleTime || item.scheduleTime || item['Schedule Time'] || '12:00pm';
+
+      const newLead = new this.leadModel({
+        contactId: contact._id,
+        requirement,
+        followupNote,
+        scheduleDate,
+        scheduleTime,
+        score: item.score !== undefined ? Number(item.score) : (item.Score !== undefined ? Number(item.Score) : 1.0),
+        keywords: item.Lead_Keywords || item.keywords || item.Keywords || '',
+        folder: item.Lead_Folder || item.folder || item.Folder || '',
+        source: item.Lead_Source || item.source || item.Source || 'Spreadsheet Import',
+        branch: item.Lead_Branch || item.branch || item.Branch || 'Global Team',
+        assignedTo: assignedToId,
+        visibility: (item.Lead_Visibility || item.visibility || item.Visibility) === 'Private' ? LeadVisibility.PRIVATE : LeadVisibility.BRANCH,
+        temperature: item.Lead_Temperature || item.temperature || item.Temperature || LeadTemperature.COLD,
+        status: item.Lead_Status || item.status || item.Status || LeadStatus.IN_PROGRESS,
+        outcome: item.Lead_Outcome || item.outcome || item.Outcome || 'Said Not Looking Any Property Now',
+        interestedIn: item.Lead_InterestedIn || item.interestedIn || item['Interested In'] || requirement,
+        createdBy: fallbackUserId,
+        updatedBy: fallbackUserId,
+      });
+
+      const savedLead = await newLead.save();
+      createdLeads.push(savedLead);
+    }
+
+    await this.activitiesService.log(
+      `Imported ${createdLeads.length} leads via bulk spreadsheet upload`,
+      ActivityType.LEAD,
+      defaultUserId,
+    );
+
+    await this.invalidateCache();
+    return { success: true, count: createdLeads.length };
   }
 }

@@ -8,6 +8,8 @@ import {
   Post,
   Query,
   Req,
+  Res,
+  Header,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -32,6 +34,11 @@ import {
   CreateSiteVisitDto,
   ConvertContactsToLeadsDto,
 } from './dto/lead-actions.dto';
+import {
+  SendGroupSmsDto,
+  SendGroupEmailDto,
+  GroupDeleteDto,
+} from './dto/bulk-actions.dto';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
 
 @ApiTags('Leads')
@@ -350,5 +357,49 @@ export class LeadsController {
   async remove(@Param('id') id: string) {
     await this.leadsService.remove(id);
     return null;
+  }
+
+  @Post('actions/send-sms')
+  @ApiOperation({ summary: 'Send group SMS to selected/all leads' })
+  @ResponseMessage('Group SMS sent successfully')
+  async sendGroupSms(@Body() dto: SendGroupSmsDto) {
+    return this.leadsService.sendGroupSms(dto);
+  }
+
+  @Post('actions/send-email')
+  @ApiOperation({ summary: 'Send group Email to selected/all leads' })
+  @ResponseMessage('Group email sent successfully')
+  async sendGroupEmail(@Body() dto: SendGroupEmailDto) {
+    return this.leadsService.sendGroupEmail(dto);
+  }
+
+  @Post('actions/group-delete')
+  @ApiOperation({ summary: 'Bulk delete leads matching selection or filters' })
+  @ResponseMessage('Leads bulk deleted successfully')
+  async groupDelete(@Body() dto: GroupDeleteDto) {
+    return this.leadsService.groupDelete(dto);
+  }
+
+  @Get('actions/download')
+  @Header('Content-Type', 'text/csv')
+  @Header('Content-Disposition', 'attachment; filename="leads.csv"')
+  @ApiOperation({ summary: 'Export and download CRM Leads in CSV format' })
+  async downloadExcel(@Query() query: QueryLeadDto, @Res() reply: any) {
+    const csvContent = await this.leadsService.downloadExcel(query);
+    reply.send(csvContent);
+  }
+
+  @Post('actions/google-drive')
+  @ApiOperation({ summary: 'Export and upload CRM Leads to Google Drive' })
+  @ResponseMessage('Leads exported to Google Drive successfully')
+  async uploadToGoogleDrive(@Body() body: { limit?: number; filters?: any }) {
+    return this.leadsService.uploadToGoogleDrive(body.filters, body.limit);
+  }
+
+  @Post('actions/import')
+  @ApiOperation({ summary: 'Import leads in bulk from spreadsheet data' })
+  @ResponseMessage('Leads imported successfully')
+  async importLeads(@Body() leads: any[]) {
+    return this.leadsService.importLeads(leads);
   }
 }

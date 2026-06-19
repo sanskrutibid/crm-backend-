@@ -314,4 +314,11 @@ export class QueryLeadDto {
   @Min(1)
   @IsOptional()
   limit?: number = 10;
+
+  @ApiPropertyOptional({
+    description: 'Filter by list of Lead IDs (comma-separated)',
+  })
+  @IsString()
+  @IsOptional()
+  leadIds?: string;
 }
