@@ -611,10 +611,21 @@ export class LeadsService implements OnModuleInit {
     ];
     const format2 = `${now.getDate()}-${months[now.getMonth()]}-${now.getFullYear()}`; // "26-May-2026"
 
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const endOfToday = new Date();
+    endOfToday.setHours(23, 59, 59, 999);
+
     switch (viewType) {
       case 'today':
         filter.status = LeadStatus.IN_PROGRESS;
-        filter.scheduleDate = { $in: [format1, format2] };
+        filter.$or = [
+          { scheduleDate: { $in: [format1, format2] } },
+          { createdAt: { $gte: startOfToday, $lte: endOfToday } },
+          { updatedAt: { $gte: startOfToday, $lte: endOfToday } },
+          { assignDate: { $gte: startOfToday, $lte: endOfToday } }
+        ];
         break;
       case 'open':
       case 'pending':
@@ -858,6 +869,12 @@ export class LeadsService implements OnModuleInit {
     const todayISO = now.toISOString().split('T')[0]; // "2026-05-29"
     const todayLong = `${now.getDate()}-${months[now.getMonth()]}-${now.getFullYear()}`; // "29-May-2026"
 
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const endOfToday = new Date();
+    endOfToday.setHours(23, 59, 59, 999);
+
     // Base filter: only In Progress leads (Won/Lost don't need followup)
     const baseFilter: any = { status: LeadStatus.IN_PROGRESS };
     if (assignedTo) baseFilter.assignedTo = assignedTo;
@@ -865,7 +882,12 @@ export class LeadsService implements OnModuleInit {
     // ── TODAY filter ─────────────────────────────────────────────────
     const todayFilter = {
       ...baseFilter,
-      scheduleDate: { $in: [todayISO, todayLong] },
+      $or: [
+        { scheduleDate: { $in: [todayISO, todayLong] } },
+        { createdAt: { $gte: startOfToday, $lte: endOfToday } },
+        { updatedAt: { $gte: startOfToday, $lte: endOfToday } },
+        { assignDate: { $gte: startOfToday, $lte: endOfToday } },
+      ],
     };
 
     // ── OVERDUE filter (scheduleDate is in the past, not today) ──────
@@ -877,6 +899,9 @@ export class LeadsService implements OnModuleInit {
         $lt: todayISO,
         $nin: [todayISO, todayLong],
       },
+      createdAt: { $not: { $gte: startOfToday, $lte: endOfToday } },
+      updatedAt: { $not: { $gte: startOfToday, $lte: endOfToday } },
+      assignDate: { $not: { $gte: startOfToday, $lte: endOfToday } },
     };
 
     const sortObj = this.buildSortObject(sortBy, orderBy);
@@ -1726,5 +1751,67 @@ export class LeadsService implements OnModuleInit {
 
     await this.invalidateCache();
     return { success: true, count: createdLeads.length };
+  }
+
+  async removeDuplicates(defaultUserId?: string): Promise<{ success: boolean; count: number; message: string }> {
+    const leads = await this.leadModel.find().populate('contactId').exec();
+    const groups = new Map<string, LeadDocument[]>();
+
+    for (const lead of leads) {
+      if (!lead.contactId) {
+        continue;
+      }
+      
+      const contact = lead.contactId as any;
+      const firstName = contact.firstName ? contact.firstName.trim().toLowerCase() : '';
+      const mobile = contact.mobile ? contact.mobile.trim() : '';
+      const email = contact.email ? contact.email.trim().toLowerCase() : '';
+
+      const key = `${firstName}_${mobile}_${email}`;
+
+      let group = groups.get(key);
+      if (!group) {
+        group = [];
+        groups.set(key, group);
+      }
+      group.push(lead);
+    }
+
+    let deletedCount = 0;
+
+    for (const [key, leadGroup] of groups.entries()) {
+      if (leadGroup.length <= 1) {
+        continue;
+      }
+
+      leadGroup.sort((a, b) => {
+        const timeA = (a as any).createdAt ? new Date((a as any).createdAt).getTime() : 0;
+        const timeB = (b as any).createdAt ? new Date((b as any).createdAt).getTime() : 0;
+        return timeA - timeB;
+      });
+
+      for (let i = 1; i < leadGroup.length; i++) {
+        const duplicateLead = leadGroup[i];
+        await this.leadModel.findByIdAndDelete(duplicateLead._id).exec();
+        deletedCount++;
+      }
+    }
+
+    if (deletedCount > 0) {
+      await this.activitiesService.log(
+        `Removed ${deletedCount} duplicate leads from CRM database`,
+        ActivityType.LEAD,
+        defaultUserId,
+      );
+      await this.invalidateCache();
+    }
+
+    return {
+      success: true,
+      count: deletedCount,
+      message: deletedCount > 0 
+        ? `Successfully removed ${deletedCount} duplicate lead(s).` 
+        : 'No duplicate leads found.'
+    };
   }
 }

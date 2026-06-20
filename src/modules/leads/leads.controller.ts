@@ -402,4 +402,12 @@ export class LeadsController {
   async importLeads(@Body() leads: any[]) {
     return this.leadsService.importLeads(leads);
   }
+
+  @Post('actions/remove-duplicates')
+  @ApiOperation({ summary: 'Remove duplicate leads matching same contact first name, mobile, and email' })
+  @ResponseMessage('Duplicate leads processed successfully')
+  async removeDuplicates(@Req() req: any) {
+    const userId = req.user?.id || req.user?._id;
+    return this.leadsService.removeDuplicates(userId);
+  }
 }
