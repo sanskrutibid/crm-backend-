@@ -1517,6 +1517,11 @@ export class ContactsService implements OnModuleInit {
         label = 'Email Sent';
       } else if (activity.description.includes('Added Quick Note')) {
         label = 'Quick Note';
+      } else if (
+        activity.description.includes('identified as a duplicate and hidden') ||
+        activity.description.includes('Duplicate lead')
+      ) {
+        label = 'Duplicate';
       }
 
       let remark = '—';

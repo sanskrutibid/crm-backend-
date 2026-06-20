@@ -105,6 +105,9 @@ export class Lead {
   @Prop({ type: Boolean, default: false })
   termsShared: boolean;
 
+  @Prop({ type: Boolean, default: false, index: true })
+  isDuplicateHidden: boolean;
+
   // ==========================================
   // 3. Status Badges & Details (Screenshot 3 & 4)
   // ==========================================

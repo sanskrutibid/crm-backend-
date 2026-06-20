@@ -419,7 +419,7 @@ export class LeadsService implements OnModuleInit {
       limit = 10,
     } = query;
 
-    const filter: any = {};
+    const filter: any = { isDuplicateHidden: { $ne: true } };
 
     if ((query as any).leadIds) {
       const ids = Array.isArray((query as any).leadIds)
@@ -876,7 +876,7 @@ export class LeadsService implements OnModuleInit {
     endOfToday.setHours(23, 59, 59, 999);
 
     // Base filter: only In Progress leads (Won/Lost don't need followup)
-    const baseFilter: any = { status: LeadStatus.IN_PROGRESS };
+    const baseFilter: any = { status: LeadStatus.IN_PROGRESS, isDuplicateHidden: { $ne: true } };
     if (assignedTo) baseFilter.assignedTo = assignedTo;
 
     // ── TODAY filter ─────────────────────────────────────────────────
@@ -1007,7 +1007,7 @@ export class LeadsService implements OnModuleInit {
       console.error('Cache read error in getOpenLeads:', err);
     }
 
-    const baseFilter: any = { status: LeadStatus.IN_PROGRESS };
+    const baseFilter: any = { status: LeadStatus.IN_PROGRESS, isDuplicateHidden: { $ne: true } };
     if (assignedTo) baseFilter.assignedTo = assignedTo;
     if (branch) baseFilter.branch = new RegExp(branch, 'i');
 
@@ -1754,7 +1754,7 @@ export class LeadsService implements OnModuleInit {
   }
 
   async removeDuplicates(defaultUserId?: string): Promise<{ success: boolean; count: number; message: string }> {
-    const leads = await this.leadModel.find().populate('contactId').exec();
+    const leads = await this.leadModel.find({ isDuplicateHidden: { $ne: true } }).populate('contactId').exec();
     const groups = new Map<string, LeadDocument[]>();
 
     for (const lead of leads) {
@@ -1792,14 +1792,26 @@ export class LeadsService implements OnModuleInit {
 
       for (let i = 1; i < leadGroup.length; i++) {
         const duplicateLead = leadGroup[i];
-        await this.leadModel.findByIdAndDelete(duplicateLead._id).exec();
+        duplicateLead.isDuplicateHidden = true;
+        await duplicateLead.save();
+
+        const contact = duplicateLead.contactId as any;
+        const customerName = contact
+          ? `${contact.firstName} ${contact.lastName || ''}`.trim()
+          : 'Unknown';
+        await this.activitiesService.log(
+          `Duplicate lead for "${customerName}" was identified and hidden from active list`,
+          ActivityType.LEAD,
+          defaultUserId,
+        );
+
         deletedCount++;
       }
     }
 
     if (deletedCount > 0) {
       await this.activitiesService.log(
-        `Removed ${deletedCount} duplicate leads from CRM database`,
+        `Removed ${deletedCount} duplicate leads from active CRM views`,
         ActivityType.LEAD,
         defaultUserId,
       );
