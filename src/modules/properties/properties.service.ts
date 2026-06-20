@@ -185,7 +185,7 @@ export class PropertiesService implements OnModuleInit {
       ActivityType.PROPERTY,
     );
 
-    return savedProperty.populate(['createdBy', 'assignedTo']);
+    return savedProperty.populate(['createdBy', 'assignedTo', 'ownerLandlord']);
   }
 
   private buildSortObject(
@@ -238,14 +238,16 @@ export class PropertiesService implements OnModuleInit {
 
     if (search) {
       filter.$and = filter.$and || [];
-      filter.$and.push({
-        $or: [
-          { name: new RegExp(search, 'i') },
-          { location: new RegExp(search, 'i') },
-          { builder: new RegExp(search, 'i') },
-          { type: new RegExp(search, 'i') },
-        ],
-      });
+      const orConditions: any[] = [
+        { name: new RegExp(search, 'i') },
+        { location: new RegExp(search, 'i') },
+        { builder: new RegExp(search, 'i') },
+        { type: new RegExp(search, 'i') },
+      ];
+      if (/^[0-9a-fA-F]{24}$/.test(search.trim())) {
+        orConditions.push({ _id: search.trim() });
+      }
+      filter.$and.push({ $or: orConditions });
     }
 
     if (updatedSince) {
@@ -261,7 +263,7 @@ export class PropertiesService implements OnModuleInit {
     }
 
     const properties = await queryChain
-      .populate(['createdBy', 'assignedTo'])
+      .populate(['createdBy', 'assignedTo', 'ownerLandlord'])
       .exec();
     return { properties, total };
   }
@@ -283,14 +285,16 @@ export class PropertiesService implements OnModuleInit {
 
     if (search) {
       filter.$and = filter.$and || [];
-      filter.$and.push({
-        $or: [
-          { name: new RegExp(search, 'i') },
-          { location: new RegExp(search, 'i') },
-          { builder: new RegExp(search, 'i') },
-          { type: new RegExp(search, 'i') },
-        ],
-      });
+      const orConditions: any[] = [
+        { name: new RegExp(search, 'i') },
+        { location: new RegExp(search, 'i') },
+        { builder: new RegExp(search, 'i') },
+        { type: new RegExp(search, 'i') },
+      ];
+      if (/^[0-9a-fA-F]{24}$/.test(search.trim())) {
+        orConditions.push({ _id: search.trim() });
+      }
+      filter.$and.push({ $or: orConditions });
     }
 
     if (updatedSince) {
@@ -306,7 +310,7 @@ export class PropertiesService implements OnModuleInit {
     }
 
     const properties = await queryChain
-      .populate(['createdBy', 'assignedTo'])
+      .populate(['createdBy', 'assignedTo', 'ownerLandlord'])
       .exec();
     return { properties, total };
   }
@@ -330,12 +334,16 @@ export class PropertiesService implements OnModuleInit {
     }
 
     if (search) {
-      filter.$or = [
+      const orConditions: any[] = [
         { name: new RegExp(search, 'i') },
         { location: new RegExp(search, 'i') },
         { builder: new RegExp(search, 'i') },
         { type: new RegExp(search, 'i') },
       ];
+      if (/^[0-9a-fA-F]{24}$/.test(search.trim())) {
+        orConditions.push({ _id: search.trim() });
+      }
+      filter.$or = orConditions;
     }
 
     // Sync Filter: Fetch records modified after this timestamp
@@ -354,7 +362,7 @@ export class PropertiesService implements OnModuleInit {
     }
 
     const properties = await queryChain
-      .populate(['createdBy', 'assignedTo'])
+      .populate(['createdBy', 'assignedTo', 'ownerLandlord'])
       .exec();
     return { properties, total };
   }
@@ -362,7 +370,7 @@ export class PropertiesService implements OnModuleInit {
   async findOne(id: string): Promise<PropertyDocument> {
     const property = await this.propertyModel
       .findById(id)
-      .populate(['createdBy', 'assignedTo'])
+      .populate(['createdBy', 'assignedTo', 'ownerLandlord'])
       .exec();
     if (!property) {
       throw new NotFoundException(`Property listing with ID "${id}" not found`);
@@ -377,7 +385,7 @@ export class PropertiesService implements OnModuleInit {
     const mappedDto = this.mapLegacyFields(updatePropertyDto, false);
     const updatedProperty = await this.propertyModel
       .findByIdAndUpdate(id, mappedDto, { new: true })
-      .populate(['createdBy', 'assignedTo'])
+      .populate(['createdBy', 'assignedTo', 'ownerLandlord'])
       .exec();
 
     if (!updatedProperty) {

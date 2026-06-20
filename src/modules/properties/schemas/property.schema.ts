@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Schema as MongooseSchema } from 'mongoose';
 import { User } from '../../users/schemas/user.schema';
+import { Contact } from '../../contacts/schemas/contact.schema';
 
 export type PropertyDocument = Property & Document;
 
@@ -78,8 +79,13 @@ export class Property {
   // ==========================================
   // Step 1: Contact Information
   // ==========================================
-  @Prop({ required: false, trim: true })
-  ownerLandlord?: string;
+  @Prop({
+    type: MongooseSchema.Types.ObjectId,
+    ref: 'Contact',
+    required: false,
+    index: true,
+  })
+  ownerLandlord?: Contact;
 
   // ==========================================
   // Step 2: Basic Information

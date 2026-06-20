@@ -1507,6 +1507,10 @@ export class ContactsService implements OnModuleInit {
         label = 'Status';
       } else if (activity.description.includes('Transferred contact')) {
         label = 'Transferred';
+      } else if (activity.description.includes('Scheduled follow-up')) {
+        label = 'Follow-up';
+      } else if (activity.description.includes('Updated raw requirement of lead')) {
+        label = 'Requirement';
       } else if (activity.description.includes('Attached document')) {
         label = 'Document';
       } else if (activity.description.includes('Sent Terms & Conditions')) {

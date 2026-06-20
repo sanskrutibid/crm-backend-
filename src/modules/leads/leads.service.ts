@@ -759,8 +759,45 @@ export class LeadsService implements OnModuleInit {
       throw new NotFoundException(`Lead with ID "${id}" not found`);
     }
 
-    // Log the change
-    if (updateLeadDto.status && originalLead.status !== updateLeadDto.status) {
+    const isTransferred =
+      updateLeadDto.assignedTo &&
+      originalLead.assignedTo?.toString() !== updateLeadDto.assignedTo;
+
+    // Log the change and sync associated contact
+    if (isTransferred) {
+      const contact = await this.contactModel.findById(updatedLead.contactId).exec();
+      if (contact) {
+        contact.assignedTo = updatedLead.assignedTo as any;
+        if (updateLeadDto.branch) {
+          contact.branch = updateLeadDto.branch;
+        }
+        if (updateLeadDto.visibility) {
+          contact.visibility = updateLeadDto.visibility as any;
+        }
+        await contact.save();
+      }
+
+      const contactName = contact
+        ? `${contact.firstName} ${contact.lastName || ''}`.trim()
+        : 'Unknown';
+      const targetUser = await this.userModel.findById(updateLeadDto.assignedTo).exec();
+      const targetUserName = targetUser
+        ? `${targetUser.firstName} ${targetUser.lastName || ''}`.trim()
+        : 'Unknown';
+
+      await this.activitiesService.log(
+        `Transferred contact "${contactName}" (Type: Lead Transfer) to agent "${targetUserName}". Branch: "${updateLeadDto.branch || 'unchanged'}"`,
+        ActivityType.LEAD,
+      );
+    } else if (updateLeadDto.scheduleDate) {
+      const contactName = updatedLead.contactId
+        ? `${(updatedLead.contactId as any).firstName} ${(updatedLead.contactId as any).lastName || ''}`.trim()
+        : 'Unknown';
+      await this.activitiesService.log(
+        `Scheduled follow-up for contact "${contactName}" on ${updateLeadDto.scheduleDate} at ${updateLeadDto.scheduleTime || '—'} [Remark: ${updateLeadDto.nextRemark || 'None'}]`,
+        ActivityType.LEAD,
+      );
+    } else if (updateLeadDto.status && originalLead.status !== updateLeadDto.status) {
       await this.activitiesService.log(
         `Updated stage of lead for "${(updatedLead.contactId as any).firstName}" to "${updatedLead.status}"`,
         ActivityType.LEAD,
@@ -1136,16 +1173,23 @@ export class LeadsService implements OnModuleInit {
       throw new NotFoundException(`Lead with ID "${id}" not found`);
     }
 
-    const customerName = lead.contactId
-      ? `${lead.contactId.firstName} ${lead.contactId.lastName || ''}`.trim()
-      : 'Unknown';
-    const mobile = lead.contactId ? lead.contactId.mobile : 'unknown mobile';
+    const contact = lead.contactId;
+    if (!contact || !contact.mobile) {
+      throw new BadRequestException('Lead contact has no mobile number registered');
+    }
 
-    await this.activitiesService.log(
-      `Sent SMS to lead "${customerName}" (${mobile}) [Template: ${dto.template}, DLT ID: ${dto.dltTemplateId}]: "${dto.message}" (Scheduled: ${dto.scheduleDate} at ${dto.scheduleTime})`,
-      ActivityType.LEAD,
-      defaultUserId,
-    );
+    const countryCode = (contact.countryCode || '').trim();
+    const mobileVal = contact.mobile.trim();
+    const combinedMobile = countryCode ? `${countryCode}${mobileVal}` : mobileVal;
+
+    await this.smsService.schedule({
+      mobiles: combinedMobile,
+      message: dto.message,
+      dltTemplateId: dto.dltTemplateId,
+      scheduleDate: dto.scheduleDate,
+      scheduleTime: dto.scheduleTime,
+      createdBy: defaultUserId,
+    });
 
     return { success: true };
   }
@@ -1156,15 +1200,19 @@ export class LeadsService implements OnModuleInit {
       throw new NotFoundException(`Lead with ID "${id}" not found`);
     }
 
-    const customerName = lead.contactId
-      ? `${lead.contactId.firstName} ${lead.contactId.lastName || ''}`.trim()
-      : 'Unknown';
+    const contact = lead.contactId;
+    if (!contact || !contact.email) {
+      throw new BadRequestException('Lead contact has no email address registered');
+    }
 
-    await this.activitiesService.log(
-      `Sent Email to lead "${customerName}" (${dto.to}) with Subject: "${dto.subject}" [Template: ${dto.template}, CC: ${dto.cc || 'None'}, BCC: ${dto.bcc || 'None'}] (Scheduled: ${dto.scheduleDate} at ${dto.scheduleTime})`,
-      ActivityType.LEAD,
-      defaultUserId,
-    );
+    await this.emailsService.schedule({
+      to: contact.email.trim(),
+      subject: dto.subject,
+      body: dto.message,
+      scheduleDate: dto.scheduleDate,
+      scheduleTime: dto.scheduleTime,
+      createdBy: defaultUserId,
+    });
 
     return { success: true };
   }
