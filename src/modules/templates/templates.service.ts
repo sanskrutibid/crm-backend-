@@ -55,6 +55,24 @@ export class TemplatesService implements OnModuleInit {
               'Hello {{1}}, your site visit to {{2}} is scheduled for {{3}} at {{4}}. See you soon!',
             createdBy: defaultUser._id as any,
           },
+          {
+            name: 'Site Visit Scheduled SMS Notification',
+            templateId: 'site_visit_sms_v1',
+            templateType: 'SMS',
+            layoutType: 'editor',
+            editorContent:
+              'Hello {{contactName}}, your site visit to {{siteName}} is scheduled for {{visitDate}} at {{timeIn}}.',
+            createdBy: defaultUser._id as any,
+          },
+          {
+            name: 'Site Visit Scheduled Email Notification',
+            templateId: 'site_visit_email_v1',
+            templateType: 'Email',
+            layoutType: 'editor',
+            editorContent:
+              '<h3>Site Visit Scheduled</h3><p>Dear {{contactName}},</p><p>Your site visit to <strong>{{siteName}}</strong> has been scheduled for <strong>{{visitDate}}</strong> from <strong>{{timeIn}}</strong> to <strong>{{timeOut}}</strong>.</p><p>Remarks: {{remark}}</p><p>Thank you!</p>',
+            createdBy: defaultUser._id as any,
+          },
         ];
 
         await this.templateModel.insertMany(initialTemplates);

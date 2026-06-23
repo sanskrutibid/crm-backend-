@@ -6,8 +6,13 @@ import { CreateSiteVisitDto } from './dto/create-site-visit.dto';
 import { UpdateSiteVisitDto } from './dto/update-site-visit.dto';
 import { QuerySiteVisitDto } from './dto/query-site-visit.dto';
 import { User, UserDocument } from '../users/schemas/user.schema';
+import { Contact, ContactDocument } from '../contacts/schemas/contact.schema';
+import { Lead, LeadDocument } from '../leads/schemas/lead.schema';
+import { SmsService } from '../sms/sms.service';
+import { EmailsService } from '../emails/emails.service';
 import { ActivitiesService } from '../activities/activities.service';
 import { ActivityType } from '../activities/schemas/activity.schema';
+import { Template, TemplateDocument } from '../templates/schemas/template.schema';
 
 @Injectable()
 export class SiteVisitsService implements OnModuleInit {
@@ -16,8 +21,42 @@ export class SiteVisitsService implements OnModuleInit {
     private readonly siteVisitModel: Model<SiteVisitDocument>,
     @InjectModel(User.name)
     private readonly userModel: Model<UserDocument>,
+    @InjectModel(Contact.name)
+    private readonly contactModel: Model<ContactDocument>,
+    @InjectModel(Lead.name)
+    private readonly leadModel: Model<LeadDocument>,
+    @InjectModel(Template.name)
+    private readonly templateModel: Model<TemplateDocument>,
+    private readonly smsService: SmsService,
+    private readonly emailsService: EmailsService,
     private readonly activitiesService: ActivitiesService,
   ) {}
+
+  private replacePlaceholders(content: string, data: any): string {
+    let result = content;
+    result = result.replace(/\{\{contactName\}\}/g, data.contactName || '');
+    result = result.replace(/\{\{visitor\}\}/g, data.visitor || '');
+    result = result.replace(/\{\{visitType\}\}/g, data.visitType || '');
+    result = result.replace(/\{\{module\}\}/g, data.module || '');
+    result = result.replace(/\{\{siteName\}\}/g, data.siteName || '');
+    result = result.replace(/\{\{otherName\}\}/g, data.otherName || '');
+    result = result.replace(/\{\{visitDate\}\}/g, data.visitDate || '');
+    result = result.replace(/\{\{timeIn\}\}/g, data.timeIn || '');
+    result = result.replace(/\{\{timeOut\}\}/g, data.timeOut || '');
+    result = result.replace(/\{\{remark\}\}/g, data.remark || '');
+    result = result.replace(/\{\{siteManager\}\}/g, data.siteManager || '');
+    result = result.replace(/\{\{sourcingManager\}\}/g, data.sourcingManager || '');
+    result = result.replace(/\{\{closingManager\}\}/g, data.closingManager || '');
+    result = result.replace(/\{\{source\}\}/g, data.source || '');
+    result = result.replace(/\{\{branch\}\}/g, data.branch || '');
+    result = result.replace(/\{\{visitStatus\}\}/g, data.visitStatus || '');
+
+    result = result.replace(/\{\{1\}\}/g, data.contactName || '');
+    result = result.replace(/\{\{2\}\}/g, data.siteName || '');
+    result = result.replace(/\{\{3\}\}/g, data.visitDate || '');
+    result = result.replace(/\{\{4\}\}/g, data.timeIn || '');
+    return result;
+  }
 
   /**
    * Seed default site visits on database start if the collection is empty.
@@ -114,6 +153,207 @@ export class SiteVisitsService implements OnModuleInit {
       createdBy,
     });
     const saved = await newVisit.save();
+
+    // Sync site visit with Lead if leadId is provided
+    if (createDto.leadId) {
+      try {
+        const lead = await this.leadModel.findById(createDto.leadId).exec();
+        if (lead) {
+          if (!lead.siteVisits) {
+            lead.siteVisits = [];
+          }
+          lead.siteVisits.push({
+            visitor: createDto.visitor,
+            visitType: createDto.visitType,
+            module: createDto.module,
+            siteName: createDto.siteName,
+            otherName: createDto.otherName,
+            visitDate: createDto.visitDate,
+            timeIn: createDto.timeIn,
+            timeOut: createDto.timeOut,
+            remark: createDto.remark,
+            siteManager: createDto.siteManager,
+            sourcingManager: createDto.sourcingManager,
+            closingManager: createDto.closingManager,
+            source: createDto.source,
+            branch: createDto.branch,
+            assignee: String(assignee),
+            visitStatus: createDto.visitStatus,
+            sendSmsNotification: createDto.sendSmsNotification === true,
+            sendEmailNotification: createDto.sendEmailNotification === true,
+            visibility: createDto.isPrivate ? 'Private' : 'Branch',
+            photograph: createDto.photograph,
+            createdAt: new Date(),
+          });
+          await lead.save();
+        }
+      } catch (err) {
+        console.error('Failed to sync site visit to lead subdocuments list:', err);
+      }
+    }
+
+    // Retrieve contact details to trigger SMS and/or Email notification
+    let contactId = createDto.contactId;
+    if (!contactId && createDto.leadId) {
+      try {
+        const lead = await this.leadModel.findById(createDto.leadId).exec();
+        if (lead && lead.contactId) {
+          if (typeof lead.contactId === 'object') {
+            contactId = (lead.contactId as any)._id
+              ? String((lead.contactId as any)._id)
+              : lead.contactId.toString();
+          } else {
+            contactId = String(lead.contactId);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to retrieve contact from lead:', err);
+      }
+    }
+
+    // Try to parse name and mobile from visitor field (Name : Mobile) as a fallback
+    let parsedMobile: string | null = null;
+    let parsedName = createDto.visitor;
+    if (createDto.visitor && createDto.visitor.includes(':')) {
+      const parts = createDto.visitor.split(':');
+      parsedName = parts[0].trim();
+      const rawMobile = parts[1].trim();
+      if (rawMobile && rawMobile.toLowerCase() !== 'no mobile') {
+        parsedMobile = rawMobile;
+      }
+    }
+
+    let visitorMobile = parsedMobile || '';
+    let visitorEmail = '';
+    let visitorName = parsedName;
+
+    if (contactId) {
+      try {
+        const contact = await this.contactModel.findById(contactId).exec();
+        if (contact) {
+          visitorMobile = contact.mobile || visitorMobile;
+          visitorEmail = contact.email || '';
+          visitorName = `${contact.firstName} ${contact.lastName || ''}`.trim() || visitorName;
+        }
+      } catch (err) {
+        console.error('Failed to retrieve contact details for site visit:', err);
+      }
+    }
+
+    const placeholderData = {
+      contactName: visitorName,
+      visitor: createDto.visitor,
+      visitType: createDto.visitType,
+      module: createDto.module,
+      siteName: createDto.siteName || '',
+      otherName: createDto.otherName || '',
+      visitDate: createDto.visitDate,
+      timeIn: createDto.timeIn,
+      timeOut: createDto.timeOut,
+      remark: createDto.remark || '',
+      siteManager: createDto.siteManager || '',
+      sourcingManager: createDto.sourcingManager || '',
+      closingManager: createDto.closingManager || '',
+      source: createDto.source || '',
+      branch: createDto.branch || '',
+      visitStatus: createDto.visitStatus || '',
+    };
+
+    try {
+      // Send SMS if requested
+      if (createDto.sendSmsNotification && visitorMobile) {
+        const parsedMobiles = visitorMobile.replace(/[^\d+]/g, '');
+        let combinedMobile = parsedMobiles;
+        if (!combinedMobile.startsWith('+')) {
+          if (/^\d{10}$/.test(combinedMobile)) {
+            combinedMobile = `+91${combinedMobile}`;
+          } else if (/^\d{12}$/.test(combinedMobile) && combinedMobile.startsWith('91')) {
+            combinedMobile = `+${combinedMobile}`;
+          } else if (/^\d+$/.test(combinedMobile)) {
+            combinedMobile = `+${combinedMobile}`;
+          }
+        }
+
+        let smsMessage = `Hello ${visitorName}, your site visit to ${createDto.siteName || ''} (${createDto.otherName || ''}) has been scheduled on ${createDto.visitDate} from ${createDto.timeIn} to ${createDto.timeOut}.\nVisit Type: ${createDto.visitType}\nStatus: ${createDto.visitStatus}\nSite Manager: ${createDto.siteManager || ''}\nRemarks: ${createDto.remark || ''}`;
+        try {
+          const smsTemplate = await this.templateModel.findOne({
+            templateType: 'SMS',
+            $or: [
+              { templateId: 'site_visit_sms_v1' },
+              { name: new RegExp('site visit', 'i') }
+            ]
+          }).exec();
+          if (smsTemplate) {
+            const rawContent = smsTemplate.editorContent || smsTemplate.fileContent || '';
+            if (rawContent) {
+              smsMessage = this.replacePlaceholders(rawContent, placeholderData);
+            }
+          }
+        } catch (err) {
+          console.error('Error fetching SMS template from DB:', err);
+        }
+
+        await this.smsService.schedule({
+          mobiles: combinedMobile,
+          message: smsMessage,
+          createdBy: createdBy && String(createdBy) !== 'undefined' ? String(createdBy) : undefined,
+        });
+      }
+
+      // Send Email if requested
+      if (createDto.sendEmailNotification && visitorEmail) {
+        let emailSubject = `Site Visit Scheduled - ${createDto.siteName || ''}`;
+        let emailBody = `<h3>Site Visit Scheduled</h3>
+<p>Dear ${visitorName},</p>
+<p>Your site visit has been scheduled. Details are below:</p>
+<table border="1" cellpadding="5" style="border-collapse: collapse;">
+  <tr><td><strong>Visitor Name:</strong></td><td>${createDto.visitor}</td></tr>
+  <tr><td><strong>Visit Type:</strong></td><td>${createDto.visitType}</td></tr>
+  <tr><td><strong>Site Name:</strong></td><td>${createDto.siteName || 'N/A'}</td></tr>
+  <tr><td><strong>Other Name:</strong></td><td>${createDto.otherName || 'N/A'}</td></tr>
+  <tr><td><strong>Visit Date:</strong></td><td>${createDto.visitDate}</td></tr>
+  <tr><td><strong>Time In:</strong></td><td>${createDto.timeIn}</td></tr>
+  <tr><td><strong>Time Out:</strong></td><td>${createDto.timeOut}</td></tr>
+  <tr><td><strong>Remark:</strong></td><td>${createDto.remark || 'N/A'}</td></tr>
+  <tr><td><strong>Site Manager:</strong></td><td>${createDto.siteManager || 'N/A'}</td></tr>
+  <tr><td><strong>Sourcing Manager:</strong></td><td>${createDto.sourcingManager || 'N/A'}</td></tr>
+  <tr><td><strong>Closing Manager:</strong></td><td>${createDto.closingManager || 'N/A'}</td></tr>
+  <tr><td><strong>Source:</strong></td><td>${createDto.source || 'N/A'}</td></tr>
+  <tr><td><strong>Branch:</strong></td><td>${createDto.branch || 'N/A'}</td></tr>
+  <tr><td><strong>Visit Status:</strong></td><td>${createDto.visitStatus || 'N/A'}</td></tr>
+</table>
+<br/>
+<p>Thank you!</p>`;
+
+        try {
+          const emailTemplate = await this.templateModel.findOne({
+            templateType: 'Email',
+            $or: [
+              { templateId: 'site_visit_email_v1' },
+              { name: new RegExp('site visit', 'i') }
+            ]
+          }).exec();
+          if (emailTemplate) {
+            const rawContent = emailTemplate.editorContent || emailTemplate.fileContent || '';
+            if (rawContent) {
+              emailBody = this.replacePlaceholders(rawContent, placeholderData);
+              emailSubject = emailTemplate.name || emailSubject;
+            }
+          }
+        } catch (err) {
+          console.error('Error fetching Email template from DB:', err);
+        }
+
+        await this.emailsService.schedule({
+          to: visitorEmail.trim(),
+          subject: emailSubject,
+          body: emailBody,
+          createdBy: createdBy && String(createdBy) !== 'undefined' ? String(createdBy) : undefined,
+        });
+      }
+    } catch (err) {
+      console.error('Failed to schedule SMS or Email notification for site visit:', err);
+    }
 
     // Log the action
     await this.activitiesService.log(
