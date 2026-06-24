@@ -20,6 +20,14 @@ import { CreateOpportunityDto } from './dto/create-opportunity.dto';
 import { UpdateOpportunityDto } from './dto/update-opportunity.dto';
 import { QueryOpportunityDto } from './dto/query-opportunity.dto';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
+import {
+  SendLeadSmsDto,
+  SendLeadEmailDto,
+  LeadQuickNoteDto,
+  SendProposalDto,
+  ChangeLeadStatusDto,
+  UpdateRequirementDto,
+} from '../leads/dto/lead-actions.dto';
 
 @ApiTags('Opportunities')
 @Controller('opportunities')
@@ -256,5 +264,61 @@ export class OpportunitiesController {
   async remove(@Param('id') id: string) {
     await this.opportunitiesService.remove(id);
     return null;
+  }
+
+  @Post(':id/actions/change-status')
+  @ApiOperation({
+    summary: 'Change opportunity status (In Progress, Won, Lost) with final outcome',
+  })
+  @ResponseMessage('Opportunity status updated successfully')
+  async changeStatus(
+    @Param('id') id: string,
+    @Body() changeOpportunityStatusDto: ChangeLeadStatusDto,
+  ) {
+    return this.opportunitiesService.changeStatus(id, changeOpportunityStatusDto);
+  }
+
+  @Post(':id/actions/update-requirement')
+  @ApiOperation({ summary: 'Update requirement of an opportunity' })
+  @ResponseMessage('Opportunity requirement updated successfully')
+  async updateRequirement(
+    @Param('id') id: string,
+    @Body() dto: UpdateRequirementDto,
+  ) {
+    return this.opportunitiesService.updateRequirement(id, dto);
+  }
+
+  @Post(':id/actions/send-sms')
+  @ApiOperation({
+    summary: 'Send scheduled or immediate SMS to an opportunity contact',
+  })
+  @ResponseMessage('SMS queued/sent successfully')
+  async sendSms(@Param('id') id: string, @Body() dto: SendLeadSmsDto) {
+    return this.opportunitiesService.sendSms(id, dto);
+  }
+
+  @Post(':id/actions/send-email')
+  @ApiOperation({
+    summary: 'Send scheduled or immediate Email to an opportunity contact',
+  })
+  @ResponseMessage('Email queued/sent successfully')
+  async sendEmail(@Param('id') id: string, @Body() dto: SendLeadEmailDto) {
+    return this.opportunitiesService.sendEmail(id, dto);
+  }
+
+  @Post(':id/actions/quick-note')
+  @ApiOperation({ summary: 'Add quick note comment for opportunity profile context' })
+  @ResponseMessage('Quick note added successfully')
+  async addQuickNote(@Param('id') id: string, @Body() dto: LeadQuickNoteDto) {
+    return this.opportunitiesService.addQuickNote(id, dto);
+  }
+
+  @Post(':id/actions/send-proposal')
+  @ApiOperation({
+    summary: 'Send rich proposal document to opportunity contact email',
+  })
+  @ResponseMessage('Proposal successfully sent')
+  async sendProposal(@Param('id') id: string, @Body() dto: SendProposalDto) {
+    return this.opportunitiesService.sendProposal(id, dto);
   }
 }

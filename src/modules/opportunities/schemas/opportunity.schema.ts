@@ -97,8 +97,8 @@ export class Opportunity {
   @Prop({ required: true, enum: OpportunityPurpose, index: true })
   purpose: OpportunityPurpose; // Labeled "For*" (e.g. "Buy", "Rent/Lease")
 
-  @Prop({ required: true, enum: OpportunityLookingFor, index: true })
-  lookingFor: OpportunityLookingFor; // Labeled "Looking For*" (e.g. "Residential Apartment")
+  @Prop({ required: true, trim: true, index: true })
+  lookingFor: string; // Labeled "Looking For*" (e.g. "Residential Apartment")
 
   @Prop({ type: Number, required: true })
   minBudget: number; // Labeled "Budget*" (min)
@@ -124,8 +124,8 @@ export class Opportunity {
   @Prop({ required: true, trim: true, index: true })
   locality: string; // Labeled "Locality*"
 
-  @Prop({ enum: OpportunityBedroom, index: true })
-  bedroom?: OpportunityBedroom; // Labeled "Bedroom" (e.g. "1 BHK", "2 BHK")
+  @Prop({ trim: true, index: true })
+  bedroom?: string; // Labeled "Bedroom" (e.g. "1 BHK", "2 BHK")
 
   @Prop({ enum: OpportunityFurnishing, index: true })
   furnishing?: OpportunityFurnishing; // Labeled "Furnishing" (e.g. "Fully Furnished")

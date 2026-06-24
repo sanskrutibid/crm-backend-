@@ -19,6 +19,16 @@ import { UpdateOpportunityDto } from './dto/update-opportunity.dto';
 import { QueryOpportunityDto } from './dto/query-opportunity.dto';
 import { ActivitiesService } from '../activities/activities.service';
 import { ActivityType } from '../activities/schemas/activity.schema';
+import { SmsService } from '../sms/sms.service';
+import { EmailsService } from '../emails/emails.service';
+import {
+  SendLeadSmsDto,
+  SendLeadEmailDto,
+  LeadQuickNoteDto,
+  SendProposalDto,
+  ChangeLeadStatusDto,
+  UpdateRequirementDto,
+} from '../leads/dto/lead-actions.dto';
 
 @Injectable()
 export class OpportunitiesService {
@@ -29,6 +39,8 @@ export class OpportunitiesService {
     private readonly contactModel: Model<ContactDocument>,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     private readonly activitiesService: ActivitiesService,
+    private readonly smsService: SmsService,
+    private readonly emailsService: EmailsService,
   ) {}
 
   /**
@@ -779,5 +791,155 @@ export class OpportunitiesService {
     };
     const field = fieldMap[sortBy] ?? 'createdAt';
     return { [field]: dir };
+  }
+
+  async sendSms(id: string, dto: SendLeadSmsDto, defaultUserId?: string) {
+    const opp = await this.opportunityModel.findById(id).populate('contactId').exec();
+    if (!opp) {
+      throw new NotFoundException(`Opportunity with ID "${id}" not found`);
+    }
+
+    const contact = opp.contactId;
+    if (!contact || !contact.mobile) {
+      throw new BadRequestException('Opportunity contact has no mobile number registered');
+    }
+
+    const countryCode = (contact.countryCode || '').trim();
+    const mobileVal = contact.mobile.trim();
+    const combinedMobile = countryCode ? `${countryCode}${mobileVal}` : mobileVal;
+
+    await this.smsService.schedule({
+      mobiles: combinedMobile,
+      message: dto.message,
+      dltTemplateId: dto.dltTemplateId,
+      scheduleDate: dto.scheduleDate,
+      scheduleTime: dto.scheduleTime,
+      createdBy: defaultUserId,
+    });
+
+    await this.activitiesService.log(
+      `Sent SMS to "${contact.firstName} ${contact.lastName || ''}": "${dto.message}"`,
+      ActivityType.OPPORTUNITY,
+      defaultUserId,
+    );
+
+    return { success: true };
+  }
+
+  async sendEmail(id: string, dto: SendLeadEmailDto, defaultUserId?: string) {
+    const opp = await this.opportunityModel.findById(id).populate('contactId').exec();
+    if (!opp) {
+      throw new NotFoundException(`Opportunity with ID "${id}" not found`);
+    }
+
+    const contact = opp.contactId;
+    if (!contact || !contact.email) {
+      throw new BadRequestException('Opportunity contact has no email address registered');
+    }
+
+    await this.emailsService.schedule({
+      to: contact.email.trim(),
+      subject: dto.subject,
+      body: dto.message,
+      scheduleDate: dto.scheduleDate,
+      scheduleTime: dto.scheduleTime,
+      createdBy: defaultUserId,
+    });
+
+    await this.activitiesService.log(
+      `Sent Email to "${contact.firstName} ${contact.lastName || ''}" | Subject: "${dto.subject}"`,
+      ActivityType.OPPORTUNITY,
+      defaultUserId,
+    );
+
+    return { success: true };
+  }
+
+  async addQuickNote(
+    id: string,
+    dto: LeadQuickNoteDto,
+    defaultUserId?: string,
+  ) {
+    const opp = await this.opportunityModel.findById(id).populate('contactId').exec();
+    if (!opp) {
+      throw new NotFoundException(`Opportunity with ID "${id}" not found`);
+    }
+
+    const customerName = opp.contactId
+      ? `${opp.contactId.firstName} ${opp.contactId.lastName || ''}`.trim()
+      : 'Unknown';
+    await this.activitiesService.log(
+      `Added Quick Note [Type: ${dto.commentType}] to opportunity for "${customerName}": "${dto.comment}"`,
+      ActivityType.OPPORTUNITY,
+      defaultUserId,
+    );
+
+    return { success: true };
+  }
+
+  async sendProposal(id: string, dto: SendProposalDto, defaultUserId?: string) {
+    const opp = await this.opportunityModel.findById(id).populate('contactId').exec();
+    if (!opp) {
+      throw new NotFoundException(`Opportunity with ID "${id}" not found`);
+    }
+
+    const customerName = opp.contactId
+      ? `${opp.contactId.firstName} ${opp.contactId.lastName || ''}`.trim()
+      : 'Unknown';
+    const recipientEmail =
+      (opp.contactId as any)?.email || 'no-email-defined@crm.com';
+
+    await this.activitiesService.log(
+      `Sent Proposal to "${customerName}" (${recipientEmail}) | Language: ${dto.language}, Module: ${dto.module}, Project: ${dto.propertyProject}, Template: ${dto.template}`,
+      ActivityType.OPPORTUNITY,
+      defaultUserId,
+    );
+
+    return { success: true };
+  }
+
+  async changeStatus(id: string, dto: ChangeLeadStatusDto) {
+    const opp = await this.opportunityModel.findById(id).populate('contactId').exec();
+    if (!opp) {
+      throw new NotFoundException(`Opportunity with ID "${id}" not found`);
+    }
+
+    opp.status = dto.status as any;
+    if (dto.outcome) {
+      opp.scheduleRemark = dto.outcome;
+    }
+    await opp.save();
+
+    const customerName = opp.contactId
+      ? `${opp.contactId.firstName} ${opp.contactId.lastName || ''}`.trim()
+      : 'Unknown';
+
+    await this.activitiesService.log(
+      `Updated stage of opportunity for customer "${customerName}" to "${opp.status}" | Outcome: "${dto.outcome}"`,
+      ActivityType.OPPORTUNITY,
+    );
+
+    return opp;
+  }
+
+  async updateRequirement(id: string, dto: UpdateRequirementDto) {
+    const opp = await this.opportunityModel.findById(id).populate('contactId').exec();
+    if (!opp) {
+      throw new NotFoundException(`Opportunity with ID "${id}" not found`);
+    }
+
+    opp.description = dto.requirement;
+    await opp.save();
+
+    const customerName = opp.contactId
+      ? `${opp.contactId.firstName} ${opp.contactId.lastName || ''}`.trim()
+      : 'Unknown';
+
+    await this.activitiesService.log(
+      `Modified opportunity requirements for "${customerName}": "${dto.requirement}"`,
+      ActivityType.OPPORTUNITY,
+    );
+
+    return opp;
   }
 }

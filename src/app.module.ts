@@ -32,6 +32,7 @@ import { LocationsModule } from './modules/locations/locations.module';
 import { BranchesModule } from './modules/branches/branches.module';
 import { FoldersModule } from './modules/folders/folders.module';
 import { SourcesModule } from './modules/sources/sources.module';
+import { PropertyTypesModule } from './modules/property-types/property-types.module';
 
 @Module({
   imports: [
@@ -78,6 +79,7 @@ import { SourcesModule } from './modules/sources/sources.module';
     BranchesModule,
     FoldersModule,
     SourcesModule,
+    PropertyTypesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

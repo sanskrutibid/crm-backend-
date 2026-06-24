@@ -52,13 +52,12 @@ export class UpdateOpportunityDto {
   purpose?: OpportunityPurpose;
 
   @ApiPropertyOptional({
-    example: OpportunityLookingFor.RESIDENTIAL_APARTMENT,
-    enum: OpportunityLookingFor,
+    example: 'Residential Apartment',
     description: 'Updated property type category',
   })
-  @IsEnum(OpportunityLookingFor)
+  @IsString()
   @IsOptional()
-  lookingFor?: OpportunityLookingFor;
+  lookingFor?: string;
 
   @ApiPropertyOptional({
     example: 50,
@@ -130,13 +129,12 @@ export class UpdateOpportunityDto {
   locality?: string;
 
   @ApiPropertyOptional({
-    example: OpportunityBedroom.BHK_2,
-    enum: OpportunityBedroom,
+    example: '2 BHK',
     description: 'Updated bedroom configuration',
   })
-  @IsEnum(OpportunityBedroom)
+  @IsString()
   @IsOptional()
-  bedroom?: OpportunityBedroom;
+  bedroom?: string;
 
   @ApiPropertyOptional({
     example: OpportunityFurnishing.FULLY_FURNISHED,

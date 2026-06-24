@@ -8,6 +8,8 @@ import { OpportunitiesService } from './opportunities.service';
 import { AuthModule } from '../auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { ActivitiesModule } from '../activities/activities.module';
+import { EmailsModule } from '../emails/emails.module';
+import { SmsModule } from '../sms/sms.module';
 
 @Module({
   imports: [
@@ -19,6 +21,8 @@ import { ActivitiesModule } from '../activities/activities.module';
     AuthModule,
     ConfigModule,
     ActivitiesModule,
+    EmailsModule,
+    SmsModule,
   ],
   controllers: [OpportunitiesController],
   providers: [OpportunitiesService],
