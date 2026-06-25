@@ -119,6 +119,12 @@ export class SiteVisit {
     index: true,
   })
   contactId?: string;
+
+  @Prop({ trim: true })
+  otp?: string;
+
+  @Prop({ type: Date })
+  otpExpiresAt?: Date;
 }
 
 export const SiteVisitSchema = SchemaFactory.createForClass(SiteVisit);

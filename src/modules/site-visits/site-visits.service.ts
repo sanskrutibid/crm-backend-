@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { SiteVisit, SiteVisitDocument } from './schemas/site-visit.schema';
@@ -147,10 +147,20 @@ export class SiteVisitsService implements OnModuleInit {
   ): Promise<SiteVisitDocument> {
     const assignee = createDto.assignee || defaultUserId;
     const createdBy = createDto.createdBy || defaultUserId;
+
+    let otp: string | null = null;
+    let otpExpiresAt: Date | null = null;
+    if (createDto.sendSmsNotification || createDto.sendEmailNotification) {
+      otp = Math.floor(100000 + Math.random() * 900000).toString();
+      otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    }
+
     const newVisit = new this.siteVisitModel({
       ...createDto,
       assignee,
       createdBy,
+      otp,
+      otpExpiresAt,
     });
     const saved = await newVisit.save();
 
@@ -295,7 +305,7 @@ export class SiteVisitsService implements OnModuleInit {
 
         await this.smsService.schedule({
           mobiles: combinedMobile,
-          message: smsMessage,
+          message: otp ? `${smsMessage}\nVerification OTP: ${otp}. This OTP is valid for 10 minutes.` : smsMessage,
           createdBy: createdBy && String(createdBy) !== 'undefined' ? String(createdBy) : undefined,
         });
       }
@@ -347,7 +357,7 @@ export class SiteVisitsService implements OnModuleInit {
         await this.emailsService.schedule({
           to: visitorEmail.trim(),
           subject: emailSubject,
-          body: emailBody,
+          body: otp ? `${emailBody}<br/><p><strong>Verification OTP:</strong> ${otp}</p><p>This OTP is valid for 10 minutes.</p>` : emailBody,
           createdBy: createdBy && String(createdBy) !== 'undefined' ? String(createdBy) : undefined,
         });
       }
@@ -597,5 +607,47 @@ export class SiteVisitsService implements OnModuleInit {
       ActivityType.SITE_VISIT,
       defaultUserId,
     );
+  }
+
+  async verifyOtp(id: string, otp: string): Promise<{ success: boolean; message: string }> {
+    const visit = await this.siteVisitModel.findById(id).exec();
+    if (!visit) {
+      throw new NotFoundException('Site Visit record not found');
+    }
+
+    if (!visit.otp) {
+      throw new BadRequestException('No active OTP found for this site visit');
+    }
+
+    if (visit.otpExpiresAt && new Date() > visit.otpExpiresAt) {
+      throw new BadRequestException('OTP has expired. Please update the visit to trigger a new one.');
+    }
+
+    if (visit.otp !== otp) {
+      throw new BadRequestException('Invalid OTP. Please check and try again.');
+    }
+
+    visit.visitStatus = 'Completed';
+    visit.otp = undefined;
+    visit.otpExpiresAt = undefined;
+    await visit.save();
+
+    // Sync status change with Lead if applicable
+    if (visit.leadId) {
+      try {
+        const lead = await this.leadModel.findById(visit.leadId).exec();
+        if (lead && lead.siteVisits) {
+          const match = lead.siteVisits.find(sv => sv.visitDate === visit.visitDate && sv.timeIn === visit.timeIn);
+          if (match) {
+            match.visitStatus = 'Completed';
+            await lead.save();
+          }
+        }
+      } catch (err) {
+        console.error('Failed to sync completed status to lead:', err);
+      }
+    }
+
+    return { success: true, message: 'OTP verified successfully. Site Visit completed.' };
   }
 }

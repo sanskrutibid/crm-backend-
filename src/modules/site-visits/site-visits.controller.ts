@@ -83,4 +83,11 @@ export class SiteVisitsController {
     await this.siteVisitsService.remove(id);
     return null;
   }
+
+  @Post(':id/verify-otp')
+  @ApiOperation({ summary: 'Verify OTP for a Site Visit' })
+  @ResponseMessage('OTP verified successfully')
+  async verifyOtp(@Param('id') id: string, @Body('otp') otp: string) {
+    return this.siteVisitsService.verifyOtp(id, otp);
+  }
 }
