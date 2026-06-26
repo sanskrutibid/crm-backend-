@@ -191,30 +191,41 @@ export class LeadsService implements OnModuleInit {
         lastName = nameParts.join(' ');
       }
 
-      const newContact = new this.contactModel({
-        salutation,
-        firstName,
-        lastName,
-        customerType: 'Customer',
-        contactType: 'Employee',
-        mobile: createLeadDto.mobile,
-        email: createLeadDto.email
-          ? createLeadDto.email.toLowerCase().trim()
-          : undefined,
-        companyName: createLeadDto.company,
-        source: createLeadDto.source || 'Website Form',
-        branch: createLeadDto.branch || 'Global Team',
-        assignedTo: assignedTo,
-      });
+      const parsedPhone = parseMobileAndCountryCode(createLeadDto.mobile);
 
-      const savedContact = await newContact.save();
-      targetContactId = savedContact._id.toString();
+      let targetContact = await this.contactModel.findOne({
+        mobile: parsedPhone.mobile,
+        countryCode: parsedPhone.countryCode,
+        isDeleted: { $ne: true }
+      }).exec();
 
-      await this.activitiesService.log(
-        `Created new contact "${createLeadDto.name}" on-the-fly during lead creation`,
-        ActivityType.LEAD,
-        defaultUserId,
-      );
+      if (!targetContact) {
+        const newContact = new this.contactModel({
+          salutation,
+          firstName,
+          lastName,
+          customerType: 'Customer',
+          contactType: 'Employee',
+          countryCode: parsedPhone.countryCode,
+          mobile: parsedPhone.mobile,
+          email: createLeadDto.email
+            ? createLeadDto.email.toLowerCase().trim()
+            : undefined,
+          companyName: createLeadDto.company,
+          source: createLeadDto.source || 'Website Form',
+          branch: createLeadDto.branch || 'Global Team',
+          assignedTo: assignedTo,
+        });
+
+        targetContact = await newContact.save();
+
+        await this.activitiesService.log(
+          `Created new contact "${createLeadDto.name}" on-the-fly during lead creation`,
+          ActivityType.LEAD,
+          defaultUserId,
+        );
+      }
+      targetContactId = targetContact._id.toString();
     } else {
       if (!targetContactId) {
         throw new BadRequestException(
@@ -1716,14 +1727,20 @@ export class LeadsService implements OnModuleInit {
     };
 
     for (const item of slice) {
-      const mobile = (item.Customer_Mobile || item.mobile || item['Mobile Number'] || '').toString().trim();
+      const rawMobile = (item.Customer_Mobile || item.mobile || item['Mobile Number'] || '').toString().trim();
       const firstName = (item.Customer_Name || item.firstName || item.name || item['Customer Name'] || '').toString().trim();
 
-      if (!firstName || !mobile) continue;
+      if (!firstName || !rawMobile) continue;
 
+      const parsedPhone = parseMobileAndCountryCode(rawMobile);
       const assignedToId = findUserId(item.assignedTo || item['Assigned To']);
 
-      let contact = await this.contactModel.findOne({ mobile, isDeleted: { $ne: true } }).exec();
+      let contact = await this.contactModel.findOne({
+        mobile: parsedPhone.mobile,
+        countryCode: parsedPhone.countryCode,
+        isDeleted: { $ne: true }
+      }).exec();
+
       if (!contact) {
         let salutation: string | undefined = undefined;
         let fName = firstName;
@@ -1750,7 +1767,8 @@ export class LeadsService implements OnModuleInit {
           salutation,
           firstName: fName,
           lastName: lName,
-          mobile,
+          countryCode: parsedPhone.countryCode,
+          mobile: parsedPhone.mobile,
           email: item.Customer_Email || item.email || item.Email,
           customerType: item.Customer_CustomerType || item.customerType || item['Customer Type'] || 'Customer',
           contactType: item.Customer_ContactType || item.contactType || item['Contact Type'] || 'Employee',
@@ -1874,4 +1892,40 @@ export class LeadsService implements OnModuleInit {
         : 'No duplicate leads found.'
     };
   }
+}
+
+function parseMobileAndCountryCode(rawMobile: string): { countryCode: string; mobile: string } {
+  const clean = (rawMobile || '').toString().trim().replace(/[-\s()]/g, '');
+
+  if (clean.startsWith('+')) {
+    if (clean.startsWith('+91')) {
+      return { countryCode: '+91', mobile: clean.substring(3) };
+    }
+    if (clean.startsWith('+1')) {
+      return { countryCode: '+1', mobile: clean.substring(2) };
+    }
+    if (clean.startsWith('+44')) {
+      return { countryCode: '+44', mobile: clean.substring(3) };
+    }
+    if (clean.startsWith('+971')) {
+      return { countryCode: '+971', mobile: clean.substring(4) };
+    }
+    
+    const match = clean.match(/^(\+\d{1,4})(\d{7,15})$/);
+    if (match) {
+      return { countryCode: match[1], mobile: match[2] };
+    }
+
+    return { countryCode: '+91', mobile: clean.replace('+', '') };
+  }
+
+  if (clean.length === 12 && clean.startsWith('91')) {
+    return { countryCode: '+91', mobile: clean.substring(2) };
+  }
+
+  if (clean.length === 10) {
+    return { countryCode: '+91', mobile: clean };
+  }
+
+  return { countryCode: '+91', mobile: clean };
 }

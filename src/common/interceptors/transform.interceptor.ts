@@ -26,9 +26,14 @@ export class TransformInterceptor<T> implements NestInterceptor<
   intercept(
     context: ExecutionContext,
     next: CallHandler,
-  ): Observable<Response<T>> {
+  ): Observable<any> {
     const httpContext = context.switchToHttp();
     const response = httpContext.getResponse();
+
+    // If response is already sent (e.g. manual file download), bypass mapping to avoid invalid payload type errors
+    if (response.sent || response.headersSent || response.raw?.headersSent) {
+      return next.handle();
+    }
 
     // Support both Fastify (reply.statusCode) and Express (res.statusCode)
     const statusCode = response.statusCode ?? response.raw?.statusCode ?? 200;

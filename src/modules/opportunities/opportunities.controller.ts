@@ -7,6 +7,8 @@ import {
   Patch,
   Post,
   Query,
+  Header,
+  Res,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -230,6 +232,31 @@ export class OpportunitiesController {
       Number(page),
       Number(limit),
     );
+  }
+
+  @Get('actions/download')
+  @Header('Content-Type', 'text/csv')
+  @Header('Content-Disposition', 'attachment; filename="opportunities.csv"')
+  @ApiOperation({ summary: 'Export and download CRM Opportunities in CSV format' })
+  async downloadExcel(@Query() query: QueryOpportunityDto, @Res() reply: any) {
+    const csvContent = await this.opportunitiesService.downloadExcel(query);
+    reply.send(csvContent);
+  }
+
+  @Post('actions/google-drive')
+  @ApiOperation({ summary: 'Export and upload CRM Opportunities to Google Drive' })
+  @ResponseMessage('Opportunities exported to Google Drive successfully')
+  async uploadToGoogleDrive(
+    @Body() body: { limit?: number; filters?: any },
+  ) {
+    return this.opportunitiesService.uploadToGoogleDrive(body.filters, body.limit);
+  }
+
+  @Post('actions/import')
+  @ApiOperation({ summary: 'Import opportunities in bulk from spreadsheet data' })
+  @ResponseMessage('Opportunities imported successfully')
+  async importOpportunities(@Body() opportunities: any[]) {
+    return this.opportunitiesService.importOpportunities(opportunities);
   }
 
   @Get(':id')

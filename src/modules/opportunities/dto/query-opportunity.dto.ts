@@ -248,4 +248,10 @@ export class QueryOpportunityDto {
   @Min(1)
   @IsOptional()
   limit?: number = 10;
+  @ApiPropertyOptional({
+    description: 'Filter by specific opportunity IDs (comma-separated)',
+  })
+  @IsString()
+  @IsOptional()
+  opportunityIds?: string;
 }

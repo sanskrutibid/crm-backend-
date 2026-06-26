@@ -70,30 +70,41 @@ export class ProjectsService {
         lastName = nameParts.join(' ');
       }
 
-      const newContact = new this.contactModel({
-        salutation,
-        firstName,
-        lastName,
-        customerType: 'Customer',
-        contactType: 'Employee',
-        mobile: createProjectDto.mobile,
-        email: createProjectDto.email
-          ? createProjectDto.email.toLowerCase().trim()
-          : undefined,
-        companyName: createProjectDto.company,
-        source: 'Project',
-        branch: createProjectDto.branch || 'Global Team',
-        assignedTo: assignedTo,
-      });
+      const parsedPhone = parseMobileAndCountryCode(createProjectDto.mobile);
 
-      const savedContact = await newContact.save();
-      targetContactId = savedContact._id.toString();
+      let targetContact = await this.contactModel.findOne({
+        mobile: parsedPhone.mobile,
+        countryCode: parsedPhone.countryCode,
+        isDeleted: { $ne: true }
+      }).exec();
 
-      await this.activitiesService.log(
-        `Created new contact "${createProjectDto.name}" on-the-fly during project creation`,
-        ActivityType.OPPORTUNITY, // General log category
-        defaultUserId,
-      );
+      if (!targetContact) {
+        const newContact = new this.contactModel({
+          salutation,
+          firstName,
+          lastName,
+          customerType: 'Customer',
+          contactType: 'Employee',
+          countryCode: parsedPhone.countryCode,
+          mobile: parsedPhone.mobile,
+          email: createProjectDto.email
+            ? createProjectDto.email.toLowerCase().trim()
+            : undefined,
+          companyName: createProjectDto.company,
+          source: 'Project',
+          branch: createProjectDto.branch || 'Global Team',
+          assignedTo: assignedTo,
+        });
+
+        targetContact = await newContact.save();
+
+        await this.activitiesService.log(
+          `Created new contact "${createProjectDto.name}" on-the-fly during project creation`,
+          ActivityType.OPPORTUNITY, // General log category
+          defaultUserId,
+        );
+      }
+      targetContactId = targetContact._id.toString();
     } else {
       if (!targetContactId) {
         throw new BadRequestException(
@@ -448,3 +459,40 @@ export class ProjectsService {
     );
   }
 }
+
+function parseMobileAndCountryCode(rawMobile: string): { countryCode: string; mobile: string } {
+  const clean = (rawMobile || '').toString().trim().replace(/[-\s()]/g, '');
+
+  if (clean.startsWith('+')) {
+    if (clean.startsWith('+91')) {
+      return { countryCode: '+91', mobile: clean.substring(3) };
+    }
+    if (clean.startsWith('+1')) {
+      return { countryCode: '+1', mobile: clean.substring(2) };
+    }
+    if (clean.startsWith('+44')) {
+      return { countryCode: '+44', mobile: clean.substring(3) };
+    }
+    if (clean.startsWith('+971')) {
+      return { countryCode: '+971', mobile: clean.substring(4) };
+    }
+    
+    const match = clean.match(/^(\+\d{1,4})(\d{7,15})$/);
+    if (match) {
+      return { countryCode: match[1], mobile: match[2] };
+    }
+
+    return { countryCode: '+91', mobile: clean.replace('+', '') };
+  }
+
+  if (clean.length === 12 && clean.startsWith('91')) {
+    return { countryCode: '+91', mobile: clean.substring(2) };
+  }
+
+  if (clean.length === 10) {
+    return { countryCode: '+91', mobile: clean };
+  }
+
+  return { countryCode: '+91', mobile: clean };
+}
+

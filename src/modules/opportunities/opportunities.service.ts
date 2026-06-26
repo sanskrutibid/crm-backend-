@@ -83,30 +83,41 @@ export class OpportunitiesService {
         lastName = nameParts.join(' ');
       }
 
-      const newContact = new this.contactModel({
-        salutation,
-        firstName,
-        lastName,
-        customerType: 'Customer',
-        contactType: 'Employee',
-        mobile: createOpportunityDto.mobile,
-        email: createOpportunityDto.email
-          ? createOpportunityDto.email.toLowerCase().trim()
-          : undefined,
-        companyName: createOpportunityDto.company,
-        source: createOpportunityDto.source || 'Website',
-        branch: createOpportunityDto.branch || 'Global Team',
-        assignedTo: assignedTo,
-      });
+      const parsedPhone = parseMobileAndCountryCode(createOpportunityDto.mobile);
 
-      const savedContact = await newContact.save();
-      targetContactId = savedContact._id.toString();
+      let targetContact = await this.contactModel.findOne({
+        mobile: parsedPhone.mobile,
+        countryCode: parsedPhone.countryCode,
+        isDeleted: { $ne: true }
+      }).exec();
 
-      await this.activitiesService.log(
-        `Created new contact "${createOpportunityDto.name}" on-the-fly during opportunity creation`,
-        ActivityType.OPPORTUNITY,
-        defaultUserId,
-      );
+      if (!targetContact) {
+        const newContact = new this.contactModel({
+          salutation,
+          firstName,
+          lastName,
+          customerType: 'Customer',
+          contactType: 'Employee',
+          countryCode: parsedPhone.countryCode,
+          mobile: parsedPhone.mobile,
+          email: createOpportunityDto.email
+            ? createOpportunityDto.email.toLowerCase().trim()
+            : undefined,
+          companyName: createOpportunityDto.company,
+          source: createOpportunityDto.source || 'Website',
+          branch: createOpportunityDto.branch || 'Global Team',
+          assignedTo: assignedTo,
+        });
+
+        targetContact = await newContact.save();
+
+        await this.activitiesService.log(
+          `Created new contact "${createOpportunityDto.name}" on-the-fly during opportunity creation`,
+          ActivityType.OPPORTUNITY,
+          defaultUserId,
+        );
+      }
+      targetContactId = targetContact._id.toString();
     } else {
       if (!targetContactId) {
         throw new BadRequestException(
@@ -245,6 +256,15 @@ export class OpportunitiesService {
     } = query;
 
     const filter: any = {};
+
+    if ((query as any).opportunityIds) {
+      const ids = Array.isArray((query as any).opportunityIds)
+        ? (query as any).opportunityIds
+        : (query as any).opportunityIds.split(',').map((id: any) => id.trim()).filter(Boolean);
+      if (ids.length > 0) {
+        filter._id = { $in: ids };
+      }
+    }
 
     // 1. Referenced Search mapping: Search across Contact name, email, mobile
     if (search) {
@@ -942,4 +962,459 @@ export class OpportunitiesService {
 
     return opp;
   }
+
+  async downloadExcel(query: any): Promise<string> {
+    const csvContent = await this.generateOpportunitiesCsv(query);
+    return csvContent;
+  }
+
+  async uploadToGoogleDrive(query: any, inputLimit?: number): Promise<any> {
+    const csvContent = await this.generateOpportunitiesCsv(query);
+    const fileName = `opportunities_export_${new Date().toISOString().slice(0, 10)}.csv`;
+    return this.uploadCsvToGoogleDrive(csvContent, fileName);
+  }
+
+  private async generateOpportunitiesCsv(query: any): Promise<string> {
+    const { opportunities } = await this.findAll({ ...query, limit: query.limit || 99999 });
+
+    const headers = [
+      'Opportunity ID',
+      'Customer Name',
+      'Mobile Number',
+      'Email',
+      'Request Date',
+      'Est Close Date',
+      'For (Purpose)',
+      'Looking For',
+      'Min Budget',
+      'Max Budget',
+      'Budget Unit',
+      'Min Area',
+      'Max Area',
+      'Area Unit',
+      'City',
+      'Locality',
+      'Bedroom',
+      'Furnishing',
+      'Transaction',
+      'Preferences',
+      'Property Age',
+      'Description',
+      'Internal Note',
+      'Stage/Purpose',
+      'Schedule Date',
+      'Schedule Time',
+      'Schedule Where',
+      'Schedule Remark',
+      'Keyword',
+      'Refer By',
+      'Folder',
+      'Source',
+      'Branch',
+      'Assigned To',
+      'Status',
+      'Created At',
+    ];
+
+    const rows = opportunities.map((o: any) => {
+      const contact = o.contactId || {};
+      const customerName = `${contact.salutation ? contact.salutation + ' ' : ''}${contact.firstName || ''} ${contact.lastName || ''}`.trim();
+      const mobileVal = contact.mobile || '';
+      const emailVal = contact.email || '';
+      const assignedToVal = o.assignedTo?.firstName || '';
+
+      return [
+        o.id || o._id?.toString() || '',
+        customerName || 'Unknown Customer',
+        mobileVal,
+        emailVal,
+        o.requestDate || '',
+        o.estCloseDate || '',
+        o.purpose || '',
+        o.lookingFor || '',
+        o.minBudget != null ? o.minBudget.toString() : '',
+        o.maxBudget != null ? o.maxBudget.toString() : '',
+        o.budgetUnit || '',
+        o.minArea != null ? o.minArea.toString() : '',
+        o.maxArea != null ? o.maxArea.toString() : '',
+        o.areaUnit || '',
+        o.city || '',
+        o.locality || '',
+        o.bedroom || '',
+        o.furnishing || '',
+        o.transaction || '',
+        o.purposePref || '',
+        o.propertyAge || '',
+        o.description || '',
+        o.internalNote || '',
+        o.schedulePurpose || '',
+        o.scheduleDate || '',
+        o.scheduleTime || '',
+        o.scheduleWhere || '',
+        o.scheduleRemark || '',
+        o.keyword || '',
+        o.referBy || '',
+        o.folder || '',
+        o.source || '',
+        o.branch || '',
+        assignedToVal,
+        o.status || '',
+        o.createdAt && !isNaN(new Date(o.createdAt).getTime()) ? new Date(o.createdAt).toISOString() : '',
+      ];
+    });
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map((r) =>
+        r.map((val) => `"${val.replace(/"/g, '""')}"`).join(','),
+      ),
+    ].join('\n');
+
+    return '\ufeff' + csvContent;
+  }
+
+  private async uploadCsvToGoogleDrive(csvContent: string, fileName: string): Promise<any> {
+    const clientId = process.env.GOOGLE_DRIVE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_DRIVE_CLIENT_SECRET;
+    const refreshToken = process.env.GOOGLE_DRIVE_REFRESH_TOKEN;
+
+    if (clientId && clientSecret && refreshToken) {
+      try {
+        const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            client_id: clientId,
+            client_secret: clientSecret,
+            refresh_token: refreshToken,
+            grant_type: 'refresh_token',
+          }),
+        });
+
+        if (!tokenResponse.ok) {
+          const errText = await tokenResponse.text();
+          throw new Error(`Google OAuth token refresh failed: ${errText}`);
+        }
+
+        const tokenData = (await tokenResponse.json()) as any;
+        const accessToken = tokenData.access_token;
+
+        const boundary = 'opportunities_upload_boundary_12345';
+        const metadata = {
+          name: fileName,
+          mimeType: 'text/csv',
+        };
+
+        const multipartBody = [
+          `--${boundary}`,
+          'Content-Type: application/json; charset=UTF-8',
+          '',
+          JSON.stringify(metadata),
+          `--${boundary}`,
+          'Content-Type: text/csv',
+          '',
+          csvContent,
+          `--${boundary}--`,
+          '',
+        ].join('\r\n');
+
+        const uploadResponse = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': `multipart/related; boundary=${boundary}`,
+          },
+          body: multipartBody,
+        });
+
+        if (!uploadResponse.ok) {
+          const errText = await uploadResponse.text();
+          throw new Error(`Google Drive upload failed: ${errText}`);
+        }
+
+        const uploadData = (await uploadResponse.json()) as any;
+        return {
+          success: true,
+          fileId: uploadData.id,
+          fileName: uploadData.name,
+          webViewLink: `https://drive.google.com/open?id=${uploadData.id}`,
+          isMock: false,
+        };
+      } catch (err) {
+        console.error('Real Google Drive upload failed, falling back to mock:', err);
+      }
+    }
+
+    try {
+      const fs = await import('fs');
+      const path = await import('path');
+      const backupsDir = path.join(process.cwd(), 'backups');
+      if (!fs.existsSync(backupsDir)) {
+        fs.mkdirSync(backupsDir, { recursive: true });
+      }
+
+      const backupFileName = `opportunities_drive_backup_${new Date().toISOString().replace(/[:.]/g, '-')}.csv`;
+      const filePath = path.join(backupsDir, backupFileName);
+      fs.writeFileSync(filePath, csvContent, 'utf-8');
+
+      const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
+      const downloadLink = `${backendUrl}/api/databackup/download/${backupFileName}`;
+
+      return {
+        success: true,
+        message: 'Google Drive credentials not set in .env. Saved locally in backups folder instead.',
+        fileName: backupFileName,
+        webViewLink: downloadLink,
+        isMock: true,
+      };
+    } catch (err: any) {
+      console.error('Google Drive export simulation failed:', err);
+      throw new Error(`Export to Google Drive failed: ${err.message}`);
+    }
+  }
+
+  async importOpportunities(opportunities: any[], defaultUserId?: string) {
+    const limit = 2000;
+    const slice = opportunities.slice(0, limit);
+    const createdOpportunities: any[] = [];
+
+    const defaultUser = await this.userModel.findOne().exec();
+    const fallbackUserId = defaultUserId || (defaultUser ? defaultUser._id.toString() : undefined);
+
+    const users = await this.userModel.find().exec();
+    const findUserId = (assignedVal: any): string | undefined => {
+      if (!assignedVal) return fallbackUserId;
+      const valStr = assignedVal.toString().trim();
+      if (!valStr) return fallbackUserId;
+
+      const isValidObjectId = /^[0-9a-fA-F]{24}$/.test(valStr);
+      if (isValidObjectId) {
+        return valStr;
+      }
+
+      const cleanVal = valStr.toLowerCase();
+      const foundUser = users.find(
+        (u) =>
+          u.firstName.toLowerCase() === cleanVal ||
+          u.email.toLowerCase() === cleanVal ||
+          `${u.firstName} ${u.lastName || ''}`.trim().toLowerCase() === cleanVal
+      );
+
+      return foundUser ? foundUser._id.toString() : fallbackUserId;
+    };
+
+    for (const item of slice) {
+      const rawMobile = (item.Customer_Mobile || item.mobile || item['Customer Mobile'] || '').toString().trim();
+      const name = (item.Customer_Name || item.name || item['Customer Name'] || '').toString().trim();
+
+      if (!name || !rawMobile) continue;
+
+      const parsedPhone = parseMobileAndCountryCode(rawMobile);
+      const assignedToId = findUserId(item.assignedTo || item['Assigned To']);
+
+      let contact = await this.contactModel.findOne({
+        mobile: parsedPhone.mobile,
+        countryCode: parsedPhone.countryCode,
+        isDeleted: { $ne: true }
+      }).exec();
+
+      if (!contact) {
+        let salutation: string | undefined = undefined;
+        let fName = name;
+        let lName: string | undefined = undefined;
+
+        const nameParts = name.split(/\s+/);
+        if (nameParts.length > 0) {
+          const firstPart = nameParts[0].replace(/\./g, '');
+          const salutations = ['mr', 'mrs', 'ms', 'dr', 'prof', 'sir'];
+          if (salutations.includes(firstPart.toLowerCase())) {
+            salutation = nameParts[0];
+            nameParts.shift();
+          }
+        }
+        if (nameParts.length > 0) {
+          fName = nameParts[0];
+          nameParts.shift();
+        }
+        if (nameParts.length > 0) {
+          lName = nameParts.join(' ');
+        }
+
+        contact = new this.contactModel({
+          salutation,
+          firstName: fName,
+          lastName: lName,
+          countryCode: parsedPhone.countryCode,
+          mobile: parsedPhone.mobile,
+          email: item.Customer_Email || item.email || item['Customer Email'] || '',
+          companyName: item.Customer_Company || item.company || item['Customer Company'] || '',
+          customerType: 'Customer',
+          contactType: 'Employee',
+          branch: item.Branch || item.branch || 'Global Team',
+          source: item.Source || item.source || 'Spreadsheet Import',
+          assignedTo: assignedToId,
+        });
+        await contact.save();
+      }
+
+      // Read requirement/details
+      const requestDate = item.Request_Date || item.requestDate || item['Request Date'] || new Date().toISOString().split('T')[0];
+      
+      let purposeVal = (item.For || item.purpose || item['For (Purpose)'] || 'Buy').toString().trim();
+      if (purposeVal.toLowerCase().includes('rent') || purposeVal.toLowerCase().includes('lease')) {
+        purposeVal = 'Rent/Lease';
+      } else if (purposeVal.toLowerCase().includes('pg')) {
+        purposeVal = 'PG';
+      } else if (purposeVal.toLowerCase().includes('joint')) {
+        purposeVal = 'Joint Ventures';
+      } else if (purposeVal.toLowerCase().includes('service')) {
+        purposeVal = 'Services';
+      } else if (purposeVal.toLowerCase().includes('re-dev') || purposeVal.toLowerCase().includes('redev')) {
+        purposeVal = 'Re-Development';
+      } else {
+        purposeVal = 'Buy';
+      }
+
+      const lookingFor = item.Looking_For || item.lookingFor || item['Looking For'] || 'Residential Apartment';
+      const minBudget = Number(item.Min_Budget || item.minBudget || item['Min Budget'] || 0);
+      const maxBudget = Number(item.Max_Budget || item.maxBudget || item['Max Budget'] || 0);
+      const budgetUnit = item.Budget_Unit || item.budgetUnit || item['Budget Unit'] || 'Lacs';
+      const minArea = Number(item.Min_Area || item.minArea || item['Min Area'] || 0);
+      const maxArea = Number(item.Max_Area || item.maxArea || item['Max Area'] || 0);
+      
+      let areaUnitVal = (item.Area_Unit || item.areaUnit || item['Area Unit'] || 'Sq.Ft.').toString().trim();
+      if (areaUnitVal.toLowerCase().includes('sq') && areaUnitVal.toLowerCase().includes('ft')) {
+        areaUnitVal = 'Sq.Ft.';
+      } else if (areaUnitVal.toLowerCase().includes('meter')) {
+        areaUnitVal = 'Sq.Meter';
+      } else if (areaUnitVal.toLowerCase().includes('ground')) {
+        areaUnitVal = 'Grounds';
+      } else if (areaUnitVal.toLowerCase().includes('aank')) {
+        areaUnitVal = 'Aankadam';
+      } else if (areaUnitVal.toLowerCase().includes('rood')) {
+        areaUnitVal = 'Rood';
+      } else {
+        areaUnitVal = 'Sq.Ft.';
+      }
+
+      const city = item.City || item.city || 'Global';
+      const locality = item.Locality || item.locality || 'Global';
+      const bedroom = item.Bedroom || item.bedroom || '';
+      
+      let furnishingVal = (item.Furnishing || item.furnishing || '').toString().trim();
+      if (furnishingVal) {
+        const cleanFurn = furnishingVal.toLowerCase();
+        if (cleanFurn.includes('fully')) furnishingVal = 'Fully Furnished';
+        else if (cleanFurn.includes('semi')) furnishingVal = 'Semi Furnished';
+        else if (cleanFurn.includes('un')) furnishingVal = 'UnFurnished';
+        else if (cleanFurn.includes('ready')) furnishingVal = 'Ready to Furnished';
+        else if (cleanFurn.includes('bare')) furnishingVal = 'Bareshell';
+        else furnishingVal = '';
+      }
+
+      const transaction = item.Transaction || item.transaction || '';
+      const purposePref = item.Preferences || item.preferences || item.purposePref || '';
+      const propertyAge = item.Property_Age || item.propertyAge || item['Property Age'] || '';
+      const description = item.Description || item.description || '';
+      const internalNote = item.Internal_Note || item.internalNote || item['Internal Note'] || '';
+      const schedulePurpose = item.Stage || item.schedulePurpose || item['Stage/Purpose'] || 'Site Visit';
+      const scheduleDate = item.Schedule_Date || item.scheduleDate || item['Schedule Date'] || new Date().toISOString().split('T')[0];
+      const scheduleTime = item.Schedule_Time || item.scheduleTime || item['Schedule Time'] || '12:00pm';
+      const scheduleWhere = item.Schedule_Where || item.scheduleWhere || item['Schedule Where'] || '';
+      const scheduleRemark = item.Schedule_Remark || item.scheduleRemark || item['Schedule Remark'] || '';
+      const keyword = item.Keyword || item.keyword || '';
+      const referBy = item.Refer_By || item.referBy || item['Refer By'] || '';
+      const folder = item.Folder || item.folder || '';
+      const source = item.Source || item.source || 'Spreadsheet Import';
+      const branch = item.Branch || item.branch || 'Global Team';
+      
+      let statusVal = (item.Status || item.status || 'In Progress').toString().trim();
+      if (statusVal) {
+        const cleanStatus = statusVal.toLowerCase();
+        if (cleanStatus.includes('won')) statusVal = 'Won';
+        else if (cleanStatus.includes('lost')) statusVal = 'Lost';
+        else statusVal = 'In Progress';
+      } else {
+        statusVal = 'In Progress';
+      }
+
+      const newOpportunity = new this.opportunityModel({
+        contactId: contact._id,
+        requestDate,
+        purpose: purposeVal,
+        lookingFor,
+        minBudget,
+        maxBudget,
+        budgetUnit,
+        minArea,
+        maxArea,
+        areaUnit: areaUnitVal,
+        city,
+        locality,
+        bedroom: bedroom || undefined,
+        furnishing: furnishingVal || undefined,
+        transaction: transaction || undefined,
+        purposePref: purposePref || undefined,
+        propertyAge: propertyAge || undefined,
+        description: description || undefined,
+        internalNote: internalNote || undefined,
+        schedulePurpose,
+        scheduleDate,
+        scheduleTime,
+        scheduleWhere: scheduleWhere || undefined,
+        scheduleRemark: scheduleRemark || undefined,
+        keyword: keyword || undefined,
+        referBy: referBy || undefined,
+        folder: folder || undefined,
+        source,
+        branch,
+        assignedTo: assignedToId,
+        status: statusVal,
+      });
+
+      await newOpportunity.save();
+      createdOpportunities.push(newOpportunity);
+    }
+
+    return {
+      success: true,
+      count: createdOpportunities.length,
+    };
+  }
+}
+
+function parseMobileAndCountryCode(rawMobile: string): { countryCode: string; mobile: string } {
+  const clean = (rawMobile || '').toString().trim().replace(/[-\s()]/g, '');
+
+  if (clean.startsWith('+')) {
+    if (clean.startsWith('+91')) {
+      return { countryCode: '+91', mobile: clean.substring(3) };
+    }
+    if (clean.startsWith('+1')) {
+      return { countryCode: '+1', mobile: clean.substring(2) };
+    }
+    if (clean.startsWith('+44')) {
+      return { countryCode: '+44', mobile: clean.substring(3) };
+    }
+    if (clean.startsWith('+971')) {
+      return { countryCode: '+971', mobile: clean.substring(4) };
+    }
+    
+    const match = clean.match(/^(\+\d{1,4})(\d{7,15})$/);
+    if (match) {
+      return { countryCode: match[1], mobile: match[2] };
+    }
+
+    return { countryCode: '+91', mobile: clean.replace('+', '') };
+  }
+
+  if (clean.length === 12 && clean.startsWith('91')) {
+    return { countryCode: '+91', mobile: clean.substring(2) };
+  }
+
+  if (clean.length === 10) {
+    return { countryCode: '+91', mobile: clean };
+  }
+
+  return { countryCode: '+91', mobile: clean };
 }
