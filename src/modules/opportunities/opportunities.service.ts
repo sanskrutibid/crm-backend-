@@ -583,7 +583,7 @@ export class OpportunitiesService {
         .countDocuments({
           ...todayFilter,
           purpose: {
-            $notin: [OpportunityPurpose.BUY, OpportunityPurpose.RENT_LEASE],
+            $nin: [OpportunityPurpose.BUY, OpportunityPurpose.RENT_LEASE],
           },
         })
         .exec(),
@@ -665,7 +665,7 @@ export class OpportunitiesService {
         .countDocuments({
           ...baseFilter,
           purpose: {
-            $notin: [OpportunityPurpose.BUY, OpportunityPurpose.RENT_LEASE],
+            $nin: [OpportunityPurpose.BUY, OpportunityPurpose.RENT_LEASE],
           },
         })
         .exec(),
