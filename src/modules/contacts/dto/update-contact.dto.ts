@@ -305,6 +305,14 @@ export class UpdateContactDto {
   skype?: string;
 
   @ApiPropertyOptional({
+    example: 'live:dayamati_linkdin',
+    description: 'Updated linkdin username handle',
+  })
+  @IsString()
+  @IsOptional()
+  linkdin?: string;
+
+  @ApiPropertyOptional({
     example: 'English',
     description: 'Updated Preferred contact language',
   })

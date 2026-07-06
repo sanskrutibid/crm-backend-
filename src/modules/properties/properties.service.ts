@@ -254,7 +254,6 @@ export class PropertiesService implements OnModuleInit {
       filter.updatedAt = { $gte: new Date(updatedSince) };
     }
 
-    const total = await this.propertyModel.countDocuments(filter).exec();
     const sortObj = this.buildSortObject(sortBy, orderBy);
     let queryChain = this.propertyModel.find(filter).sort(sortObj);
 
@@ -262,9 +261,10 @@ export class PropertiesService implements OnModuleInit {
       queryChain = queryChain.skip((page - 1) * limit).limit(limit);
     }
 
-    const properties = await queryChain
-      .populate(['createdBy', 'assignedTo', 'ownerLandlord'])
-      .exec();
+    const [properties, total] = await Promise.all([
+      queryChain.populate(['createdBy', 'assignedTo', 'ownerLandlord']).exec(),
+      this.propertyModel.countDocuments(filter).exec(),
+    ]);
     return { properties, total };
   }
 
@@ -301,7 +301,6 @@ export class PropertiesService implements OnModuleInit {
       filter.updatedAt = { $gte: new Date(updatedSince) };
     }
 
-    const total = await this.propertyModel.countDocuments(filter).exec();
     const sortObj = this.buildSortObject(sortBy, orderBy);
     let queryChain = this.propertyModel.find(filter).sort(sortObj);
 
@@ -309,9 +308,10 @@ export class PropertiesService implements OnModuleInit {
       queryChain = queryChain.skip((page - 1) * limit).limit(limit);
     }
 
-    const properties = await queryChain
-      .populate(['createdBy', 'assignedTo', 'ownerLandlord'])
-      .exec();
+    const [properties, total] = await Promise.all([
+      queryChain.populate(['createdBy', 'assignedTo', 'ownerLandlord']).exec(),
+      this.propertyModel.countDocuments(filter).exec(),
+    ]);
     return { properties, total };
   }
 
@@ -351,8 +351,6 @@ export class PropertiesService implements OnModuleInit {
       filter.updatedAt = { $gte: new Date(updatedSince) };
     }
 
-    const total = await this.propertyModel.countDocuments(filter).exec();
-
     // Pagination bypass logic: If limit is >= 99999, return all matching records at once
     const sortObj = this.buildSortObject(sortBy, orderBy);
     let queryChain = this.propertyModel.find(filter).sort(sortObj);
@@ -361,9 +359,10 @@ export class PropertiesService implements OnModuleInit {
       queryChain = queryChain.skip((page - 1) * limit).limit(limit);
     }
 
-    const properties = await queryChain
-      .populate(['createdBy', 'assignedTo', 'ownerLandlord'])
-      .exec();
+    const [properties, total] = await Promise.all([
+      queryChain.populate(['createdBy', 'assignedTo', 'ownerLandlord']).exec(),
+      this.propertyModel.countDocuments(filter).exec(),
+    ]);
     return { properties, total };
   }
 

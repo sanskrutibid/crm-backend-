@@ -152,6 +152,9 @@ export class Contact {
   @Prop({ trim: true })
   skype?: string;
 
+  @Prop({ trim: true })
+  linkdin?: string;
+
   @Prop({ trim: true, default: 'English' })
   preferredLanguage?: string;
 
@@ -213,7 +216,7 @@ export class Contact {
   @Prop({ type: Boolean, default: false, index: true })
   isStarred: boolean;
 
-  @Prop({ trim: true })
+  @Prop({ trim: true, index: true })
   status?: string; // e.g. Active, Inactive, DND
 
   @Prop({ trim: true })
@@ -251,3 +254,5 @@ export class Contact {
 }
 
 export const ContactSchema = SchemaFactory.createForClass(Contact);
+ContactSchema.index({ createdAt: -1 });
+

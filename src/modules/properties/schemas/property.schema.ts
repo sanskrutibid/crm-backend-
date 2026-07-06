@@ -70,6 +70,7 @@ export class Property {
     required: false,
     enum: PropertyStatus,
     default: PropertyStatus.AVAILABLE,
+    index: true,
   })
   status?: PropertyStatus;
 

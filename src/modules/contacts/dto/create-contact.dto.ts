@@ -371,6 +371,14 @@ export class CreateContactDto {
   skype?: string;
 
   @ApiPropertyOptional({
+    example: 'live:dayamati_linkdin',
+    description: 'linkdin username handle',
+  })
+  @IsString()
+  @IsOptional()
+  linkdin?: string;
+
+  @ApiPropertyOptional({
     example: 'English',
     description: 'Preferred contact language',
     default: 'English',

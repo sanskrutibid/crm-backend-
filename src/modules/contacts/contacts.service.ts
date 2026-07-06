@@ -7,6 +7,8 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import * as dns from 'dns';
+import { promisify } from 'util';
 import {
   Contact,
   ContactDocument,
@@ -147,6 +149,57 @@ export class ContactsService implements OnModuleInit {
     return `GC${yy}${mm}${dd}-${hh}${min}${ss}-${rand}`;
   }
 
+  /**
+   * Validates if the email address is proper, non-dummy, and has valid MX DNS records.
+   */
+  private async checkEmailDeliverability(email: string): Promise<{ valid: boolean; reason?: string }> {
+    if (!email) return { valid: false, reason: 'Email address is required' };
+    const cleanEmail = email.trim().toLowerCase();
+
+    // 1. Basic regex check
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(cleanEmail)) {
+      return { valid: false, reason: 'Invalid email format' };
+    }
+
+    const [username, domain] = cleanEmail.split('@');
+
+    // 2. Check for common dummy usernames
+    const commonDummyUsernames = [
+      'test', 'demo', 'dummy', 'temp', 'fake', 'example', 'random', 'admin', 'user', 'guest', 'abc', 'xyz', 'sam'
+    ];
+    if (commonDummyUsernames.includes(username)) {
+      return { valid: false, reason: `"${username}" is a generic or dummy username` };
+    }
+
+    // Generic public email checks (Gmail requires >= 6 chars for usernames)
+    if (domain === 'gmail.com' && username.length < 6) {
+      return { valid: false, reason: 'Gmail usernames must be at least 6 characters long' };
+    }
+
+    // 3. Check for disposable domains
+    const disposableDomains = [
+      'mailinator.com', 'yopmail.com', 'tempmail.com', 'guerrillamail.com',
+      'dispostable.com', '10minutemail.com', 'trashmail.com', 'getairmail.com'
+    ];
+    if (disposableDomains.includes(domain)) {
+      return { valid: false, reason: 'Disposable email domains are not allowed' };
+    }
+
+    // 4. DNS MX record lookup
+    const resolveMxAsync = promisify(dns.resolveMx);
+    try {
+      const mxRecords = await resolveMxAsync(domain);
+      if (!mxRecords || mxRecords.length === 0) {
+        return { valid: false, reason: 'The domain does not have active mail servers (no MX records found)' };
+      }
+    } catch (err) {
+      return { valid: false, reason: `Unable to resolve mail server for domain: "${domain}"` };
+    }
+
+    return { valid: true };
+  }
+
   async create(
     createContactDto: CreateContactDto,
     defaultUserId?: string,
@@ -156,8 +209,18 @@ export class ContactsService implements OnModuleInit {
     const uniqueNumber =
       createContactDto.uniqueNumber || this.generateUniqueNumber();
 
+    // Auto-verify email status if email is provided and valid
+    let emailStatus = EmailStatus.PENDING;
+    if (createContactDto.email && createContactDto.email.trim()) {
+      const checkResult = await this.checkEmailDeliverability(createContactDto.email);
+      emailStatus = checkResult.valid ? EmailStatus.SAFE : EmailStatus.UNSAFE;
+    } else if (createContactDto.emailStatus) {
+      emailStatus = createContactDto.emailStatus;
+    }
+
     const newContact = new this.contactModel({
       ...createContactDto,
+      emailStatus,
       assignedTo,
       uniqueNumber,
       createdBy: defaultUserId,
@@ -313,22 +376,10 @@ export class ContactsService implements OnModuleInit {
       sortOption = { isStarred: sortDirection, createdAt: -1 };
     }
 
-    const total = await this.contactModel.countDocuments(filter).exec();
-
     // Calculate dynamic counts for today's and shortlisted contacts
     const now = new Date();
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
-    
-    const todayCount = await this.contactModel.countDocuments({
-      isDeleted: { $ne: true },
-      createdAt: { $gte: startOfToday, $lte: endOfToday }
-    }).exec();
-
-    const shortlistedCount = await this.contactModel.countDocuments({
-      isDeleted: { $ne: true },
-      isStarred: true
-    }).exec();
 
     // Pagination bypass logic: If limit is not specified, return all matching records at once.
     // If limit is specified and is >= 99999, return all matching records.
@@ -342,7 +393,19 @@ export class ContactsService implements OnModuleInit {
       queryChain.skip((pageNum - 1) * limit).limit(limit);
     }
 
-    const contacts = await queryChain.exec();
+    const [contacts, total, todayCount, shortlistedCount] = await Promise.all([
+      queryChain.exec(),
+      this.contactModel.countDocuments(filter).exec(),
+      this.contactModel.countDocuments({
+        isDeleted: { $ne: true },
+        createdAt: { $gte: startOfToday, $lte: endOfToday },
+      }).exec(),
+      this.contactModel.countDocuments({
+        isDeleted: { $ne: true },
+        isStarred: true,
+      }).exec(),
+    ]);
+
     return { contacts, total, todayCount, shortlistedCount };
   }
 
@@ -368,10 +431,16 @@ export class ContactsService implements OnModuleInit {
       throw new NotFoundException(`Contact with ID "${id}" not found`);
     }
 
+    const updateData = { ...updateContactDto };
+    if (updateData.email && updateData.email.trim()) {
+      const checkResult = await this.checkEmailDeliverability(updateData.email);
+      updateData.emailStatus = checkResult.valid ? EmailStatus.SAFE : EmailStatus.UNSAFE;
+    }
+
     const updatedContact = await this.contactModel
       .findOneAndUpdate(
         { _id: id, isDeleted: { $ne: true } },
-        updateContactDto,
+        updateData,
         { new: true },
       )
       .populate(['assignedTo', 'createdBy'])
@@ -1371,19 +1440,26 @@ export class ContactsService implements OnModuleInit {
       throw new BadRequestException('Email address is required');
     }
     const cleanEmail = email.trim().toLowerCase();
+
+    // Check deliverability - throws if invalid/dummy
+    const checkResult = await this.checkEmailDeliverability(cleanEmail);
+    if (!checkResult.valid) {
+      throw new BadRequestException(checkResult.reason || 'Invalid email address');
+    }
     
     // Generate a 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
 
-    // Upsert verification record
+    // Upsert verification record - marked as verified automatically
     await this.emailVerificationModel.findOneAndUpdate(
       { email: cleanEmail },
-      { otp, expiresAt, verified: false },
+      { otp, expiresAt, verified: true },
       { upsert: true, new: true }
     ).exec();
 
-    // Send the email with the OTP using EmailsService
+    // Do NOT send the email with the OTP using EmailsService, as requested: no OTP should be sent
+    /*
     await this.emailsService.schedule({
       to: cleanEmail,
       subject: 'Email Verification OTP',
@@ -1399,8 +1475,9 @@ export class ContactsService implements OnModuleInit {
         </div>
       `,
     });
+    */
 
-    return { success: true, message: 'OTP sent successfully' };
+    return { success: true, message: 'Email address auto-verified successfully' };
   }
 
   async verifyEmailOtp(email: string, otp: string) {
