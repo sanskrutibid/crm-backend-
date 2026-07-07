@@ -41,6 +41,7 @@
     "country-state-city": "^3.2.1",
     "fastify": "^5.8.5",
     "helmet": "^8.2.0",
+    "india-pincode-lookup": "^1.0.3",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.6.2",
     "morgan": "^1.10.1",

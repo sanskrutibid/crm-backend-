@@ -86,7 +86,50 @@ export class LocationsService implements OnModuleInit {
       })
       .select({ pincode: 1, locality: 1, _id: 0 })
       .exec();
-    return list;
+
+    const resultList = list.map(item => ({
+      pincode: item.pincode,
+      locality: item.locality,
+    }));
+
+    if (countryIso === 'IN' && city) {
+      try {
+        const pincodeData = require('india-pincode-lookup/pincodes.json');
+        const cityLower = city.trim().toLowerCase();
+
+        let apiList = pincodeData.filter(
+          (e: any) =>
+            e.districtName.toLowerCase() === cityLower ||
+            e.taluk.toLowerCase() === cityLower,
+        );
+
+        // If no exact district or taluk matches, fallback to matching officeName
+        if (apiList.length === 0) {
+          apiList = pincodeData.filter(
+            (e: any) => e.officeName.toLowerCase().includes(cityLower),
+          );
+        }
+
+        const apiListMapped = apiList.map((po: any) => ({
+          pincode: po.pincode.toString(),
+          locality: po.officeName,
+        }));
+
+        // Merge and deduplicate by combination of locality and pincode
+        const seen = new Set(resultList.map(item => `${item.locality.toLowerCase()}_${item.pincode}`));
+        for (const item of apiListMapped) {
+          const key = `${item.locality.toLowerCase()}_${item.pincode}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            resultList.push(item);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch pincodes from offline dataset:', err);
+      }
+    }
+
+    return resultList.sort((a, b) => a.locality.localeCompare(b.locality));
   }
 
   async validatePincode(
@@ -94,7 +137,52 @@ export class LocationsService implements OnModuleInit {
     city: string,
     pincode: string,
   ): Promise<{ isValid: boolean; locality?: string }> {
-    // Check if there are any pincodes mapped in our database for this city
+    if (countryIso === 'IN' && pincode) {
+      try {
+        const pincodeNum = Number(pincode.trim());
+        if (!isNaN(pincodeNum)) {
+          const pincodeData = require('india-pincode-lookup/pincodes.json');
+          const matches = pincodeData.filter((e: any) => e.pincode === pincodeNum);
+
+          if (matches.length > 0) {
+            // Find one that matches the city (district or taluk or officeName) or default to the first one
+            const cityLower = city.trim().toLowerCase();
+            const matchedPo = matches.find(
+              (po: any) =>
+                po.districtName.toLowerCase() === cityLower ||
+                po.taluk.toLowerCase() === cityLower ||
+                po.officeName.toLowerCase().includes(cityLower)
+            ) || matches[0];
+
+            return { isValid: true, locality: matchedPo.officeName };
+          }
+        }
+      } catch (err) {
+        console.error('Failed to validate pincode offline:', err);
+      }
+
+      // Fallback to online API
+      try {
+        const response = await fetch(`https://api.postalpincode.in/pincode/${pincode.trim()}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (Array.isArray(data) && data[0]?.Status === 'Success' && Array.isArray(data[0]?.PostOffice)) {
+            // Find one that matches the city or default to the first one
+            const matchedPo = data[0].PostOffice.find(
+              (po: any) =>
+                po.District.toLowerCase() === city.toLowerCase() ||
+                po.Block.toLowerCase() === city.toLowerCase() ||
+                po.Circle.toLowerCase() === city.toLowerCase()
+            ) || data[0].PostOffice[0];
+            return { isValid: true, locality: matchedPo.Name };
+          }
+        }
+      } catch (err) {
+        console.error('Failed to validate pincode via API fallback:', err);
+      }
+    }
+
+    // Fallback to database validation
     const hasPincodes = await this.locationModel
       .countDocuments({
         countryIso,
@@ -103,7 +191,6 @@ export class LocationsService implements OnModuleInit {
       .exec();
 
     if (hasPincodes === 0) {
-      // If we don't have database records for this city, consider it valid
       return { isValid: true };
     }
 
