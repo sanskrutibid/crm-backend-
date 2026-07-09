@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsOptional, IsString, IsInt, Min } from 'class-validator';
+import { IsEnum, IsOptional, IsString, IsInt, Min, IsArray } from 'class-validator';
 import { PropertyStatus } from '../schemas/property.schema';
 import { Type } from 'class-transformer';
 
@@ -82,4 +82,10 @@ export class QueryPropertyDto {
   @IsString()
   @IsOptional()
   orderBy?: 'Asc' | 'Desc' = 'Desc';
+}
+
+export class GroupDeletePropertiesDto {
+  @IsArray()
+  @IsString({ each: true })
+  propertyIds: string[];
 }

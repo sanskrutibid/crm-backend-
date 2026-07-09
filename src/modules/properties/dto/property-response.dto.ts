@@ -89,6 +89,12 @@ export class PropertyResponseDto {
   })
   propertyType?: string;
 
+  @ApiPropertyOptional({
+    example: 'Residential',
+    description: 'Property category (e.g. Residential, Commercial, etc.)',
+  })
+  category?: string;
+
   @ApiPropertyOptional({ example: 'Rent', description: 'Transaction type' })
   transaction?: string;
 

@@ -101,6 +101,9 @@ export class Property {
   propertyType?: string;
 
   @Prop({ required: false, trim: true })
+  category?: string;
+
+  @Prop({ required: false, trim: true })
   transaction?: string;
 
   @Prop({ required: false, trim: true })

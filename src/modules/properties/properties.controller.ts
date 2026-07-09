@@ -7,6 +7,8 @@ import {
   Patch,
   Post,
   Query,
+  Header,
+  Res,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -17,7 +19,7 @@ import {
 import { PropertiesService } from './properties.service';
 import { CreatePropertyDto } from './dto/create-property.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
-import { QueryPropertyDto } from './dto/query-property.dto';
+import { QueryPropertyDto, GroupDeletePropertiesDto } from './dto/query-property.dto';
 import { PropertyResponseDto } from './dto/property-response.dto';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
 
@@ -101,6 +103,38 @@ export class PropertiesController {
     @Body() updatePropertyDto: UpdatePropertyDto,
   ) {
     return this.propertiesService.update(id, updatePropertyDto);
+  }
+
+  @Get('actions/download')
+  @Header('Content-Type', 'text/csv')
+  @Header('Content-Disposition', 'attachment; filename="properties.csv"')
+  @ApiOperation({ summary: 'Export and download CRM Properties in CSV format' })
+  async downloadExcel(@Query() query: QueryPropertyDto, @Res() reply: any) {
+    const csvContent = await this.propertiesService.downloadExcel(query);
+    reply.send(csvContent);
+  }
+
+  @Post('actions/google-drive')
+  @ApiOperation({ summary: 'Export and upload CRM Properties to Google Drive' })
+  @ResponseMessage('Properties exported to Google Drive successfully')
+  async uploadToGoogleDrive(
+    @Body() body: { limit?: number; filters?: any },
+  ) {
+    return this.propertiesService.uploadToGoogleDrive(body.filters, body.limit);
+  }
+
+  @Post('actions/import')
+  @ApiOperation({ summary: 'Import properties in bulk from spreadsheet data' })
+  @ResponseMessage('Properties imported successfully')
+  async importProperties(@Body() properties: any[]) {
+    return this.propertiesService.importProperties(properties);
+  }
+
+  @Post('actions/group-delete')
+  @ApiOperation({ summary: 'Bulk delete properties matching selection or filters' })
+  @ResponseMessage('Properties bulk deleted successfully')
+  async groupDelete(@Body() groupDeleteDto: GroupDeletePropertiesDto) {
+    return this.propertiesService.groupDelete(groupDeleteDto);
   }
 
   @Delete(':id')

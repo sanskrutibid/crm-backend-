@@ -125,6 +125,14 @@ export class CreatePropertyDto {
   @IsOptional()
   propertyType?: string;
 
+  @ApiPropertyOptional({
+    example: 'Residential',
+    description: 'Property category (e.g. Residential, Commercial, etc.)',
+  })
+  @IsString()
+  @IsOptional()
+  category?: string;
+
   @ApiPropertyOptional({ example: 'Rent', description: 'Transaction type' })
   @IsString()
   @IsOptional()

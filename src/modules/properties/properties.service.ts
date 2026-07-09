@@ -9,15 +9,21 @@ import {
 } from './schemas/property.schema';
 import { CreatePropertyDto } from './dto/create-property.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
-import { QueryPropertyDto } from './dto/query-property.dto';
+import { QueryPropertyDto, GroupDeletePropertiesDto } from './dto/query-property.dto';
 import { ActivitiesService } from '../activities/activities.service';
 import { ActivityType } from '../activities/schemas/activity.schema';
+import { Contact, ContactDocument } from '../contacts/schemas/contact.schema';
+import { User, UserDocument } from '../users/schemas/user.schema';
 
 @Injectable()
 export class PropertiesService implements OnModuleInit {
   constructor(
     @InjectModel(Property.name)
     private readonly propertyModel: Model<PropertyDocument>,
+    @InjectModel(Contact.name)
+    private readonly contactModel: Model<ContactDocument>,
+    @InjectModel(User.name)
+    private readonly userModel: Model<UserDocument>,
     private readonly activitiesService: ActivitiesService,
   ) {}
 
@@ -414,4 +420,309 @@ export class PropertiesService implements OnModuleInit {
       ActivityType.PROPERTY,
     );
   }
+
+  async groupDelete(dto: GroupDeletePropertiesDto): Promise<{ success: boolean; count: number }> {
+    const { propertyIds } = dto;
+    if (!propertyIds || propertyIds.length === 0) {
+      return { success: true, count: 0 };
+    }
+    const result = await this.propertyModel.deleteMany({ _id: { $in: propertyIds } }).exec();
+    await this.activitiesService.log(
+      `Bulk deleted ${result.deletedCount} properties from database`,
+      ActivityType.PROPERTY,
+    );
+    return { success: true, count: result.deletedCount };
+  }
+
+  async downloadExcel(query: QueryPropertyDto): Promise<string> {
+    return this.generatePropertiesCsv(query);
+  }
+
+  async uploadToGoogleDrive(query: any, inputLimit?: number): Promise<any> {
+    const csvContent = await this.generatePropertiesCsv(query);
+    const fileName = `properties_export_${new Date().toISOString().slice(0, 10)}.csv`;
+    return this.uploadCsvToGoogleDrive(csvContent, fileName);
+  }
+
+  private async generatePropertiesCsv(query: any): Promise<string> {
+    const { properties } = await this.findAll({ ...query, limit: query.limit || 99999 });
+
+    const headers = [
+      'Property ID',
+      'Property Name',
+      'Owner Name',
+      'Location',
+      'Property Type',
+      'Category',
+      'Transaction',
+      'Price',
+      'Area (Sq. Ft.)',
+      'Builder',
+      'Status',
+      'Created At',
+    ];
+
+    const rows = properties.map((p: any) => {
+      const owner = p.ownerLandlord || {};
+      const ownerName = owner.firstName
+        ? `${owner.firstName} ${owner.lastName || ''}`.trim()
+        : (typeof p.ownerLandlord === 'string' ? p.ownerLandlord : 'Unknown');
+
+      return [
+        p.id || p._id?.toString() || '',
+        p.name || '',
+        ownerName,
+        p.location || p.address || '',
+        p.propertyType || '',
+        p.category || '',
+        p.transaction || '',
+        p.price || '',
+        p.sqft != null ? p.sqft.toString() : '',
+        p.builder || '',
+        p.status || '',
+        p.createdAt && !isNaN(new Date(p.createdAt).getTime()) ? new Date(p.createdAt).toISOString() : '',
+      ];
+    });
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map((r) =>
+        r.map((val) => `"${val.replace(/"/g, '""')}"`).join(','),
+      ),
+    ].join('\n');
+
+    return '\ufeff' + csvContent;
+  }
+
+  private async uploadCsvToGoogleDrive(csvContent: string, fileName: string): Promise<any> {
+    const clientId = process.env.GOOGLE_DRIVE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_DRIVE_CLIENT_SECRET;
+    const refreshToken = process.env.GOOGLE_DRIVE_REFRESH_TOKEN;
+
+    if (clientId && clientSecret && refreshToken) {
+      try {
+        const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            client_id: clientId,
+            client_secret: clientSecret,
+            refresh_token: refreshToken,
+            grant_type: 'refresh_token',
+          }),
+        });
+
+        if (!tokenResponse.ok) {
+          const errText = await tokenResponse.text();
+          throw new Error(`Google OAuth token refresh failed: ${errText}`);
+        }
+
+        const tokenData = (await tokenResponse.json()) as any;
+        const accessToken = tokenData.access_token;
+
+        const metadata = {
+          name: fileName,
+          mimeType: 'text/csv',
+        };
+
+        const boundary = 'foo_bar_baz';
+        const delimiter = `\r\n--${boundary}\r\n`;
+        const closeDelimiter = `\r\n--${boundary}--\r\n`;
+
+        const multipartBody =
+          delimiter +
+          'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+          JSON.stringify(metadata) +
+          delimiter +
+          'Content-Type: text/csv; charset=UTF-8\r\n\r\n' +
+          csvContent +
+          closeDelimiter;
+
+        const uploadResponse = await fetch(
+          'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              'Content-Type': `multipart/related; boundary=${boundary}`,
+              'Content-Length': multipartBody.length.toString(),
+            },
+            body: multipartBody,
+          },
+        );
+
+        if (!uploadResponse.ok) {
+          const errText = await uploadResponse.text();
+          throw new Error(`Google Drive upload failed: ${errText}`);
+        }
+
+        const fileData = (await uploadResponse.json()) as any;
+        return {
+          success: true,
+          message: 'File successfully uploaded to Google Drive!',
+          fileId: fileData.id,
+        };
+      } catch (err: any) {
+        console.error('Google Drive export simulation failed:', err);
+        throw new Error(`Export to Google Drive failed: ${err.message}`);
+      }
+    } else {
+      console.log('Google Drive config missing. Simulating file upload...');
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      return {
+        success: true,
+        message: 'Google Drive configuration missing. Simulated file export successfully!',
+        fileId: 'simulated_drive_file_id_12345',
+      };
+    }
+  }
+
+  async importProperties(properties: any[], defaultUserId?: string): Promise<{ success: boolean; count: number }> {
+    const limit = 2000;
+    const slice = properties.slice(0, limit);
+    const createdProperties: any[] = [];
+
+    const defaultUser = await this.userModel.findOne().exec();
+    const fallbackUserId = defaultUserId || (defaultUser ? defaultUser._id.toString() : undefined);
+
+    const users = await this.userModel.find().exec();
+    const findUserId = (assignedVal: any): string | undefined => {
+      if (!assignedVal) return fallbackUserId;
+      const valStr = assignedVal.toString().trim();
+      if (!valStr) return fallbackUserId;
+
+      const isValidObjectId = /^[0-9a-fA-F]{24}$/.test(valStr);
+      if (isValidObjectId) {
+        return valStr;
+      }
+
+      const cleanVal = valStr.toLowerCase();
+      const foundUser = users.find(
+        (u) =>
+          u.firstName.toLowerCase() === cleanVal ||
+          u.email.toLowerCase() === cleanVal ||
+          `${u.firstName} ${u.lastName || ''}`.trim().toLowerCase() === cleanVal
+      );
+
+      return foundUser ? foundUser._id.toString() : fallbackUserId;
+    };
+
+    for (const item of slice) {
+      const rawMobile = (item.Owner_Mobile || item.Customer_Mobile || item.mobile || item['Customer Mobile'] || item['Owner Mobile'] || '').toString().trim();
+      const name = (item.Owner_Name || item.Customer_Name || item.name || item['Customer Name'] || item['Owner Name'] || '').toString().trim();
+
+      if (!name || !rawMobile) continue;
+
+      const parsedPhone = parseMobileAndCountryCode(rawMobile);
+      const assignedToId = findUserId(item.assignedTo || item['Assigned To']);
+
+      let contact = await this.contactModel.findOne({
+        mobile: parsedPhone.mobile,
+        countryCode: parsedPhone.countryCode,
+        isDeleted: { $ne: true }
+      }).exec();
+
+      if (!contact) {
+        let salutation: string | undefined = undefined;
+        let fName = name;
+        let lName: string | undefined = undefined;
+
+        const nameParts = name.split(/\s+/);
+        if (nameParts.length > 0) {
+          const firstPart = nameParts[0].replace(/\./g, '');
+          const salutations = ['mr', 'mrs', 'ms', 'dr', 'prof', 'sir'];
+          if (salutations.includes(firstPart.toLowerCase())) {
+            salutation = nameParts[0];
+            nameParts.shift();
+          }
+        }
+        if (nameParts.length > 0) {
+          fName = nameParts[0];
+          nameParts.shift();
+        }
+        if (nameParts.length > 0) {
+          lName = nameParts.join(' ');
+        }
+
+        contact = new this.contactModel({
+          salutation,
+          firstName: fName,
+          lastName: lName,
+          countryCode: parsedPhone.countryCode,
+          mobile: parsedPhone.mobile,
+          email: item.Customer_Email || item.email || item['Customer Email'] || item.Owner_Email || item['Owner Email'] || '',
+          companyName: item.Customer_Company || item.company || item['Customer Company'] || '',
+          customerType: 'Customer',
+          contactType: 'Employee',
+          branch: item.Branch || item.branch || 'Global Team',
+          source: item.Source || item.source || 'Spreadsheet Import',
+          assignedTo: assignedToId,
+        });
+        await contact.save();
+      }
+
+      const propertyPayload: any = {
+        name: item.Property_Name || item.name || item['Property Name'] || item.title || 'Unnamed Property',
+        location: item.Location || item.location || item.address || item.Address || 'Unknown Location',
+        propertyType: item.Property_Type || item.propertyType || item['Property Type'] || 'Flat/Apartment',
+        category: item.Category || item.category || item.Category_Property || item['Category'] || 'Residential',
+        transaction: item.Transaction || item.transaction || 'New',
+        price: item.Price || item.price || '',
+        sqft: Number(item.Sqft || item.sqft || item['Area (Sq. Ft.)'] || item.area || 0),
+        status: item.Status || item.status || 'Available',
+        builder: item.Builder || item.builder || '',
+        ownerLandlord: contact ? contact._id.toString() : undefined,
+        createdBy: assignedToId,
+        assignedTo: assignedToId,
+        description: item.Description || item.description || '',
+      };
+
+      const newProperty = new this.propertyModel(propertyPayload);
+      const savedProperty = await newProperty.save();
+      createdProperties.push(savedProperty);
+    }
+
+    await this.activitiesService.log(
+      `Bulk imported ${createdProperties.length} properties via Spreadsheet`,
+      ActivityType.PROPERTY,
+    );
+
+    return { success: true, count: createdProperties.length };
+  }
+}
+
+function parseMobileAndCountryCode(rawMobile: string): { countryCode: string; mobile: string } {
+  const clean = (rawMobile || '').toString().trim().replace(/[-\s()]/g, '');
+
+  if (clean.startsWith('+')) {
+    if (clean.startsWith('+91')) {
+      return { countryCode: '+91', mobile: clean.substring(3) };
+    }
+    if (clean.startsWith('+1')) {
+      return { countryCode: '+1', mobile: clean.substring(2) };
+    }
+    if (clean.startsWith('+44')) {
+      return { countryCode: '+44', mobile: clean.substring(3) };
+    }
+    if (clean.startsWith('+971')) {
+      return { countryCode: '+971', mobile: clean.substring(4) };
+    }
+    
+    const match = clean.match(/^(\+\d{1,4})(\d{7,15})$/);
+    if (match) {
+      return { countryCode: match[1], mobile: match[2] };
+    }
+
+    return { countryCode: '+91', mobile: clean.replace('+', '') };
+  }
+
+  if (clean.length === 12 && clean.startsWith('91')) {
+    return { countryCode: '+91', mobile: clean.substring(2) };
+  }
+
+  if (clean.length === 10) {
+    return { countryCode: '+91', mobile: clean };
+  }
+
+  return { countryCode: '+91', mobile: clean };
 }

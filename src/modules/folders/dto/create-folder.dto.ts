@@ -28,4 +28,8 @@ export class CreateFolderDto {
   @IsOptional()
   @IsBoolean()
   smartFolder?: boolean;
+
+  @IsOptional()
+  @IsString()
+  categoryProperty?: string;
 }

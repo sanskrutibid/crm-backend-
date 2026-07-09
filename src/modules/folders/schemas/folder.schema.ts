@@ -35,6 +35,9 @@ export class Folder {
 
   @Prop({ type: Boolean, default: false })
   smartFolder: boolean;
+
+  @Prop({ required: false, trim: true })
+  categoryProperty?: string;
 }
 
 export const FolderSchema = SchemaFactory.createForClass(Folder);
