@@ -8,6 +8,7 @@ import { ProjectsService } from './projects.service';
 import { AuthModule } from '../auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { ActivitiesModule } from '../activities/activities.module';
+import { EmailsModule } from '../emails/emails.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { ActivitiesModule } from '../activities/activities.module';
     AuthModule,
     ConfigModule,
     ActivitiesModule,
+    EmailsModule,
   ],
   controllers: [ProjectsController],
   providers: [ProjectsService],

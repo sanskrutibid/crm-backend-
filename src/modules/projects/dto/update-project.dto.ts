@@ -348,4 +348,44 @@ export class UpdateProjectDto {
   @IsEnum(ProjectStatus)
   @IsOptional()
   status?: ProjectStatus;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  completionDate?: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  possession?: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  possessionMonth?: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  possessionYear?: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  preferName?: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  preferredFacls?: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  zoneNumber?: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  title?: string;
 }

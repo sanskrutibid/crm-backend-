@@ -16,8 +16,10 @@ import { User, UserDocument } from '../users/schemas/user.schema';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { QueryProjectDto } from './dto/query-project.dto';
+import { SendProjectProposalDto } from './dto/send-project-proposal.dto';
 import { ActivitiesService } from '../activities/activities.service';
 import { ActivityType } from '../activities/schemas/activity.schema';
+import { EmailsService } from '../emails/emails.service';
 
 @Injectable()
 export class ProjectsService {
@@ -28,6 +30,7 @@ export class ProjectsService {
     private readonly contactModel: Model<ContactDocument>,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     private readonly activitiesService: ActivitiesService,
+    private readonly emailsService: EmailsService,
   ) {}
 
   /**
@@ -457,6 +460,184 @@ export class ProjectsService {
       `Deleted project profile: "${project.projectName}"`,
       ActivityType.OPPORTUNITY,
     );
+  }
+
+  async importProjects(projects: any[], defaultUserId?: string): Promise<{ success: boolean; count: number }> {
+    const limit = 2000;
+    const slice = projects.slice(0, limit);
+    const createdProjects: any[] = [];
+
+    const defaultUser = await this.userModel.findOne().exec();
+    const fallbackUserId = defaultUserId || (defaultUser ? defaultUser._id.toString() : undefined);
+
+    const users = await this.userModel.find().exec();
+    const findUserId = (assignedVal: any): string | undefined => {
+      if (!assignedVal) return fallbackUserId;
+      const valStr = assignedVal.toString().trim();
+      if (!valStr) return fallbackUserId;
+
+      const isValidObjectId = /^[0-9a-fA-F]{24}$/.test(valStr);
+      if (isValidObjectId) {
+        return valStr;
+      }
+
+      const cleanVal = valStr.toLowerCase();
+      const foundUser = users.find(
+        (u) =>
+          u.firstName.toLowerCase() === cleanVal ||
+          u.email.toLowerCase() === cleanVal ||
+          `${u.firstName} ${u.lastName || ''}`.trim().toLowerCase() === cleanVal
+      );
+
+      return foundUser ? foundUser._id.toString() : fallbackUserId;
+    };
+
+    for (const item of slice) {
+      const rawMobile = (item.Customer_Mobile || item.Customer_Phone || item.Owner_Mobile || item.mobile || '').toString().trim();
+      const name = (item.Customer_Name || item.Owner_Name || item.name || '').toString().trim();
+
+      if (!name || !rawMobile) continue;
+
+      const parsedPhone = parseMobileAndCountryCode(rawMobile);
+      const assignedToId = findUserId(item.EmployeeId || item.Customer_EmployeeId || item.assignedTo);
+
+      let contact = await this.contactModel.findOne({
+        mobile: parsedPhone.mobile,
+        countryCode: parsedPhone.countryCode,
+        isDeleted: { $ne: true }
+      }).exec();
+
+      if (!contact) {
+        let salutation = item.Customer_Title || undefined;
+        let fName = name;
+        let lName: string | undefined = undefined;
+
+        const nameParts = name.split(/\s+/);
+        if (nameParts.length > 0) {
+          const firstPart = nameParts[0].replace(/\./g, '');
+          const salutations = ['mr', 'mrs', 'ms', 'dr', 'prof', 'sir'];
+          if (salutations.includes(firstPart.toLowerCase())) {
+            salutation = nameParts[0];
+            nameParts.shift();
+          }
+        }
+        if (nameParts.length > 0) {
+          fName = nameParts[0];
+          nameParts.shift();
+        }
+        if (nameParts.length > 0) {
+          lName = nameParts.join(' ');
+        }
+
+        contact = new this.contactModel({
+          salutation,
+          firstName: fName,
+          lastName: lName,
+          countryCode: parsedPhone.countryCode,
+          mobile: parsedPhone.mobile,
+          email: item.Customer_Email || '',
+          companyName: item.Customer_BusinessName || item.Customer_OfficeName || '',
+          businessDomain: item.Customer_BusinessType || '',
+          designation: item.Customer_Designation || '',
+          professionalAddress: item.Customer_AddressName || '',
+          pincode: item.Customer_PinCode || '',
+          dob: item.Customer_DOBDate || '',
+          anniversary: item.Customer_AnniversaryDate || '',
+          sendSmsGreeting: String(item.Customer_IsSmsNotification).toLowerCase() === 'no' ? false : true,
+          sendEmailGreeting: String(item.Customer_IsEmailNotification).toLowerCase() === 'no' ? false : true,
+          customerRemark: item.Customer_Remark || '',
+          source: item.Customer_SourceId || 'Spreadsheet Import',
+          branch: item.Customer_BranchId || 'Global Team',
+          assignedTo: assignedToId,
+          folder: item.Customer_FolderName || '',
+          website: item.Customer_Website || '',
+          faxNumber: item.Customer_FaxNumber || '',
+          professionalLocality: item.Customer_ServiceLocation || '',
+          city: item.Customer_CityId || '',
+          customerType: 'Customer',
+          contactType: 'Employee',
+          uniqueNumber: item.Customer_UID || item.Customer_No || '',
+          isConfidential: String(item.Customer_IsSecure).toLowerCase() === 'yes' ? true : false,
+          visibility: String(item.Customer_Private).toLowerCase() === 'yes' ? 'Private' : 'Branch',
+        });
+        await contact.save();
+      }
+
+      const projectPayload: any = {
+        contactId: contact._id.toString(),
+        projectName: item.ProjectName || item.ProjectDisplayName || 'Unnamed Project',
+        launchDate: item.StartDate || new Date().toISOString().slice(0, 10),
+        completionDate: item.EndDate || '',
+        reraNumber: item.RefNumber || '',
+        zoneNumber: item.ZoneNumber || '',
+        title: item.Title || '',
+        description: item.Description || '',
+        specification: item.Specifications || '',
+        buildingPremises: item.BuildingName || '',
+        streetName: item.StreetName || '',
+        locality: item.Location || 'Unknown Locality',
+        city: item.CityId || 'Unknown City',
+        address: item.AddressName || '',
+        pinCode: (item.PinCode || '').toString(),
+        landmark: item.LandMark || '',
+        remark: item.Remark || '',
+        transactionType: item.TransactionType || 'New',
+        possession: item.Possession || '',
+        possessionMonth: item.PossessionMonth || '',
+        possessionYear: item.PossessionYear || '',
+        branch: item.BranchId || 'Global Team',
+        assignedTo: assignedToId,
+        folder: item.PreferName || '',
+        websiteKeywords: item.WebsiteKeyword || '',
+        preferredFacls: item.Preferred_Facls || '',
+        createdBy: assignedToId,
+        status: ProjectStatus.AVAILABLE,
+        visibility: ProjectVisibility.PRIVATE,
+      };
+
+      const newProject = new this.projectModel(projectPayload);
+      const savedProject = await newProject.save();
+      createdProjects.push(savedProject);
+    }
+
+    await this.activitiesService.log(
+      `Bulk imported ${createdProjects.length} projects via Spreadsheet`,
+      ActivityType.OPPORTUNITY,
+    );
+
+    return { success: true, count: createdProjects.length };
+  }
+
+  async sendProposal(id: string, dto: SendProjectProposalDto, defaultUserId?: string) {
+    const project = await this.projectModel.findById(id).populate('contactId').exec();
+    if (!project) {
+      throw new NotFoundException(`Project with ID "${id}" not found`);
+    }
+
+    if (!dto.to) {
+      throw new BadRequestException('Recipient email address is required');
+    }
+
+    await this.emailsService.schedule({
+      to: dto.to.trim(),
+      subject: dto.subject,
+      body: dto.body,
+      scheduleDate: dto.scheduleDate,
+      scheduleTime: dto.scheduleTime,
+      createdBy: defaultUserId,
+    });
+
+    const projectOwnerName = project.contactId
+      ? `${project.contactId.firstName} ${project.contactId.lastName || ''}`.trim()
+      : 'Unknown Owner';
+
+    await this.activitiesService.log(
+      `Sent Project Proposal for "${project.projectName}" to client: "${dto.to}" | Owner: "${projectOwnerName}" | Template: "${dto.template || 'None'}"`,
+      ActivityType.OPPORTUNITY,
+      defaultUserId,
+    );
+
+    return { success: true };
   }
 }
 

@@ -152,6 +152,30 @@ export class Project {
   @Prop({ trim: true })
   folder?: string; // Labeled "Folder"
 
+  @Prop({ trim: true })
+  completionDate?: string;
+
+  @Prop({ trim: true })
+  possession?: string;
+
+  @Prop({ trim: true })
+  possessionMonth?: string;
+
+  @Prop({ trim: true })
+  possessionYear?: string;
+
+  @Prop({ trim: true })
+  preferName?: string;
+
+  @Prop({ trim: true })
+  preferredFacls?: string;
+
+  @Prop({ trim: true })
+  zoneNumber?: string;
+
+  @Prop({ trim: true })
+  title?: string;
+
   @Prop({ required: true, trim: true, index: true })
   branch: string; // Labeled "Branch*"
 

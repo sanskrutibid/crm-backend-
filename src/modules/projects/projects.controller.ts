@@ -18,6 +18,7 @@ import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { QueryProjectDto } from './dto/query-project.dto';
+import { SendProjectProposalDto } from './dto/send-project-proposal.dto';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
 import { ProjectStatus } from './schemas/project.schema';
 
@@ -115,5 +116,22 @@ export class ProjectsController {
   async remove(@Param('id') id: string) {
     await this.projectsService.remove(id);
     return null;
+  }
+
+  @Post('actions/import')
+  @ApiOperation({ summary: 'Import projects in bulk from spreadsheet data' })
+  @ResponseMessage('Projects imported successfully')
+  async importProjects(@Body() projects: any[]) {
+    return this.projectsService.importProjects(projects);
+  }
+
+  @Post(':id/actions/send-proposal')
+  @ApiOperation({ summary: 'Send project proposal email' })
+  @ResponseMessage('Proposal successfully sent')
+  async sendProposal(
+    @Param('id') id: string,
+    @Body() dto: SendProjectProposalDto,
+  ) {
+    return this.projectsService.sendProposal(id, dto);
   }
 }
