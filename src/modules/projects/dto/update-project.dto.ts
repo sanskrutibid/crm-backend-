@@ -388,4 +388,13 @@ export class UpdateProjectDto {
   @IsString()
   @IsOptional()
   title?: string;
+
+  @ApiPropertyOptional({
+    type: [Object],
+    description: 'Project unit/plan configurations',
+    default: [],
+  })
+  @IsArray()
+  @IsOptional()
+  plans?: any[];
 }

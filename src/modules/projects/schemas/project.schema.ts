@@ -208,6 +208,9 @@ export class Project {
   })
   status: ProjectStatus;
 
+  @Prop({ type: [Object], default: [] })
+  plans?: any[];
+
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: false })
   createdBy?: User;
 
