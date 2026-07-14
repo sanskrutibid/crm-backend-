@@ -208,6 +208,9 @@ export class Project {
   })
   status: ProjectStatus;
 
+  @Prop({ type: Boolean, default: false })
+  publishedOnWebsite?: boolean;
+
   @Prop({ type: [Object], default: [] })
   plans?: any[];
 

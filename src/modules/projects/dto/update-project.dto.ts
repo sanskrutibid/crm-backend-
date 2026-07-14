@@ -343,11 +343,19 @@ export class UpdateProjectDto {
   @ApiPropertyOptional({
     example: ProjectStatus.AVAILABLE,
     enum: ProjectStatus,
-    description: 'Project listing status',
+    description: 'Project listing status status',
   })
   @IsEnum(ProjectStatus)
   @IsOptional()
   status?: ProjectStatus;
+
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Whether the project is published on the website',
+  })
+  @IsBoolean()
+  @IsOptional()
+  publishedOnWebsite?: boolean;
 
   @ApiPropertyOptional()
   @IsString()

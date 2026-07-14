@@ -401,6 +401,15 @@ export class CreateProjectDto {
   @IsOptional()
   status?: ProjectStatus;
 
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Whether the project is published on the website',
+    default: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  publishedOnWebsite?: boolean;
+
   @ApiPropertyOptional()
   @IsString()
   @IsOptional()
