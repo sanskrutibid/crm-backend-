@@ -353,4 +353,20 @@ export class UpdateOpportunityDto {
   @IsEnum(OpportunityStatus)
   @IsOptional()
   status?: OpportunityStatus;
+
+  @ApiPropertyOptional({
+    example: 18.5204,
+    description: 'Updated latitude coordinate for geofence matching',
+  })
+  @IsNumber()
+  @IsOptional()
+  latitude?: number;
+
+  @ApiPropertyOptional({
+    example: 73.8567,
+    description: 'Updated longitude coordinate for geofence matching',
+  })
+  @IsNumber()
+  @IsOptional()
+  longitude?: number;
 }

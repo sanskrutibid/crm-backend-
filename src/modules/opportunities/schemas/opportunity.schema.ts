@@ -236,6 +236,12 @@ export class Opportunity {
 
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: false })
   updatedBy?: User;
+
+  @Prop({ required: false, type: Number })
+  latitude?: number;
+
+  @Prop({ required: false, type: Number })
+  longitude?: number;
 }
 
 export const OpportunitySchema = SchemaFactory.createForClass(Opportunity);

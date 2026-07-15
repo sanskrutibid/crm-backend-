@@ -412,4 +412,20 @@ export class CreateOpportunityDto {
   @IsEnum(OpportunityStatus)
   @IsOptional()
   status?: OpportunityStatus;
+
+  @ApiPropertyOptional({
+    example: 18.5204,
+    description: 'Target latitude coordinate for geofence matching',
+  })
+  @IsNumber()
+  @IsOptional()
+  latitude?: number;
+
+  @ApiPropertyOptional({
+    example: 73.8567,
+    description: 'Target longitude coordinate for geofence matching',
+  })
+  @IsNumber()
+  @IsOptional()
+  longitude?: number;
 }

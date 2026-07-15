@@ -33,6 +33,7 @@ import { BranchesModule } from './modules/branches/branches.module';
 import { FoldersModule } from './modules/folders/folders.module';
 import { SourcesModule } from './modules/sources/sources.module';
 import { PropertyTypesModule } from './modules/property-types/property-types.module';
+import { MatchmakingModule } from './modules/matchmaking/matchmaking.module';
 
 @Module({
   imports: [
@@ -80,6 +81,7 @@ import { PropertyTypesModule } from './modules/property-types/property-types.mod
     FoldersModule,
     SourcesModule,
     PropertyTypesModule,
+    MatchmakingModule,
   ],
   controllers: [AppController],
   providers: [AppService],
