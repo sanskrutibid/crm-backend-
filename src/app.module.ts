@@ -34,6 +34,7 @@ import { FoldersModule } from './modules/folders/folders.module';
 import { SourcesModule } from './modules/sources/sources.module';
 import { PropertyTypesModule } from './modules/property-types/property-types.module';
 import { MatchmakingModule } from './modules/matchmaking/matchmaking.module';
+import { EmployeesModule } from './modules/employees/employees.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { MatchmakingModule } from './modules/matchmaking/matchmaking.module';
     CrmCacheModule,
 
     UsersModule,
+    EmployeesModule,
     RolesModule,
     AuthModule,
     LeadsModule,
