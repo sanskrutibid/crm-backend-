@@ -36,6 +36,7 @@ import { PropertyTypesModule } from './modules/property-types/property-types.mod
 import { MatchmakingModule } from './modules/matchmaking/matchmaking.module';
 import { EmployeesModule } from './modules/employees/employees.module';
 import { HolidaysModule } from './modules/holidays/holidays.module';
+import { EmployeeDocumentsModule } from './modules/employee-documents/employee-documents.module';
 
 @Module({
   imports: [
@@ -57,6 +58,7 @@ import { HolidaysModule } from './modules/holidays/holidays.module';
     UsersModule,
     EmployeesModule,
     HolidaysModule,
+    EmployeeDocumentsModule,
     RolesModule,
     AuthModule,
     LeadsModule,
