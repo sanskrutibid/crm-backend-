@@ -37,6 +37,7 @@ import { MatchmakingModule } from './modules/matchmaking/matchmaking.module';
 import { EmployeesModule } from './modules/employees/employees.module';
 import { HolidaysModule } from './modules/holidays/holidays.module';
 import { EmployeeDocumentsModule } from './modules/employee-documents/employee-documents.module';
+import { PayrollModule } from './modules/payroll/payroll.module';
 
 @Module({
   imports: [
@@ -59,6 +60,7 @@ import { EmployeeDocumentsModule } from './modules/employee-documents/employee-d
     EmployeesModule,
     HolidaysModule,
     EmployeeDocumentsModule,
+    PayrollModule,
     RolesModule,
     AuthModule,
     LeadsModule,
