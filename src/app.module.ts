@@ -38,6 +38,7 @@ import { EmployeesModule } from './modules/employees/employees.module';
 import { HolidaysModule } from './modules/holidays/holidays.module';
 import { EmployeeDocumentsModule } from './modules/employee-documents/employee-documents.module';
 import { PayrollModule } from './modules/payroll/payroll.module';
+import { LeavesModule } from './modules/leaves/leaves.module';
 
 @Module({
   imports: [
@@ -61,6 +62,7 @@ import { PayrollModule } from './modules/payroll/payroll.module';
     HolidaysModule,
     EmployeeDocumentsModule,
     PayrollModule,
+    LeavesModule,
     RolesModule,
     AuthModule,
     LeadsModule,
