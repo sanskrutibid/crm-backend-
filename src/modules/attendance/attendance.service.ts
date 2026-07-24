@@ -181,6 +181,13 @@ export class AttendanceService {
     };
   }
 
+  /**
+   * Fetches all attendance records in the database, populated with user details.
+   */
+  async getAllAttendance(): Promise<Attendance[]> {
+    return this.attendanceModel.find().populate('userId').sort({ punchInTime: -1 }).exec();
+  }
+
   // ==========================================
   // Spatial & Geodetic Algorithms
   // ==========================================

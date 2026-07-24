@@ -72,6 +72,14 @@ export class AttendanceController {
     return this.attendanceService.trackLocation(activeUserId, trackLocationDto);
   }
 
+  @Get()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get all attendance records' })
+  @ResponseMessage('All attendance records retrieved successfully')
+  async getAllAttendance() {
+    return this.attendanceService.getAllAttendance();
+  }
+
   @Get('agent/:userId/timeline')
   @UseGuards(JwtAuthGuard)
   @ApiOperation({
