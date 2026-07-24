@@ -2,11 +2,13 @@ import {
   Controller,
   Post,
   Get,
+  Delete,
   Body,
   Param,
   Query,
   Req,
   Res,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -17,6 +19,8 @@ import {
 import { EmailsService } from './emails.service';
 import { ScheduleEmailDto } from './dto/schedule-email.dto';
 import { QueryEmailDto } from './dto/query-email.dto';
+import { SaveSmtpConfigDto } from './dto/smtp-config.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
 
 @ApiTags('Emails')
@@ -24,11 +28,44 @@ import { ResponseMessage } from '../../common/decorators/response-message.decora
 export class EmailsController {
   constructor(private readonly emailsService: EmailsService) {}
 
+  @Post('smtp-config')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Save or update user SMTP configuration' })
+  @ApiCreatedResponse({ description: 'SMTP configuration saved successfully.' })
+  @ResponseMessage('SMTP configuration saved successfully')
+  async saveSmtpConfig(@Body() dto: SaveSmtpConfigDto, @Req() req: any) {
+    const userId = req.user.id || req.user._id;
+    return this.emailsService.saveSmtpConfig(userId, dto);
+  }
+
+  @Get('smtp-config')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get user SMTP configuration' })
+  @ApiOkResponse({ description: 'SMTP configuration retrieved successfully.' })
+  @ResponseMessage('SMTP configuration retrieved successfully')
+  async getSmtpConfig(@Req() req: any) {
+    const userId = req.user.id || req.user._id;
+    return this.emailsService.getSmtpConfig(userId);
+  }
+
+  @Delete('smtp-config')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Delete user SMTP configuration' })
+  @ApiOkResponse({ description: 'SMTP configuration deleted successfully.' })
+  @ResponseMessage('SMTP configuration deleted successfully')
+  async deleteSmtpConfig(@Req() req: any) {
+    const userId = req.user.id || req.user._id;
+    await this.emailsService.deleteSmtpConfig(userId);
+    return { success: true };
+  }
+
   @Post('schedule')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Schedule a new email campaign' })
   @ApiCreatedResponse({ description: 'Email successfully scheduled.' })
   @ResponseMessage('Email scheduled successfully')
-  async schedule(@Body() dto: ScheduleEmailDto) {
+  async schedule(@Body() dto: ScheduleEmailDto, @Req() req: any) {
+    dto.createdBy = req.user.id || req.user._id;
     return this.emailsService.schedule(dto);
   }
 
@@ -77,6 +114,16 @@ export class EmailsController {
     res.header('Pragma', 'no-cache');
     res.header('Expires', '0');
     res.send(buffer);
+  }
+
+  @Post('smtp-config/verify')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Verify SMTP connection credentials' })
+  @ApiOkResponse({ description: 'SMTP verification result status' })
+  @ResponseMessage('SMTP verification executed')
+  async verifySmtpConfig(@Body() dto: SaveSmtpConfigDto, @Req() req: any) {
+    const userId = req.user.id || req.user._id;
+    return this.emailsService.verifySmtpConfig(userId, dto);
   }
 
   @Get(':id/html')

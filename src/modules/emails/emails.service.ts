@@ -2,16 +2,20 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  BadRequestException,
   OnModuleInit,
   OnModuleDestroy,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import { Email, EmailDocument } from './schemas/email.schema';
+import { SmtpConfig, SmtpConfigDocument } from './schemas/smtp-config.schema';
 import { ScheduleEmailDto } from './dto/schedule-email.dto';
 import { QueryEmailDto } from './dto/query-email.dto';
+import { SaveSmtpConfigDto } from './dto/smtp-config.dto';
+import { encrypt, decrypt } from './helpers/crypto.helper';
 
 @Injectable()
 export class EmailsService implements OnModuleInit, OnModuleDestroy {
@@ -21,6 +25,8 @@ export class EmailsService implements OnModuleInit, OnModuleDestroy {
   constructor(
     @InjectModel(Email.name)
     private readonly emailModel: Model<EmailDocument>,
+    @InjectModel(SmtpConfig.name)
+    private readonly smtpConfigModel: Model<SmtpConfigDocument>,
     private readonly configService: ConfigService,
   ) {}
 
@@ -38,6 +44,22 @@ export class EmailsService implements OnModuleInit, OnModuleDestroy {
       clearInterval(this.schedulerInterval);
       this.logger.log('✉️ Cleared Scheduled Emails Polling Loop.');
     }
+  }
+
+  /**
+   * Resolve secure flag based on SMTP port:
+   * Port 465 requires secure: true (Implicit TLS/SSL).
+   * Port 587 / 25 require secure: false (Explicit TLS / STARTTLS).
+   */
+  private getEffectiveSecure(port: number, secure?: boolean): boolean {
+    const numericPort = Number(port);
+    if (numericPort === 465) {
+      return true;
+    }
+    if (numericPort === 587 || numericPort === 25) {
+      return false;
+    }
+    return secure ?? false;
   }
 
   /**
@@ -287,22 +309,78 @@ export class EmailsService implements OnModuleInit, OnModuleDestroy {
    * Send single email via SMTP
    */
   async sendEmail(email: EmailDocument) {
-    const gmailUser = this.configService.get<string>('GMAIL_USER');
-    const gmailAppPassword =
-      this.configService.get<string>('GMAIL_APP_PASSWORD');
     const fromName =
       this.configService.get<string>('MAIL_FROM_NAME') || 'VaultStone CRM';
     const backendUrl =
       this.configService.get<string>('BACKEND_URL') || 'http://localhost:3000';
 
-    if (!gmailUser || !gmailAppPassword) {
-      this.logger.warn(
-        '⚠️ SMTP settings are missing GMAIL_USER or GMAIL_APP_PASSWORD. Email sending will fail.',
-      );
-      email.status = 'Failed';
-      email.errorMessage = 'SMTP configuration is incomplete in .env';
-      await email.save();
-      return;
+    let transporter: nodemailer.Transporter;
+    let senderEmail: string;
+    let senderDisplayName = fromName;
+
+    // Check if the creator/employee has a custom SMTP configuration
+    let creatorId: string | null = null;
+    if (email.createdBy) {
+      if (typeof email.createdBy === 'string') {
+        creatorId = email.createdBy;
+      } else if (email.createdBy instanceof Types.ObjectId) {
+        creatorId = email.createdBy.toString();
+      } else if (typeof email.createdBy === 'object') {
+        creatorId = (email.createdBy as any).id || (email.createdBy as any)._id?.toString() || null;
+      }
+    }
+
+    let customSmtp: SmtpConfigDocument | null = null;
+    if (creatorId && Types.ObjectId.isValid(creatorId)) {
+      customSmtp = await this.smtpConfigModel.findOne({ userId: new Types.ObjectId(creatorId) }).exec();
+    }
+
+    if (customSmtp) {
+      // Use Employee-specific SMTP credentials
+      const encryptionKey = this.configService.get<string>('SMTP_ENCRYPTION_KEY') || 'a_secret_32_bytes_key_for_smtp';
+      const decryptedPassword = decrypt(customSmtp.pass, customSmtp.iv, encryptionKey);
+
+      const port = Number(customSmtp.port);
+      const secure = this.getEffectiveSecure(port, customSmtp.secure);
+
+      transporter = nodemailer.createTransport({
+        host: customSmtp.host,
+        port,
+        secure,
+        auth: {
+          user: customSmtp.user,
+          pass: decryptedPassword,
+        },
+      });
+      senderEmail = customSmtp.user;
+      if (customSmtp.fromName) {
+        senderDisplayName = customSmtp.fromName;
+      }
+      this.logger.log(`✉️ Using employee-specific SMTP transporter for creator ID ${creatorId} (${senderEmail})`);
+    } else {
+      // Fallback to Global SMTP Config
+      const gmailUser = this.configService.get<string>('GMAIL_USER');
+      const gmailAppPassword = this.configService.get<string>('GMAIL_APP_PASSWORD');
+
+      if (!gmailUser || !gmailAppPassword) {
+        this.logger.warn(
+          '⚠️ SMTP settings are missing GMAIL_USER or GMAIL_APP_PASSWORD. Email sending will fail.',
+        );
+        email.status = 'Failed';
+        email.errorMessage = 'SMTP configuration is incomplete in .env';
+        await email.save();
+        return;
+      }
+
+      transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: gmailUser,
+          pass: gmailAppPassword,
+        },
+      });
+      senderEmail = gmailUser;
+      this.logger.log(`✉️ Using fallback global SMTP transporter (${senderEmail})`);
     }
 
     // Append 1x1 transparent tracking pixel image at the end of body
@@ -315,16 +393,8 @@ export class EmailsService implements OnModuleInit, OnModuleDestroy {
     }
 
     try {
-      const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          user: gmailUser,
-          pass: gmailAppPassword,
-        },
-      });
-
       const mailOptions = {
-        from: `"${fromName}" <${gmailUser}>`,
+        from: `"${senderDisplayName}" <${senderEmail}>`,
         to: email.to.join(', '),
         cc: email.cc && email.cc.length > 0 ? email.cc.join(', ') : undefined,
         bcc:
@@ -373,6 +443,103 @@ export class EmailsService implements OnModuleInit, OnModuleDestroy {
       );
     } catch (err) {
       this.logger.error(`Failed to track open for email ID ${id}:`, err);
+    }
+  }
+
+  /**
+   * Encrypts and saves or updates SMTP configuration for a user/employee
+   */
+  async saveSmtpConfig(userId: string, dto: SaveSmtpConfigDto): Promise<SmtpConfigDocument> {
+    const existing = await this.smtpConfigModel.findOne({ userId: new Types.ObjectId(userId) }).exec();
+    
+    let encryptedData = existing?.pass;
+    let iv = existing?.iv;
+
+    if (dto.pass && dto.pass !== '••••••••••••') {
+      const encryptionKey = this.configService.get<string>('SMTP_ENCRYPTION_KEY') || 'a_secret_32_bytes_key_for_smtp';
+      const encrypted = encrypt(dto.pass, encryptionKey);
+      encryptedData = encrypted.encryptedData;
+      iv = encrypted.iv;
+    } else if (!existing) {
+      throw new BadRequestException('Password is required for new SMTP configuration');
+    }
+
+    const port = Number(dto.port);
+    const secure = this.getEffectiveSecure(port, dto.secure);
+
+    const payload = {
+      userId: new Types.ObjectId(userId),
+      host: dto.host,
+      port,
+      secure,
+      user: dto.user,
+      pass: encryptedData,
+      iv,
+      fromName: dto.fromName || '',
+    };
+
+    return this.smtpConfigModel.findOneAndUpdate(
+      { userId: new Types.ObjectId(userId) },
+      payload,
+      { new: true, upsert: true }
+    ).exec();
+  }
+
+  /**
+   * Fetches SMTP configuration for a user/employee
+   */
+  async getSmtpConfig(userId: string): Promise<SmtpConfigDocument> {
+    const config = await this.smtpConfigModel.findOne({ userId: new Types.ObjectId(userId) }).exec();
+    if (!config) {
+      throw new NotFoundException(`SMTP configuration for user ID "${userId}" not found`);
+    }
+    return config;
+  }
+
+  /**
+   * Deletes SMTP configuration for a user/employee
+   */
+  async deleteSmtpConfig(userId: string): Promise<void> {
+    const result = await this.smtpConfigModel.deleteOne({ userId: new Types.ObjectId(userId) }).exec();
+    if (result.deletedCount === 0) {
+      throw new NotFoundException(`SMTP configuration for user ID "${userId}" not found`);
+    }
+  }
+
+  /**
+   * Verifies connection to SMTP server using specified settings
+   */
+  async verifySmtpConfig(userId: string, dto: SaveSmtpConfigDto): Promise<{ success: boolean; message: string }> {
+    try {
+      let passwordToVerify = dto.pass;
+
+      if (!passwordToVerify || passwordToVerify === '••••••••••••') {
+        const existing = await this.smtpConfigModel.findOne({ userId: new Types.ObjectId(userId) }).exec();
+        if (!existing) {
+          throw new BadRequestException('Password is required to verify SMTP configuration');
+        }
+        const encryptionKey = this.configService.get<string>('SMTP_ENCRYPTION_KEY') || 'a_secret_32_bytes_key_for_smtp';
+        passwordToVerify = decrypt(existing.pass, existing.iv, encryptionKey);
+      }
+
+      const port = Number(dto.port);
+      const secure = this.getEffectiveSecure(port, dto.secure);
+
+      const transporter = nodemailer.createTransport({
+        host: dto.host,
+        port,
+        secure,
+        auth: {
+          user: dto.user,
+          pass: passwordToVerify,
+        },
+      });
+
+      await transporter.verify();
+      return { success: true, message: 'SMTP credentials verified successfully!' };
+    } catch (err: any) {
+      this.logger.error(`❌ SMTP validation failed for ${dto.user}@${dto.host}:`, err);
+      return { success: false, message: err.message || 'SMTP credentials verification failed.' };
     }
   }
 }
