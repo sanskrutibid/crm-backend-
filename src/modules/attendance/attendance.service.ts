@@ -254,10 +254,87 @@ export class AttendanceService {
   }
 
   /**
-   * Fetches all attendance records in the database, populated with user details.
+   * Fetches all attendance records in the database, populated with user details,
+   * dynamically synthesizing check-ins from LoginHistory when no explicit record exists.
    */
-  async getAllAttendance(): Promise<Attendance[]> {
-    return this.attendanceModel.find().populate('userId').sort({ punchInTime: -1 }).exec();
+  async getAllAttendance(): Promise<any[]> {
+    // 1. Fetch all explicit attendance documents
+    const attendances = await this.attendanceModel.find().populate('userId').exec();
+
+    // Create a set of user-date strings that already have explicit attendance records
+    const existingKeys = new Set(
+      attendances.map((a) => {
+        const uId = a.userId && typeof a.userId === 'object' ? a.userId._id.toString() : (a.userId || '').toString();
+        return `${uId}_${a.date}`;
+      })
+    );
+
+    // 2. Fetch all logins from LoginHistory
+    const logins = await this.loginHistoryModel
+      .find({ type: 'login' })
+      .populate('userId')
+      .exec();
+
+    // Sort logins by timestamp ascending so we process the first login of the day
+    logins.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+
+    // 3. Synthesize attendance for user-dates that have logins but no explicit attendance records
+    const synthesized: any[] = [];
+    const synthesizedKeys = new Set<string>();
+
+    for (const login of logins) {
+      if (!login.userId) continue;
+      const uId = typeof login.userId === 'object' ? (login.userId as any)._id.toString() : login.userId.toString();
+      const dateStr = login.timestamp.toISOString().split('T')[0];
+      const key = `${uId}_${dateStr}`;
+
+      if (!existingKeys.has(key) && !synthesizedKeys.has(key)) {
+        // Query if there is a logout on the same day
+        const start = new Date(`${dateStr}T00:00:00.000Z`);
+        const end = new Date(`${dateStr}T23:59:59.999Z`);
+        const logout = await this.loginHistoryModel
+          .findOne({
+            userId: uId,
+            type: 'logout',
+            timestamp: { $gte: start, $lte: end },
+          })
+          .sort({ timestamp: -1 })
+          .exec();
+
+        synthesized.push({
+          userId: login.userId,
+          date: dateStr,
+          punchInTime: login.timestamp,
+          punchInLocation: {
+            latitude: login.lat ?? 28.5355,
+            longitude: login.long ?? 77.391,
+            timestamp: login.timestamp,
+          },
+          punchOutTime: logout ? logout.timestamp : undefined,
+          punchOutLocation: logout
+            ? {
+                latitude: logout.lat ?? 28.5355,
+                longitude: logout.long ?? 77.391,
+                timestamp: logout.timestamp,
+              }
+            : undefined,
+          status: logout ? 'COMPLETED' : 'ACTIVE',
+          path: [],
+          isSynthesized: true,
+        });
+
+        synthesizedKeys.add(key);
+      }
+    }
+
+    // Combine both arrays and sort by punchInTime descending
+    const all = [
+      ...attendances.map((a) => (a.toObject ? a.toObject() : a)),
+      ...synthesized,
+    ];
+    all.sort((a, b) => new Date(b.punchInTime).getTime() - new Date(a.punchInTime).getTime());
+
+    return all;
   }
 
   // ==========================================
