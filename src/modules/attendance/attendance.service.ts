@@ -6,6 +6,7 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Attendance, AttendanceDocument } from './schemas/attendance.schema';
+import { LoginHistory, LoginHistoryDocument } from '../login-history/schemas/login-history.schema';
 import { PunchInDto } from './dto/punch-in.dto';
 import { PunchOutDto } from './dto/punch-out.dto';
 import { TrackLocationDto } from './dto/track-location.dto';
@@ -15,6 +16,8 @@ export class AttendanceService {
   constructor(
     @InjectModel(Attendance.name)
     private attendanceModel: Model<AttendanceDocument>,
+    @InjectModel(LoginHistory.name)
+    private loginHistoryModel: Model<LoginHistoryDocument>,
   ) {}
 
   /**
@@ -158,7 +161,75 @@ export class AttendanceService {
       .sort({ punchInTime: -1 })
       .exec();
 
+    // Query LoginHistory for this user on this day
+    const start = new Date(`${date}T00:00:00.000Z`);
+    const end = new Date(`${date}T23:59:59.999Z`);
+    const logins = await this.loginHistoryModel
+      .find({
+        userId,
+        type: 'login',
+        timestamp: { $gte: start, $lte: end },
+      })
+      .sort({ timestamp: 1 })
+      .exec();
+
+    const firstLogin = logins[0];
+    const loginDetails = firstLogin
+      ? {
+          time: firstLogin.timestamp,
+          ip: firstLogin.ip,
+          device: firstLogin.device || firstLogin.userAgent || 'Unknown Device',
+          lat: firstLogin.lat,
+          long: firstLogin.long,
+        }
+      : undefined;
+
     if (!shift) {
+      if (logins.length > 0) {
+        // Find logout logs
+        const logouts = await this.loginHistoryModel
+          .find({
+            userId,
+            type: 'logout',
+            timestamp: { $gte: start, $lte: end },
+          })
+          .sort({ timestamp: -1 })
+          .exec();
+        const lastLogout = logouts[0];
+
+        const path = logins
+          .map((l) => ({
+            latitude: l.lat ?? 0,
+            longitude: l.long ?? 0,
+            timestamp: l.timestamp,
+          }))
+          .filter((p) => p.latitude !== 0 && p.longitude !== 0);
+
+        return {
+          userId,
+          date,
+          status: lastLogout ? 'COMPLETED' : 'ACTIVE',
+          punchInTime: firstLogin.timestamp,
+          punchInLocation: {
+            latitude: firstLogin.lat ?? 28.5355,
+            longitude: firstLogin.long ?? 77.391,
+            timestamp: firstLogin.timestamp,
+          },
+          punchOutTime: lastLogout ? lastLogout.timestamp : undefined,
+          punchOutLocation: lastLogout
+            ? {
+                latitude: lastLogout.lat ?? 28.5355,
+                longitude: lastLogout.long ?? 77.391,
+                timestamp: lastLogout.timestamp,
+              }
+            : undefined,
+          path,
+          holdingPoints: [],
+          totalDistanceKm: 0,
+          loginDetails,
+        };
+      }
+
       throw new NotFoundException(
         `No attendance record found for user on date ${date}`,
       );
@@ -178,6 +249,7 @@ export class AttendanceService {
       path: shift.path,
       holdingPoints,
       totalDistanceKm,
+      loginDetails,
     };
   }
 
