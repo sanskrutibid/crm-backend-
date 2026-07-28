@@ -13,6 +13,11 @@ import {
   OpportunityDocument,
   OpportunityStatus,
 } from '../opportunities/schemas/opportunity.schema';
+import {
+  Project,
+  ProjectDocument,
+  ProjectStatus,
+} from '../projects/schemas/project.schema';
 
 @Injectable()
 export class DashboardService {
@@ -24,6 +29,8 @@ export class DashboardService {
     private readonly contactModel: Model<ContactDocument>,
     @InjectModel(Opportunity.name)
     private readonly opportunityModel: Model<OpportunityDocument>,
+    @InjectModel(Project.name)
+    private readonly projectModel: Model<ProjectDocument>,
   ) {}
 
   async getStats() {
@@ -48,6 +55,12 @@ export class DashboardService {
       propRented,
       buyingAgg,
       sellingAgg,
+      propTotalCount,
+      propAvailableCount,
+      propSoldOutCount,
+      projectTotalCount,
+      projectAvailableCount,
+      projectSoldOutCount,
     ] = await Promise.all([
       // 1. Contacts
       this.contactModel.countDocuments({ isDeleted: false }).exec(),
@@ -116,6 +129,16 @@ export class DashboardService {
           },
         },
       ]).exec(),
+
+      // Properties counts
+      this.propertyModel.countDocuments().exec(),
+      this.propertyModel.countDocuments({ status: PropertyStatus.AVAILABLE }).exec(),
+      this.propertyModel.countDocuments({ status: PropertyStatus.SOLD_OUT }).exec(),
+
+      // Projects counts
+      this.projectModel.countDocuments().exec(),
+      this.projectModel.countDocuments({ status: ProjectStatus.AVAILABLE }).exec(),
+      this.projectModel.countDocuments({ status: ProjectStatus.SOLD_OUT }).exec(),
     ]);
 
     const wonClosed = wonTotal;
@@ -166,6 +189,16 @@ export class DashboardService {
         total: wonTotal,
         closed: wonClosed,
         lost: wonLost,
+      },
+      properties: {
+        total: propTotalCount,
+        open: propAvailableCount,
+        closed: propSoldOutCount,
+      },
+      projects: {
+        total: projectTotalCount,
+        open: projectAvailableCount,
+        closed: projectSoldOutCount,
       },
       propertiesBreakdown: [
         propCommercial,

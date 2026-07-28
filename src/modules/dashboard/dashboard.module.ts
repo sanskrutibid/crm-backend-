@@ -12,6 +12,10 @@ import {
   Opportunity,
   OpportunitySchema,
 } from '../opportunities/schemas/opportunity.schema';
+import {
+  Project,
+  ProjectSchema,
+} from '../projects/schemas/project.schema';
 
 @Module({
   imports: [
@@ -20,6 +24,7 @@ import {
       { name: Lead.name, schema: LeadSchema },
       { name: Contact.name, schema: ContactSchema },
       { name: Opportunity.name, schema: OpportunitySchema },
+      { name: Project.name, schema: ProjectSchema },
     ]),
   ],
   controllers: [DashboardController],
