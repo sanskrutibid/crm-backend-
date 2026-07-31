@@ -11,7 +11,7 @@ async function main() {
 
     const employees = await Employee.find({}).lean();
     console.log('Employees in DB count:', employees.length);
-    console.log('Employees in DB:', JSON.stringify(employees.map(e => ({ id: e._id, employeeId: e.employeeId, firstName: e.firstName, lastName: e.lastName })), null, 2));
+    console.log('Employees in DB full data:', JSON.stringify(employees, null, 2));
   } catch (err) {
     console.error('Error:', err);
   } finally {

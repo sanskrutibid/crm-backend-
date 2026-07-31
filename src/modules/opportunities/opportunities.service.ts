@@ -14,6 +14,7 @@ import {
 } from './schemas/opportunity.schema';
 import { Contact, ContactDocument } from '../contacts/schemas/contact.schema';
 import { User, UserDocument } from '../users/schemas/user.schema';
+import { generateExcelBuffer } from '../../common/utils/excel.util';
 import { CreateOpportunityDto } from './dto/create-opportunity.dto';
 import { UpdateOpportunityDto } from './dto/update-opportunity.dto';
 import { QueryOpportunityDto } from './dto/query-opportunity.dto';
@@ -963,18 +964,17 @@ export class OpportunitiesService {
     return opp;
   }
 
-  async downloadExcel(query: any): Promise<string> {
-    const csvContent = await this.generateOpportunitiesCsv(query);
-    return csvContent;
+  async downloadExcel(query: any): Promise<Buffer> {
+    const { buffer } = await this.generateOpportunitiesExcel(query);
+    return buffer;
   }
 
   async uploadToGoogleDrive(query: any, inputLimit?: number): Promise<any> {
-    const csvContent = await this.generateOpportunitiesCsv(query);
-    const fileName = `opportunities_export_${new Date().toISOString().slice(0, 10)}.csv`;
-    return this.uploadCsvToGoogleDrive(csvContent, fileName);
+    const { buffer, fileName } = await this.generateOpportunitiesExcel(query);
+    return this.uploadExcelToGoogleDrive(buffer, fileName);
   }
 
-  private async generateOpportunitiesCsv(query: any): Promise<string> {
+  private async generateOpportunitiesExcel(query: any): Promise<{ buffer: Buffer; fileName: string }> {
     const { opportunities } = await this.findAll({ ...query, limit: query.limit || 99999 });
 
     const headers = [
@@ -1018,7 +1018,7 @@ export class OpportunitiesService {
 
     const rows = opportunities.map((o: any) => {
       const contact = o.contactId || {};
-      const customerName = `${contact.salutation ? contact.salutation + ' ' : ''}${contact.firstName || ''} ${contact.lastName || ''}`.trim();
+      const customerName = `${contact.firstName || ''} ${contact.lastName || ''}`.trim();
       const mobileVal = contact.mobile || '';
       const emailVal = contact.email || '';
       const assignedToVal = o.assignedTo?.firstName || '';
@@ -1043,7 +1043,7 @@ export class OpportunitiesService {
         o.bedroom || '',
         o.furnishing || '',
         o.transaction || '',
-        o.purposePref || '',
+        o.preferences || '',
         o.propertyAge || '',
         o.description || '',
         o.internalNote || '',
@@ -1063,17 +1063,12 @@ export class OpportunitiesService {
       ];
     });
 
-    const csvContent = [
-      headers.join(','),
-      ...rows.map((r) =>
-        r.map((val) => `"${val.replace(/"/g, '""')}"`).join(','),
-      ),
-    ].join('\n');
-
-    return '\ufeff' + csvContent;
+    const buffer = await generateExcelBuffer('Opportunities', headers, rows);
+    const fileName = `opportunities_export_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    return { buffer, fileName };
   }
 
-  private async uploadCsvToGoogleDrive(csvContent: string, fileName: string): Promise<any> {
+  private async uploadExcelToGoogleDrive(buffer: Buffer, fileName: string): Promise<any> {
     const clientId = process.env.GOOGLE_DRIVE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_DRIVE_CLIENT_SECRET;
     const refreshToken = process.env.GOOGLE_DRIVE_REFRESH_TOKEN;
@@ -1102,21 +1097,26 @@ export class OpportunitiesService {
         const boundary = 'opportunities_upload_boundary_12345';
         const metadata = {
           name: fileName,
-          mimeType: 'text/csv',
+          mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         };
 
-        const multipartBody = [
+        const header = [
           `--${boundary}`,
           'Content-Type: application/json; charset=UTF-8',
           '',
           JSON.stringify(metadata),
           `--${boundary}`,
-          'Content-Type: text/csv',
+          'Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
           '',
-          csvContent,
-          `--${boundary}--`,
           '',
         ].join('\r\n');
+        const footer = `\r\n--${boundary}--\r\n`;
+
+        const multipartBody = Buffer.concat([
+          Buffer.from(header, 'utf-8'),
+          buffer,
+          Buffer.from(footer, 'utf-8'),
+        ]);
 
         const uploadResponse = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
           method: 'POST',
@@ -1153,9 +1153,9 @@ export class OpportunitiesService {
         fs.mkdirSync(backupsDir, { recursive: true });
       }
 
-      const backupFileName = `opportunities_drive_backup_${new Date().toISOString().replace(/[:.]/g, '-')}.csv`;
+      const backupFileName = `opportunities_drive_backup_${new Date().toISOString().replace(/[:.]/g, '-')}.xlsx`;
       const filePath = path.join(backupsDir, backupFileName);
-      fs.writeFileSync(filePath, csvContent, 'utf-8');
+      fs.writeFileSync(filePath, buffer);
 
       const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
       const downloadLink = `${backendUrl}/api/databackup/download/${backupFileName}`;

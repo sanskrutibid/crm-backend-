@@ -7,6 +7,8 @@ import {
   Patch,
   Post,
   Query,
+  Header,
+  Res,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -79,5 +81,29 @@ export class ReportsController {
   async remove(@Param('id') id: string) {
     await this.reportsService.remove(id);
     return null;
+  }
+
+  @Get(':id/data')
+  @ApiOperation({ summary: 'Get Report headers and rows data' })
+  @ResponseMessage('Report data retrieved successfully')
+  async getReportData(@Param('id') id: string) {
+    return this.reportsService.getReportData(id);
+  }
+
+  @Get(':id/download')
+  @ApiOperation({ summary: 'Export and download Report in Excel format' })
+  async downloadReport(@Param('id') id: string, @Res() reply: any) {
+    const { buffer, fileName } = await this.reportsService.generateReportExcel(id);
+    reply.header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    reply.header('Content-Disposition', `attachment; filename="${fileName}"`);
+    reply.send(buffer);
+  }
+
+  @Post(':id/google-drive')
+  @ApiOperation({ summary: 'Export and upload Report to Google Drive' })
+  @ResponseMessage('Report uploaded to Google Drive successfully')
+  async uploadToGoogleDrive(@Param('id') id: string) {
+    const { buffer, fileName } = await this.reportsService.generateReportExcel(id);
+    return this.reportsService.uploadExcelToGoogleDrive(buffer, fileName);
   }
 }

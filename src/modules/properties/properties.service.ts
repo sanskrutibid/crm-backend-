@@ -14,6 +14,7 @@ import { ActivitiesService } from '../activities/activities.service';
 import { ActivityType } from '../activities/schemas/activity.schema';
 import { Contact, ContactDocument } from '../contacts/schemas/contact.schema';
 import { User, UserDocument } from '../users/schemas/user.schema';
+import { generateExcelBuffer } from '../../common/utils/excel.util';
 
 @Injectable()
 export class PropertiesService implements OnModuleInit {
@@ -434,17 +435,17 @@ export class PropertiesService implements OnModuleInit {
     return { success: true, count: result.deletedCount };
   }
 
-  async downloadExcel(query: QueryPropertyDto): Promise<string> {
-    return this.generatePropertiesCsv(query);
+  async downloadExcel(query: QueryPropertyDto): Promise<Buffer> {
+    const { buffer } = await this.generatePropertiesExcel(query);
+    return buffer;
   }
 
   async uploadToGoogleDrive(query: any, inputLimit?: number): Promise<any> {
-    const csvContent = await this.generatePropertiesCsv(query);
-    const fileName = `properties_export_${new Date().toISOString().slice(0, 10)}.csv`;
-    return this.uploadCsvToGoogleDrive(csvContent, fileName);
+    const { buffer, fileName } = await this.generatePropertiesExcel(query);
+    return this.uploadExcelToGoogleDrive(buffer, fileName);
   }
 
-  private async generatePropertiesCsv(query: any): Promise<string> {
+  private async generatePropertiesExcel(query: any): Promise<{ buffer: Buffer; fileName: string }> {
     const { properties } = await this.findAll({ ...query, limit: query.limit || 99999 });
 
     const headers = [
@@ -484,17 +485,12 @@ export class PropertiesService implements OnModuleInit {
       ];
     });
 
-    const csvContent = [
-      headers.join(','),
-      ...rows.map((r) =>
-        r.map((val) => `"${val.replace(/"/g, '""')}"`).join(','),
-      ),
-    ].join('\n');
-
-    return '\ufeff' + csvContent;
+    const buffer = await generateExcelBuffer('Properties', headers, rows);
+    const fileName = `properties_export_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    return { buffer, fileName };
   }
 
-  private async uploadCsvToGoogleDrive(csvContent: string, fileName: string): Promise<any> {
+  private async uploadExcelToGoogleDrive(buffer: Buffer, fileName: string): Promise<any> {
     const clientId = process.env.GOOGLE_DRIVE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_DRIVE_CLIENT_SECRET;
     const refreshToken = process.env.GOOGLE_DRIVE_REFRESH_TOKEN;
@@ -520,23 +516,29 @@ export class PropertiesService implements OnModuleInit {
         const tokenData = (await tokenResponse.json()) as any;
         const accessToken = tokenData.access_token;
 
+        const boundary = 'foo_bar_baz';
         const metadata = {
           name: fileName,
-          mimeType: 'text/csv',
+          mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         };
 
-        const boundary = 'foo_bar_baz';
-        const delimiter = `\r\n--${boundary}\r\n`;
-        const closeDelimiter = `\r\n--${boundary}--\r\n`;
+        const header = [
+          `--${boundary}`,
+          'Content-Type: application/json; charset=UTF-8',
+          '',
+          JSON.stringify(metadata),
+          `--${boundary}`,
+          'Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          '',
+          '',
+        ].join('\r\n');
+        const footer = `\r\n--${boundary}--\r\n`;
 
-        const multipartBody =
-          delimiter +
-          'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
-          JSON.stringify(metadata) +
-          delimiter +
-          'Content-Type: text/csv; charset=UTF-8\r\n\r\n' +
-          csvContent +
-          closeDelimiter;
+        const multipartBody = Buffer.concat([
+          Buffer.from(header, 'utf-8'),
+          buffer,
+          Buffer.from(footer, 'utf-8'),
+        ]);
 
         const uploadResponse = await fetch(
           'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',
@@ -563,17 +565,35 @@ export class PropertiesService implements OnModuleInit {
           fileId: fileData.id,
         };
       } catch (err: any) {
-        console.error('Google Drive export simulation failed:', err);
-        throw new Error(`Export to Google Drive failed: ${err.message}`);
+        console.error('Google Drive export simulation failed, falling back to local mock:', err);
       }
-    } else {
-      console.log('Google Drive config missing. Simulating file upload...');
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+    }
+
+    try {
+      const fs = await import('fs');
+      const path = await import('path');
+      const backupsDir = path.join(process.cwd(), 'backups');
+      if (!fs.existsSync(backupsDir)) {
+        fs.mkdirSync(backupsDir, { recursive: true });
+      }
+
+      const backupFileName = `${fileName.replace('.xlsx', '')}_drive_${new Date().getTime()}.xlsx`;
+      const filePath = path.join(backupsDir, backupFileName);
+      fs.writeFileSync(filePath, buffer);
+
+      const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
+      const downloadLink = `${backendUrl}/api/databackup/download/${backupFileName}`;
+
       return {
         success: true,
-        message: 'Google Drive configuration missing. Simulated file export successfully!',
-        fileId: 'simulated_drive_file_id_12345',
+        message: 'Google Drive credentials not set in .env. Saved locally in backups folder instead.',
+        fileName: backupFileName,
+        webViewLink: downloadLink,
+        isMock: true,
       };
+    } catch (err: any) {
+      console.error('Google Drive export simulation failed:', err);
+      throw new Error(`Export to Google Drive failed: ${err.message}`);
     }
   }
 

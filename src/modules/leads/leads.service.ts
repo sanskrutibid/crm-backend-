@@ -18,6 +18,7 @@ import {
 } from './schemas/lead.schema';
 import { Contact, ContactDocument } from '../contacts/schemas/contact.schema';
 import { User, UserDocument } from '../users/schemas/user.schema';
+import { generateExcelBuffer } from '../../common/utils/excel.util';
 import {
   SiteVisit,
   SiteVisitDocument,
@@ -1510,7 +1511,17 @@ export class LeadsService implements OnModuleInit {
     return { success: true, count };
   }
 
-  private async generateLeadsCsv(query: any): Promise<string> {
+  async downloadExcel(query: any): Promise<Buffer> {
+    const { buffer } = await this.generateLeadsExcel(query);
+    return buffer;
+  }
+
+  async uploadToGoogleDrive(query: any, inputLimit?: number): Promise<any> {
+    const { buffer, fileName } = await this.generateLeadsExcel(query);
+    return this.uploadExcelToGoogleDrive(buffer, fileName);
+  }
+
+  private async generateLeadsExcel(query: any): Promise<{ buffer: Buffer; fileName: string }> {
     const { leads } = await this.findAll({ ...query, limit: query.limit || 99999 });
 
     const headers = [
@@ -1565,21 +1576,16 @@ export class LeadsService implements OnModuleInit {
         l.outcome || '',
         l.interestedIn || '',
         l.purpose || '',
-        l.createdAt ? new Date(l.createdAt).toISOString() : '',
+        l.createdAt && !isNaN(new Date(l.createdAt).getTime()) ? new Date(l.createdAt).toISOString() : '',
       ];
     });
 
-    const csvContent = [
-      headers.join(','),
-      ...rows.map((r) =>
-        r.map((val) => `"${val.replace(/"/g, '""')}"`).join(','),
-      ),
-    ].join('\n');
-
-    return csvContent;
+    const buffer = await generateExcelBuffer('Leads', headers, rows);
+    const fileName = `leads_export_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    return { buffer, fileName };
   }
 
-  private async uploadCsvToGoogleDrive(csvContent: string, fileName: string): Promise<any> {
+  private async uploadExcelToGoogleDrive(buffer: Buffer, fileName: string): Promise<any> {
     const clientId = process.env.GOOGLE_DRIVE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_DRIVE_CLIENT_SECRET;
     const refreshToken = process.env.GOOGLE_DRIVE_REFRESH_TOKEN;
@@ -1608,21 +1614,26 @@ export class LeadsService implements OnModuleInit {
         const boundary = 'leads_upload_boundary_12345';
         const metadata = {
           name: fileName,
-          mimeType: 'text/csv',
+          mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         };
 
-        const multipartBody = [
+        const header = [
           `--${boundary}`,
           'Content-Type: application/json; charset=UTF-8',
           '',
           JSON.stringify(metadata),
           `--${boundary}`,
-          'Content-Type: text/csv',
+          'Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
           '',
-          csvContent,
-          `--${boundary}--`,
           '',
         ].join('\r\n');
+        const footer = `\r\n--${boundary}--\r\n`;
+
+        const multipartBody = Buffer.concat([
+          Buffer.from(header, 'utf-8'),
+          buffer,
+          Buffer.from(footer, 'utf-8'),
+        ]);
 
         const uploadResponse = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
           method: 'POST',
@@ -1659,9 +1670,9 @@ export class LeadsService implements OnModuleInit {
         fs.mkdirSync(backupsDir, { recursive: true });
       }
 
-      const backupFileName = `leads_drive_backup_${new Date().toISOString().replace(/[:.]/g, '-')}.csv`;
+      const backupFileName = `leads_drive_backup_${new Date().toISOString().replace(/[:.]/g, '-')}.xlsx`;
       const filePath = path.join(backupsDir, backupFileName);
-      fs.writeFileSync(filePath, csvContent, 'utf-8');
+      fs.writeFileSync(filePath, buffer);
 
       const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
       const downloadLink = `${backendUrl}/api/databackup/download/${backupFileName}`;
@@ -1679,20 +1690,7 @@ export class LeadsService implements OnModuleInit {
     }
   }
 
-  async downloadExcel(query: any): Promise<string> {
-    const csvContent = await this.generateLeadsCsv(query);
-    const fileName = `leads_export_${new Date().toISOString().slice(0, 10)}.csv`;
-    this.uploadCsvToGoogleDrive(csvContent, fileName).catch((err) => {
-      console.error('Background Google Drive upload failed:', err);
-    });
-    return csvContent;
-  }
 
-  async uploadToGoogleDrive(query: any, inputLimit?: number): Promise<any> {
-    const csvContent = await this.generateLeadsCsv(query);
-    const fileName = `leads_export_${new Date().toISOString().slice(0, 10)}.csv`;
-    return this.uploadCsvToGoogleDrive(csvContent, fileName);
-  }
 
   async importLeads(leads: any[], defaultUserId?: string) {
     const limit = 2000;

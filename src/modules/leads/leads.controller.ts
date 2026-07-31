@@ -381,12 +381,12 @@ export class LeadsController {
   }
 
   @Get('actions/download')
-  @Header('Content-Type', 'text/csv')
-  @Header('Content-Disposition', 'attachment; filename="leads.csv"')
-  @ApiOperation({ summary: 'Export and download CRM Leads in CSV format' })
+  @ApiOperation({ summary: 'Export and download CRM Leads in Excel format' })
   async downloadExcel(@Query() query: QueryLeadDto, @Res() reply: any) {
-    const csvContent = await this.leadsService.downloadExcel(query);
-    reply.send(csvContent);
+    const buffer = await this.leadsService.downloadExcel(query);
+    reply.header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    reply.header('Content-Disposition', 'attachment; filename="leads.xlsx"');
+    reply.send(buffer);
   }
 
   @Post('actions/google-drive')

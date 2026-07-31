@@ -235,12 +235,12 @@ export class OpportunitiesController {
   }
 
   @Get('actions/download')
-  @Header('Content-Type', 'text/csv')
-  @Header('Content-Disposition', 'attachment; filename="opportunities.csv"')
-  @ApiOperation({ summary: 'Export and download CRM Opportunities in CSV format' })
+  @ApiOperation({ summary: 'Export and download CRM Opportunities in Excel format' })
   async downloadExcel(@Query() query: QueryOpportunityDto, @Res() reply: any) {
-    const csvContent = await this.opportunitiesService.downloadExcel(query);
-    reply.send(csvContent);
+    const buffer = await this.opportunitiesService.downloadExcel(query);
+    reply.header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    reply.header('Content-Disposition', 'attachment; filename="opportunities.xlsx"');
+    reply.send(buffer);
   }
 
   @Post('actions/google-drive')

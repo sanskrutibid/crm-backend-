@@ -106,12 +106,12 @@ export class PropertiesController {
   }
 
   @Get('actions/download')
-  @Header('Content-Type', 'text/csv')
-  @Header('Content-Disposition', 'attachment; filename="properties.csv"')
-  @ApiOperation({ summary: 'Export and download CRM Properties in CSV format' })
+  @ApiOperation({ summary: 'Export and download CRM Properties in Excel format' })
   async downloadExcel(@Query() query: QueryPropertyDto, @Res() reply: any) {
-    const csvContent = await this.propertiesService.downloadExcel(query);
-    reply.send(csvContent);
+    const buffer = await this.propertiesService.downloadExcel(query);
+    reply.header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    reply.header('Content-Disposition', 'attachment; filename="properties.xlsx"');
+    reply.send(buffer);
   }
 
   @Post('actions/google-drive')

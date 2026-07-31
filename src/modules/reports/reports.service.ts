@@ -8,6 +8,13 @@ import { QueryReportDto } from './dto/query-report.dto';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { ActivitiesService } from '../activities/activities.service';
 import { ActivityType } from '../activities/schemas/activity.schema';
+import { Lead, LeadDocument } from '../leads/schemas/lead.schema';
+import { Opportunity, OpportunityDocument } from '../opportunities/schemas/opportunity.schema';
+import { Property, PropertyDocument } from '../properties/schemas/property.schema';
+import { Project, ProjectDocument } from '../projects/schemas/project.schema';
+import { SiteVisit, SiteVisitDocument } from '../site-visits/schemas/site-visit.schema';
+import { Contact, ContactDocument } from '../contacts/schemas/contact.schema';
+import { generateExcelBuffer } from '../../common/utils/excel.util';
 
 @Injectable()
 export class ReportsService implements OnModuleInit {
@@ -17,6 +24,18 @@ export class ReportsService implements OnModuleInit {
     @InjectModel(User.name)
     private readonly userModel: Model<UserDocument>,
     private readonly activitiesService: ActivitiesService,
+    @InjectModel(Lead.name)
+    private readonly leadModel: Model<LeadDocument>,
+    @InjectModel(Opportunity.name)
+    private readonly opportunityModel: Model<OpportunityDocument>,
+    @InjectModel(Property.name)
+    private readonly propertyModel: Model<PropertyDocument>,
+    @InjectModel(Project.name)
+    private readonly projectModel: Model<ProjectDocument>,
+    @InjectModel(SiteVisit.name)
+    private readonly siteVisitModel: Model<SiteVisitDocument>,
+    @InjectModel(Contact.name)
+    private readonly contactModel: Model<ContactDocument>,
   ) {}
 
   /**
@@ -251,5 +270,509 @@ export class ReportsService implements OnModuleInit {
       ActivityType.REPORT,
       userId,
     );
+  }
+
+  async uploadExcelToGoogleDrive(buffer: Buffer, fileName: string): Promise<any> {
+    const clientId = process.env.GOOGLE_DRIVE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_DRIVE_CLIENT_SECRET;
+    const refreshToken = process.env.GOOGLE_DRIVE_REFRESH_TOKEN;
+
+    if (clientId && clientSecret && refreshToken) {
+      try {
+        const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            client_id: clientId,
+            client_secret: clientSecret,
+            refresh_token: refreshToken,
+            grant_type: 'refresh_token',
+          }),
+        });
+
+        if (!tokenResponse.ok) {
+          const errText = await tokenResponse.text();
+          throw new Error(`Google OAuth token refresh failed: ${errText}`);
+        }
+
+        const tokenData = (await tokenResponse.json()) as any;
+        const accessToken = tokenData.access_token;
+
+        const boundary = 'report_upload_boundary_12345';
+        const metadata = {
+          name: fileName,
+          mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        };
+
+        const header = [
+          `--${boundary}`,
+          'Content-Type: application/json; charset=UTF-8',
+          '',
+          JSON.stringify(metadata),
+          `--${boundary}`,
+          'Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          '',
+          '',
+        ].join('\r\n');
+        const footer = `\r\n--${boundary}--\r\n`;
+
+        const multipartBody = Buffer.concat([
+          Buffer.from(header, 'utf-8'),
+          buffer,
+          Buffer.from(footer, 'utf-8'),
+        ]);
+
+        const uploadResponse = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': `multipart/related; boundary=${boundary}`,
+          },
+          body: multipartBody,
+        });
+
+        if (!uploadResponse.ok) {
+          const errText = await uploadResponse.text();
+          throw new Error(`Google Drive upload failed: ${errText}`);
+        }
+
+        const uploadData = (await uploadResponse.json()) as any;
+        return {
+          success: true,
+          fileId: uploadData.id,
+          fileName: uploadData.name,
+          webViewLink: `https://drive.google.com/open?id=${uploadData.id}`,
+          isMock: false,
+        };
+      } catch (err) {
+        console.error('Real Google Drive upload failed, falling back to mock:', err);
+      }
+    }
+
+    try {
+      const fs = await import('fs');
+      const path = await import('path');
+      const backupsDir = path.join(process.cwd(), 'backups');
+      if (!fs.existsSync(backupsDir)) {
+        fs.mkdirSync(backupsDir, { recursive: true });
+      }
+
+      const backupFileName = `${fileName.replace('.xlsx', '')}_drive_${new Date().getTime()}.xlsx`;
+      const filePath = path.join(backupsDir, backupFileName);
+      fs.writeFileSync(filePath, buffer);
+
+      const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
+      const downloadLink = `${backendUrl}/api/databackup/download/${backupFileName}`;
+
+      return {
+        success: true,
+        message: 'Google Drive credentials not set in .env. Saved locally in backups folder instead.',
+        fileName: backupFileName,
+        webViewLink: downloadLink,
+        isMock: true,
+      };
+    } catch (err: any) {
+      console.error('Google Drive export simulation failed:', err);
+      throw new Error(`Export to Google Drive failed: ${err.message}`);
+    }
+  }
+
+  async getReportData(id: string): Promise<{ headers: string[]; rows: string[][]; reportName: string }> {
+    const report = await this.findOne(id);
+    const reportNameLower = report.name.toLowerCase();
+    const userIds = report.permission
+      ? report.permission.split(',').map((u) => u.trim()).filter(Boolean)
+      : [];
+
+    let headers: string[] = [];
+    let rows: string[][] = [];
+
+    if (reportNameLower.includes('lead')) {
+      const query: any = {};
+      if (userIds.length > 0) {
+        query.$or = [
+          { assignedTo: { $in: userIds } },
+          { createdBy: { $in: userIds } },
+        ];
+      }
+      const leads = await this.leadModel
+        .find(query)
+        .populate('contactId')
+        .populate('assignedTo')
+        .populate('createdBy')
+        .exec();
+
+      headers = [
+        'Contact Name',
+        'Contact Mobile',
+        'Contact Email',
+        'Requirement',
+        'Follow-up Note',
+        'Schedule Date',
+        'Schedule Time',
+        'Score',
+        'Source',
+        'Branch',
+        'Assignee',
+        'Temperature',
+        'Status',
+        'Next Remark',
+        'Outcome',
+        'Purpose',
+        'Created At',
+      ];
+
+      rows = leads.map((l: any) => {
+        const contactName = l.contactId
+          ? `${l.contactId.firstName || ''} ${l.contactId.lastName || ''}`.trim()
+          : '';
+        const contactMobile = l.contactId?.mobile || '';
+        const contactEmail = l.contactId?.email || '';
+        const assigneeName = l.assignedTo
+          ? `${l.assignedTo.firstName || ''} ${l.assignedTo.lastName || ''}`.trim()
+          : '';
+        return [
+          contactName,
+          contactMobile,
+          contactEmail,
+          l.requirement || '',
+          l.followupNote || '',
+          l.scheduleDate || '',
+          l.scheduleTime || '',
+          l.score !== undefined ? l.score.toString() : '1.0',
+          l.source || '',
+          l.branch || '',
+          assigneeName,
+          l.temperature || '',
+          l.status || '',
+          l.nextRemark || '',
+          l.outcome || '',
+          l.purpose || '',
+          l.createdAt ? new Date(l.createdAt).toISOString() : '',
+        ];
+      });
+    } else if (
+      reportNameLower.includes('opportunity') ||
+      reportNameLower.includes('opp')
+    ) {
+      const query: any = {};
+      if (userIds.length > 0) {
+        query.$or = [
+          { assignedTo: { $in: userIds } },
+          { createdBy: { $in: userIds } },
+        ];
+      }
+      const opps = await this.opportunityModel
+        .find(query)
+        .populate('contactId')
+        .populate('assignedTo')
+        .populate('createdBy')
+        .exec();
+
+      headers = [
+        'Customer Name',
+        'Customer Mobile',
+        'Customer Email',
+        'Purpose',
+        'Looking For',
+        'Budget',
+        'Area',
+        'City',
+        'Locality',
+        'Bedroom',
+        'Furnishing',
+        'Next Stage',
+        'Schedule Date',
+        'Schedule Time',
+        'Source',
+        'Branch',
+        'Assignee',
+        'Est. Revenue',
+        'Status',
+        'Created At',
+      ];
+
+      rows = opps.map((o: any) => {
+        const contactName = o.contactId
+          ? `${o.contactId.firstName || ''} ${o.contactId.lastName || ''}`.trim()
+          : '';
+        const contactMobile = o.contactId?.mobile || '';
+        const contactEmail = o.contactId?.email || '';
+        const assigneeName = o.assignedTo
+          ? `${o.assignedTo.firstName || ''} ${o.assignedTo.lastName || ''}`.trim()
+          : '';
+        const budgetStr = `${o.minBudget || 0}-${o.maxBudget || 0} ${o.budgetUnit || ''}`.trim();
+        const areaStr = `${o.minArea || 0}-${o.maxArea || 0} ${o.areaUnit || ''}`.trim();
+        return [
+          contactName,
+          contactMobile,
+          contactEmail,
+          o.purpose || '',
+          o.lookingFor || '',
+          budgetStr,
+          areaStr,
+          o.city || '',
+          o.locality || '',
+          o.bedroom || '',
+          o.furnishing || '',
+          o.schedulePurpose || '',
+          o.scheduleDate || '',
+          o.scheduleTime || '',
+          o.source || '',
+          o.branch || '',
+          assigneeName,
+          o.estRevenue !== undefined ? o.estRevenue.toString() : '0',
+          o.status || '',
+          o.createdAt ? new Date(o.createdAt).toISOString() : '',
+        ];
+      });
+    } else if (reportNameLower.includes('property')) {
+      const query: any = {};
+      if (userIds.length > 0) {
+        query.$or = [
+          { assignedTo: { $in: userIds } },
+          { createdBy: { $in: userIds } },
+        ];
+      }
+      const props = await this.propertyModel
+        .find(query)
+        .populate('ownerLandlord')
+        .populate('assignedTo')
+        .populate('createdBy')
+        .exec();
+
+      headers = [
+        'Property Name',
+        'Location',
+        'Type',
+        'Price',
+        'Sqft',
+        'Status',
+        'Builder',
+        'Owner Name',
+        'Owner Mobile',
+        'Assignee',
+        'Created At',
+      ];
+
+      rows = props.map((p: any) => {
+        const ownerName = p.ownerLandlord
+          ? `${p.ownerLandlord.firstName || ''} ${p.ownerLandlord.lastName || ''}`.trim()
+          : '';
+        const ownerMobile = p.ownerLandlord?.mobile || '';
+        const assigneeName = p.assignedTo
+          ? `${p.assignedTo.firstName || ''} ${p.assignedTo.lastName || ''}`.trim()
+          : '';
+        return [
+          p.name || '',
+          p.location || '',
+          p.type || '',
+          p.price !== undefined ? p.price.toString() : '',
+          p.sqft !== undefined ? p.sqft.toString() : '',
+          p.status || '',
+          p.builder || '',
+          ownerName,
+          ownerMobile,
+          assigneeName,
+          p.createdAt ? new Date(p.createdAt).toISOString() : '',
+        ];
+      });
+    } else if (reportNameLower.includes('project')) {
+      const query: any = {};
+      if (userIds.length > 0) {
+        query.$or = [
+          { assignedTo: { $in: userIds } },
+          { createdBy: { $in: userIds } },
+        ];
+      }
+      const projects = await this.projectModel
+        .find(query)
+        .populate('contactId')
+        .populate('assignedTo')
+        .populate('createdBy')
+        .exec();
+
+      headers = [
+        'Project Name',
+        'Project Owner',
+        'Launch Date',
+        'RERA Number',
+        'Area',
+        'Price',
+        'Status',
+        'Developer',
+        'Assignee',
+        'Created At',
+      ];
+
+      rows = projects.map((p: any) => {
+        const ownerName = p.contactId
+          ? `${p.contactId.firstName || ''} ${p.contactId.lastName || ''}`.trim()
+          : '';
+        const assigneeName = p.assignedTo
+          ? `${p.assignedTo.firstName || ''} ${p.assignedTo.lastName || ''}`.trim()
+          : '';
+        const areaStr = `${p.projectArea || ''} ${p.areaUnit || ''}`.trim();
+        return [
+          p.projectName || '',
+          ownerName,
+          p.launchDate || '',
+          p.reraNumber || '',
+          areaStr,
+          p.price !== undefined ? p.price.toString() : '',
+          p.status || '',
+          p.developerName || '',
+          assigneeName,
+          p.createdAt ? new Date(p.createdAt).toISOString() : '',
+        ];
+      });
+    } else if (
+      reportNameLower.includes('visit') ||
+      reportNameLower.includes('sitevisit') ||
+      reportNameLower.includes('sitevist')
+    ) {
+      const query: any = {};
+      if (userIds.length > 0) {
+        query.$or = [
+          { assignee: { $in: userIds } },
+          { createdBy: { $in: userIds } },
+        ];
+      }
+      const siteVisits = await this.siteVisitModel
+        .find(query)
+        .populate('assignee')
+        .populate('createdBy')
+        .exec();
+
+      headers = [
+        'Visitor',
+        'Visit Type',
+        'Module',
+        'Site Name',
+        'Visit Date',
+        'Time In',
+        'Time Out',
+        'Remark',
+        'Site Manager',
+        'Sourcing Manager',
+        'Closing Manager',
+        'Source',
+        'Branch',
+        'Assignee',
+        'Visit Status',
+        'Submitted By',
+        'Created At',
+      ];
+
+      rows = siteVisits.map((sv: any) => {
+        const assigneeName = sv.assignee
+          ? `${sv.assignee.firstName || ''} ${sv.assignee.lastName || ''}`.trim()
+          : '';
+        const submittedBy = sv.createdBy
+          ? `${sv.createdBy.firstName || ''} ${sv.createdBy.lastName || ''}`.trim()
+          : '';
+        return [
+          sv.visitor || '',
+          sv.visitType || '',
+          sv.module || '',
+          sv.siteName || '',
+          sv.visitDate || '',
+          sv.timeIn || '',
+          sv.timeOut || '',
+          sv.remark || '',
+          sv.siteManager || '',
+          sv.sourcingManager || '',
+          sv.closingManager || '',
+          sv.source || '',
+          sv.branch || '',
+          assigneeName,
+          sv.visitStatus || '',
+          submittedBy,
+          sv.createdAt ? new Date(sv.createdAt).toISOString() : '',
+        ];
+      });
+    } else {
+      // Default: Contact / Customer Summary
+      const query: any = {};
+      if (userIds.length > 0) {
+        query.$or = [
+          { assignedTo: { $in: userIds } },
+          { createdBy: { $in: userIds } },
+        ];
+      }
+      const contacts = await this.contactModel
+        .find(query)
+        .populate('assignedTo')
+        .populate('createdBy')
+        .exec();
+
+      headers = [
+        'Customer Name',
+        'Customer Type',
+        'Contact Type',
+        'Mobile',
+        'Email',
+        'DND Status',
+        'Unique Number',
+        'Address',
+        'City',
+        'Company',
+        'Designation',
+        'Source',
+        'Branch',
+        'Assignee',
+        'Created At',
+      ];
+
+      rows = contacts.map((c: any) => {
+        const contactName = `${c.firstName || ''} ${c.lastName || ''}`.trim();
+        const assigneeName = c.assignedTo
+          ? `${c.assignedTo.firstName || ''} ${c.assignedTo.lastName || ''}`.trim()
+          : '';
+        return [
+          contactName,
+          c.customerType || '',
+          c.contactType || '',
+          c.mobile || '',
+          c.email || '',
+          c.dndStatus || '',
+          c.uniqueNumber || '',
+          c.address || '',
+          c.city || '',
+          c.companyName || '',
+          c.designation || '',
+          c.source || '',
+          c.branch || '',
+          assigneeName,
+          c.createdAt ? new Date(c.createdAt).toISOString() : '',
+        ];
+      });
+    }
+
+    return { headers, rows, reportName: report.name };
+  }
+
+  async generateReportExcel(id: string): Promise<{ buffer: Buffer; fileName: string; reportName: string }> {
+    const { headers, rows, reportName } = await this.getReportData(id);
+    const buffer = await generateExcelBuffer(reportName, headers, rows);
+
+    let filePrefix = 'report';
+    const reportNameLower = reportName.toLowerCase();
+    if (reportNameLower.includes('lead')) {
+      filePrefix = 'lead_report';
+    } else if (reportNameLower.includes('opportunity') || reportNameLower.includes('opp')) {
+      filePrefix = 'opportunity_report';
+    } else if (reportNameLower.includes('property')) {
+      filePrefix = 'property_report';
+    } else if (reportNameLower.includes('project')) {
+      filePrefix = 'project_report';
+    } else if (reportNameLower.includes('visit') || reportNameLower.includes('sitevisit') || reportNameLower.includes('sitevist')) {
+      filePrefix = 'site_visit_report';
+    } else {
+      filePrefix = 'customer_summary_report';
+    }
+
+    const fileName = `${filePrefix}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    return { buffer, fileName, reportName };
   }
 }

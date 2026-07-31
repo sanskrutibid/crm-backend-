@@ -48,11 +48,11 @@ export class Attendance {
   @Prop({ required: true, trim: true, index: true })
   date: string; // Format: YYYY-MM-DD for fast shift grouping and indexing
 
-  @Prop({ required: true, type: Date })
-  punchInTime: Date;
+  @Prop({ type: Date })
+  punchInTime?: Date;
 
-  @Prop({ required: true, type: LocationPointSchema })
-  punchInLocation: LocationPoint;
+  @Prop({ type: LocationPointSchema })
+  punchInLocation?: LocationPoint;
 
   @Prop({ type: Date })
   punchOutTime?: Date;
@@ -70,6 +70,18 @@ export class Attendance {
 
   @Prop({ type: [LocationPointSchema], default: [] })
   path: LocationPoint[];
+
+  @Prop({ type: String })
+  remarks?: string;
+
+  @Prop({ type: String })
+  lateBy?: string;
+
+  @Prop({ type: String })
+  workingHours?: string;
+
+  @Prop({ type: String })
+  manualStatus?: string;
 }
 
 export const AttendanceSchema = SchemaFactory.createForClass(Attendance);

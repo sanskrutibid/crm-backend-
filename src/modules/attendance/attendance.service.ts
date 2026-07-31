@@ -10,6 +10,7 @@ import { LoginHistory, LoginHistoryDocument } from '../login-history/schemas/log
 import { PunchInDto } from './dto/punch-in.dto';
 import { PunchOutDto } from './dto/punch-out.dto';
 import { TrackLocationDto } from './dto/track-location.dto';
+import { MarkAttendanceDto } from './dto/mark-attendance.dto';
 
 @Injectable()
 export class AttendanceService {
@@ -235,8 +236,8 @@ export class AttendanceService {
       );
     }
 
-    const totalDistanceKm = this.calculateTotalDistance(shift.path);
-    const holdingPoints = this.calculateHoldingPoints(shift.path);
+    const totalDistanceKm = this.calculateTotalDistance(shift.path || []);
+    const holdingPoints = this.calculateHoldingPoints(shift.path || []);
 
     return {
       userId: shift.userId,
@@ -246,11 +247,74 @@ export class AttendanceService {
       punchInLocation: shift.punchInLocation,
       punchOutTime: shift.punchOutTime,
       punchOutLocation: shift.punchOutLocation,
-      path: shift.path,
+      path: shift.path || [],
       holdingPoints,
       totalDistanceKm,
       loginDetails,
+      manualStatus: shift.manualStatus,
+      remarks: shift.remarks,
+      workingHours: shift.workingHours,
+      lateBy: shift.lateBy,
     };
+  }
+
+  /**
+   * Saves or updates a manual attendance record marked by an administrator.
+   */
+  async saveManualAttendance(
+    dto: MarkAttendanceDto,
+  ): Promise<AttendanceDocument> {
+    const {
+      userId,
+      date,
+      status,
+      checkIn,
+      checkOut,
+      workingHours,
+      lateBy,
+      remarks,
+    } = dto;
+
+    // Find if there is an existing record
+    let record = await this.attendanceModel.findOne({ userId, date }).exec();
+
+    // Default coordinates Nagpur/Noida
+    const defaultLocation = {
+      latitude: 21.1458,
+      longitude: 79.0882,
+      timestamp: new Date(),
+    };
+
+    if (!record) {
+      record = new this.attendanceModel({
+        userId,
+        date,
+      });
+    }
+
+    record.manualStatus = status;
+    record.remarks = remarks || '';
+    record.workingHours = workingHours || '';
+    record.lateBy = lateBy || '';
+    record.status = checkOut ? 'COMPLETED' : 'ACTIVE';
+
+    if (checkIn) {
+      record.punchInTime = new Date(`${date}T${checkIn}:00`);
+      record.punchInLocation = defaultLocation;
+    } else {
+      record.punchInTime = undefined;
+      record.punchInLocation = undefined;
+    }
+
+    if (checkOut) {
+      record.punchOutTime = new Date(`${date}T${checkOut}:00`);
+      record.punchOutLocation = defaultLocation;
+    } else {
+      record.punchOutTime = undefined;
+      record.punchOutLocation = undefined;
+    }
+
+    return record.save();
   }
 
   /**

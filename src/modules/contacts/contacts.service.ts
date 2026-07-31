@@ -17,6 +17,7 @@ import {
   ContactVisibility,
 } from './schemas/contact.schema';
 import { Audience, AudienceDocument } from './schemas/audience.schema';
+import { generateExcelBuffer } from '../../common/utils/excel.util';
 import {
   EmailVerification,
   EmailVerificationDocument,
@@ -814,7 +815,17 @@ export class ContactsService implements OnModuleInit {
     return { success: true, primaryContact: primary };
   }
 
-  private async generateContactsCsv(query: any): Promise<string> {
+  async downloadExcel(query: any): Promise<Buffer> {
+    const { buffer } = await this.generateContactsExcel(query);
+    return buffer;
+  }
+
+  async uploadToGoogleDrive(query: any, inputLimit?: number): Promise<any> {
+    const { buffer, fileName } = await this.generateContactsExcel(query);
+    return this.uploadExcelToGoogleDrive(buffer, fileName);
+  }
+
+  private async generateContactsExcel(query: any): Promise<{ buffer: Buffer; fileName: string }> {
     const filter = this.buildFilter(query);
     const queryChain = this.contactModel
       .find(filter)
@@ -867,21 +878,16 @@ export class ContactsService implements OnModuleInit {
         c.customerType || '',
         c.contactType || '',
         c.branch || '',
-        (c as any).createdAt ? (c as any).createdAt.toISOString() : '',
+        (c as any).createdAt && !isNaN(new Date((c as any).createdAt).getTime()) ? new Date((c as any).createdAt).toISOString() : '',
       ];
     });
 
-    const csvContent = [
-      headers.join(','),
-      ...rows.map((r) =>
-        r.map((val) => `"${val.replace(/"/g, '""')}"`).join(','),
-      ),
-    ].join('\n');
-
-    return csvContent;
+    const buffer = await generateExcelBuffer('Contacts', headers, rows);
+    const fileName = `contacts_export_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    return { buffer, fileName };
   }
 
-  private async uploadCsvToGoogleDrive(csvContent: string, fileName: string): Promise<any> {
+  private async uploadExcelToGoogleDrive(buffer: Buffer, fileName: string): Promise<any> {
     const clientId = process.env.GOOGLE_DRIVE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_DRIVE_CLIENT_SECRET;
     const refreshToken = process.env.GOOGLE_DRIVE_REFRESH_TOKEN;
@@ -910,21 +916,26 @@ export class ContactsService implements OnModuleInit {
         const boundary = 'contacts_upload_boundary_12345';
         const metadata = {
           name: fileName,
-          mimeType: 'text/csv',
+          mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         };
 
-        const multipartBody = [
+        const header = [
           `--${boundary}`,
           'Content-Type: application/json; charset=UTF-8',
           '',
           JSON.stringify(metadata),
           `--${boundary}`,
-          'Content-Type: text/csv',
+          'Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
           '',
-          csvContent,
-          `--${boundary}--`,
           '',
         ].join('\r\n');
+        const footer = `\r\n--${boundary}--\r\n`;
+
+        const multipartBody = Buffer.concat([
+          Buffer.from(header, 'utf-8'),
+          buffer,
+          Buffer.from(footer, 'utf-8'),
+        ]);
 
         const uploadResponse = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
           method: 'POST',
@@ -961,9 +972,9 @@ export class ContactsService implements OnModuleInit {
         fs.mkdirSync(backupsDir, { recursive: true });
       }
 
-      const backupFileName = `contacts_drive_backup_${new Date().toISOString().replace(/[:.]/g, '-')}.csv`;
+      const backupFileName = `contacts_drive_backup_${new Date().toISOString().replace(/[:.]/g, '-')}.xlsx`;
       const filePath = path.join(backupsDir, backupFileName);
-      fs.writeFileSync(filePath, csvContent, 'utf-8');
+      fs.writeFileSync(filePath, buffer);
 
       const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
       const downloadLink = `${backendUrl}/api/databackup/download/${backupFileName}`;
@@ -979,21 +990,6 @@ export class ContactsService implements OnModuleInit {
       this.logger.error('Google Drive export simulation failed:', err);
       throw new Error(`Export to Google Drive failed: ${err.message}`);
     }
-  }
-
-  async downloadExcel(query: any): Promise<string> {
-    const csvContent = await this.generateContactsCsv(query);
-    const fileName = `contacts_export_${new Date().toISOString().slice(0, 10)}.csv`;
-    this.uploadCsvToGoogleDrive(csvContent, fileName).catch((err) => {
-      this.logger.error('Background Google Drive upload failed:', err);
-    });
-    return csvContent;
-  }
-
-  async uploadToGoogleDrive(query: any, inputLimit?: number): Promise<any> {
-    const csvContent = await this.generateContactsCsv(query);
-    const fileName = `contacts_export_${new Date().toISOString().slice(0, 10)}.csv`;
-    return this.uploadCsvToGoogleDrive(csvContent, fileName);
   }
 
   async importContacts(contacts: any[], defaultUserId?: string) {

@@ -20,6 +20,7 @@ import { AttendanceService } from './attendance.service';
 import { PunchInDto } from './dto/punch-in.dto';
 import { PunchOutDto } from './dto/punch-out.dto';
 import { TrackLocationDto } from './dto/track-location.dto';
+import { MarkAttendanceDto } from './dto/mark-attendance.dto';
 import { AgentMovementTimelineDto } from './dto/attendance-response.dto';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -78,6 +79,18 @@ export class AttendanceController {
   @ResponseMessage('All attendance records retrieved successfully')
   async getAllAttendance() {
     return this.attendanceService.getAllAttendance();
+  }
+
+  @Post('manual-mark')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Manually mark attendance by Admin' })
+  @ApiOkResponse({
+    description: 'Attendance manually saved/updated successfully.',
+  })
+  @ResponseMessage('Attendance manually marked successfully')
+  async saveManualAttendance(@Body() markAttendanceDto: MarkAttendanceDto) {
+    return this.attendanceService.saveManualAttendance(markAttendanceDto);
   }
 
   @Get('agent/:userId/timeline')
