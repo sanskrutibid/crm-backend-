@@ -48,11 +48,14 @@ import { LeavesModule } from './modules/leaves/leaves.module';
 
     MongooseModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        uri:
-          configService.get<string>('MONGO_URI') ||
-          'mongodb://localhost:27017/crm_app',
-      }),
+     useFactory: (configService: ConfigService) => {
+
+  return {
+    uri:
+      configService.get<string>('MONGO_URI') ||
+      'mongodb://localhost:27017/crm_app',
+  };
+},
     }),
 
     CrmCacheModule,
