@@ -13,6 +13,7 @@ import { EmailsService } from '../emails/emails.service';
 import { ActivitiesService } from '../activities/activities.service';
 import { ActivityType } from '../activities/schemas/activity.schema';
 import { Template, TemplateDocument } from '../templates/schemas/template.schema';
+import { GoogleCalendarService } from '../google-calendar/google-calendar.service';
 
 @Injectable()
 export class SiteVisitsService implements OnModuleInit {
@@ -30,6 +31,7 @@ export class SiteVisitsService implements OnModuleInit {
     private readonly smsService: SmsService,
     private readonly emailsService: EmailsService,
     private readonly activitiesService: ActivitiesService,
+    private readonly googleCalendarService: GoogleCalendarService,
   ) {}
 
   private replacePlaceholders(content: string, data: any): string {
@@ -163,6 +165,11 @@ export class SiteVisitsService implements OnModuleInit {
       otpExpiresAt,
     });
     const saved = await newVisit.save();
+
+    // Sync with Google Calendar asynchronously
+    this.googleCalendarService.syncEventForSiteVisit(saved._id.toString()).catch(err => {
+      console.error('Google Calendar sync failed for site visit creation:', err);
+    });
 
     // Sync site visit with Lead if leadId is provided
     if (createDto.leadId) {
@@ -575,6 +582,13 @@ export class SiteVisitsService implements OnModuleInit {
       .populate(['assignee', 'createdBy', 'contactId'])
       .exec();
 
+    if (updated) {
+      // Sync with Google Calendar asynchronously
+      this.googleCalendarService.syncEventForSiteVisit(updated._id.toString()).catch(err => {
+        console.error('Google Calendar sync failed for site visit update:', err);
+      });
+    }
+
     if (!updated) {
       throw new NotFoundException(
         `Site visit record with ID "${id}" not found`,
@@ -597,6 +611,12 @@ export class SiteVisitsService implements OnModuleInit {
       throw new NotFoundException(
         `Site visit record with ID "${id}" not found`,
       );
+    }
+
+    if (visit.googleEventId && visit.assignee) {
+      this.googleCalendarService.deleteEvent(visit.assignee.toString(), visit.googleEventId).catch(err => {
+        console.error('Google Calendar event deletion failed for site visit:', err);
+      });
     }
 
     await this.siteVisitModel.findByIdAndDelete(id).exec();

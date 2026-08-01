@@ -19,6 +19,7 @@ import { ConfigModule } from '@nestjs/config';
 import { ActivitiesModule } from '../activities/activities.module';
 import { EmailsModule } from '../emails/emails.module';
 import { SmsModule } from '../sms/sms.module';
+import { GoogleCalendarModule } from '../google-calendar/google-calendar.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { SmsModule } from '../sms/sms.module';
     ActivitiesModule,
     EmailsModule,
     SmsModule,
+    GoogleCalendarModule,
   ],
   controllers: [LeadsController],
   providers: [LeadsService, LeadsAIService],

@@ -11,6 +11,7 @@ import { AuthModule } from '../auth/auth.module';
 import { ActivitiesModule } from '../activities/activities.module';
 import { SmsModule } from '../sms/sms.module';
 import { EmailsModule } from '../emails/emails.module';
+import { GoogleCalendarModule } from '../google-calendar/google-calendar.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { EmailsModule } from '../emails/emails.module';
     ActivitiesModule,
     SmsModule,
     EmailsModule,
+    GoogleCalendarModule,
   ],
   controllers: [SiteVisitsController],
   providers: [SiteVisitsService],

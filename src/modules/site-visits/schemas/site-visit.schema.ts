@@ -125,6 +125,9 @@ export class SiteVisit {
 
   @Prop({ type: Date })
   otpExpiresAt?: Date;
+
+  @Prop({ trim: true })
+  googleEventId?: string;
 }
 
 export const SiteVisitSchema = SchemaFactory.createForClass(SiteVisit);

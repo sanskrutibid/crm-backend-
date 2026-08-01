@@ -39,6 +39,7 @@ import { HolidaysModule } from './modules/holidays/holidays.module';
 import { EmployeeDocumentsModule } from './modules/employee-documents/employee-documents.module';
 import { PayrollModule } from './modules/payroll/payroll.module';
 import { LeavesModule } from './modules/leaves/leaves.module';
+import { GoogleCalendarModule } from './modules/google-calendar/google-calendar.module';
 
 @Module({
   imports: [
@@ -95,6 +96,7 @@ import { LeavesModule } from './modules/leaves/leaves.module';
     SourcesModule,
     PropertyTypesModule,
     MatchmakingModule,
+    GoogleCalendarModule,
   ],
   controllers: [AppController],
   providers: [AppService],

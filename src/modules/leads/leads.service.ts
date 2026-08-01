@@ -50,6 +50,7 @@ import {
 } from './dto/bulk-actions.dto';
 import { SmsService } from '../sms/sms.service';
 import { EmailsService } from '../emails/emails.service';
+import { GoogleCalendarService } from '../google-calendar/google-calendar.service';
 
 @Injectable()
 export class LeadsService implements OnModuleInit {
@@ -66,6 +67,7 @@ export class LeadsService implements OnModuleInit {
     private readonly activitiesService: ActivitiesService,
     private readonly smsService: SmsService,
     private readonly emailsService: EmailsService,
+    private readonly googleCalendarService: GoogleCalendarService,
   ) {}
 
   private async invalidateCache(id?: string) {
@@ -264,6 +266,11 @@ export class LeadsService implements OnModuleInit {
       assignDate: new Date(),
     });
     const savedLead = await newLead.save();
+
+    // Sync with Google Calendar asynchronously
+    this.googleCalendarService.syncEventForLead(savedLead._id.toString()).catch(err => {
+      console.error('Google Calendar sync failed during creation:', err);
+    });
 
     // Log lead creation
     const contact = await this.contactModel.findById(targetContactId).exec();
@@ -767,6 +774,13 @@ export class LeadsService implements OnModuleInit {
       .populate(['contactId', 'assignedTo', 'createdBy', 'updatedBy'])
       .exec();
 
+    if (updatedLead) {
+      // Sync with Google Calendar asynchronously
+      this.googleCalendarService.syncEventForLead(updatedLead._id.toString()).catch(err => {
+        console.error('Google Calendar sync failed during update:', err);
+      });
+    }
+
     if (!updatedLead) {
       throw new NotFoundException(`Lead with ID "${id}" not found`);
     }
@@ -829,6 +843,12 @@ export class LeadsService implements OnModuleInit {
     const lead = await this.leadModel.findById(id).populate('contactId').exec();
     if (!lead) {
       throw new NotFoundException(`Lead with ID "${id}" not found`);
+    }
+
+    if (lead.googleEventId && lead.assignedTo) {
+      this.googleCalendarService.deleteEvent(lead.assignedTo.toString() || (lead.assignedTo as any)._id?.toString(), lead.googleEventId).catch(err => {
+        console.error('Google Calendar event deletion failed:', err);
+      });
     }
 
     await this.leadModel.findByIdAndDelete(id).exec();

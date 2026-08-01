@@ -177,6 +177,9 @@ export class Lead {
     default: [],
   })
   siteVisits: any[];
+
+  @Prop({ trim: true })
+  googleEventId?: string;
 }
 
 export const LeadSchema = SchemaFactory.createForClass(Lead);

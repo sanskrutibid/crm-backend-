@@ -42,6 +42,18 @@ export class User {
 
   @Prop({ default: true })
   isActive: boolean;
+
+  @Prop({ trim: true })
+  googleRefreshToken?: string;
+
+  @Prop({ trim: true })
+  googleAccessToken?: string;
+
+  @Prop({ trim: true })
+  googleEmail?: string;
+
+  @Prop({ default: false })
+  googleCalendarConnected: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
