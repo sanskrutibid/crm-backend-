@@ -108,7 +108,7 @@ export class GoogleCalendarService {
   }
 
   /**
-   * Helper to parse schedule date and time strings into a single Date object.
+   * Helper to parse schedule date and time strings into a single Date object forced to IST (UTC+05:30).
    * Handles "2026-05-26" and "26-May-2026" formats.
    */
   private parseDateTime(dateStr?: string, timeStr?: string): Date | null {
@@ -132,30 +132,46 @@ export class GoogleCalendarService {
         hours = 0;
       }
 
-      let date = new Date();
+      let year = 0;
+      let month = 0;
+      let day = 0;
+
       if (dStr.includes('-')) {
         const parts = dStr.split('-');
         if (parts[0].length === 4) {
           // YYYY-MM-DD
-          const year = parseInt(parts[0], 10);
-          const month = parseInt(parts[1], 10) - 1;
-          const day = parseInt(parts[2], 10);
-          date = new Date(year, month, day, hours, minutes, 0);
+          year = parseInt(parts[0], 10);
+          month = parseInt(parts[1], 10) - 1;
+          day = parseInt(parts[2], 10);
         } else {
           // DD-MMM-YYYY or DD-MM-YYYY
           const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
-          const day = parseInt(parts[0], 10);
+          day = parseInt(parts[0], 10);
           const monthPart = parts[1].toLowerCase();
-          const year = parseInt(parts[2], 10);
-          let month = months.findIndex(m => monthPart.startsWith(m));
+          year = parseInt(parts[2], 10);
+          month = months.findIndex(m => monthPart.startsWith(m));
           if (month === -1) {
             month = parseInt(parts[1], 10) - 1;
           }
-          date = new Date(year, month, day, hours, minutes, 0);
         }
       } else {
-        date = new Date(`${dStr} ${hours}:${minutes}:00`);
+        const parsedDate = new Date(dStr);
+        if (!isNaN(parsedDate.getTime())) {
+          year = parsedDate.getFullYear();
+          month = parsedDate.getMonth();
+          day = parsedDate.getDate();
+        } else {
+          const today = new Date();
+          year = today.getFullYear();
+          month = today.getMonth();
+          day = today.getDate();
+        }
       }
+
+      const pad = (num: number) => String(num).padStart(2, '0');
+      // Construct ISO string with +05:30 timezone offset
+      const isoString = `${year}-${pad(month + 1)}-${pad(day)}T${pad(hours)}:${pad(minutes)}:00+05:30`;
+      const date = new Date(isoString);
 
       return isNaN(date.getTime()) ? null : date;
     } catch (err) {
@@ -188,11 +204,11 @@ export class GoogleCalendarService {
         description: `Lead Details:\nRequirement: ${lead.requirement}\nFollowup Note: ${lead.followupNote}\nTemperature: ${lead.temperature}\nStatus: ${lead.status}`,
         start: {
           dateTime: start.toISOString(),
-          timeZone: 'UTC',
+          timeZone: 'Asia/Kolkata',
         },
         end: {
           dateTime: end.toISOString(),
-          timeZone: 'UTC',
+          timeZone: 'Asia/Kolkata',
         },
       };
 
@@ -258,11 +274,11 @@ export class GoogleCalendarService {
         description: `Site Visit Details:\nVisitor Name: ${visit.visitor}\nVisit Type: ${visit.visitType}\nStatus: ${visit.visitStatus}\nRemark: ${visit.remark || 'N/A'}`,
         start: {
           dateTime: start.toISOString(),
-          timeZone: 'UTC',
+          timeZone: 'Asia/Kolkata',
         },
         end: {
           dateTime: end.toISOString(),
-          timeZone: 'UTC',
+          timeZone: 'Asia/Kolkata',
         },
       };
 
