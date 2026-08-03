@@ -401,6 +401,40 @@ export class AttendanceService {
     return all;
   }
 
+  /**
+   * Retrieves the live location of all agents who have punched in today.
+   */
+  async getLiveLocations(): Promise<any[]> {
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    // Find all attendance records for today
+    const records = await this.attendanceModel
+      .find({ date: todayStr })
+      .populate('userId')
+      .exec();
+
+    return records.map((record) => {
+      const user = record.userId as any;
+      const lastPoint =
+        record.path && record.path.length > 0
+          ? record.path[record.path.length - 1]
+          : record.punchInLocation;
+
+      return {
+        userId: user?._id?.toString() || record.userId?.toString(),
+        userName: user
+          ? `${user.firstName} ${user.lastName || ''}`.trim()
+          : 'Unknown Agent',
+        role: user?.role || 'Staff',
+        latitude: lastPoint?.latitude || 21.1458,
+        longitude: lastPoint?.longitude || 79.0882,
+        lastUpdated: lastPoint?.timestamp || record.punchInTime || new Date(),
+        status: record.status === 'ACTIVE' ? 'Active' : 'Inactive',
+        address: lastPoint?.address || (record.status === 'ACTIVE' ? 'Active Tracking' : 'Last Known Location'),
+      };
+    });
+  }
+
   // ==========================================
   // Spatial & Geodetic Algorithms
   // ==========================================

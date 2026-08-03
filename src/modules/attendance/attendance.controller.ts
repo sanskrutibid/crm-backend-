@@ -81,6 +81,14 @@ export class AttendanceController {
     return this.attendanceService.getAllAttendance();
   }
 
+  @Get('live')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Retrieve live locations of all active agents' })
+  @ResponseMessage('Live locations retrieved successfully')
+  async getLiveLocations() {
+    return this.attendanceService.getLiveLocations();
+  }
+
   @Post('manual-mark')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)

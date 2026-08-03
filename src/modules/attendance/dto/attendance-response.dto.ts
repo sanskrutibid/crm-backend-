@@ -12,6 +12,12 @@ export class LocationPointDto {
     description: 'Timestamp coordinate was captured',
   })
   timestamp: string;
+
+  @ApiPropertyOptional({
+    example: 'Nagpur, Maharashtra',
+    description: 'Resolved street address for the location snapshot',
+  })
+  address?: string;
 }
 
 export class HoldingPointDto {

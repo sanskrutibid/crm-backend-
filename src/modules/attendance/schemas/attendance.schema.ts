@@ -17,6 +17,9 @@ export class LocationPoint {
 
   @Prop({ required: true, type: Date, default: Date.now })
   timestamp: Date;
+
+  @Prop({ type: String })
+  address?: string;
 }
 
 const LocationPointSchema = SchemaFactory.createForClass(LocationPoint);
