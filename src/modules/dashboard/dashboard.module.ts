@@ -16,6 +16,7 @@ import {
   Project,
   ProjectSchema,
 } from '../projects/schemas/project.schema';
+import { User, UserSchema } from '../users/schemas/user.schema';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import {
       { name: Contact.name, schema: ContactSchema },
       { name: Opportunity.name, schema: OpportunitySchema },
       { name: Project.name, schema: ProjectSchema },
+      { name: User.name, schema: UserSchema },
     ]),
   ],
   controllers: [DashboardController],

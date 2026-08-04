@@ -25,7 +25,7 @@ export class User {
   @Prop({ required: true, unique: true, trim: true, lowercase: true })
   email: string;
 
-  @Prop({ required: true })
+  @Prop({ required: false })
   password?: string;
 
   @Prop({ required: true, trim: true })

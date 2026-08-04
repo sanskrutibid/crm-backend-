@@ -6,6 +6,8 @@ import {
   IsEmail,
   IsDateString,
   IsEnum,
+  MinLength,
+  Matches,
 } from 'class-validator';
 
 export class CreateEmployeeDto {
@@ -234,4 +236,18 @@ export class CreateEmployeeDto {
   @IsOptional()
   @IsString()
   profileImage?: string;
+
+  @ApiPropertyOptional({ example: 'SecureAgent123!', description: 'Password' })
+  @IsOptional()
+  @IsString()
+  @MinLength(8, { message: 'Password must be at least 8 characters long' })
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}\[\]|\\:;"'<>,.?/~`\-]).{8,}$/, {
+    message: 'Password must contain at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character',
+  })
+  password?: string;
+
+  @ApiPropertyOptional({ example: 'SecureAgent123!', description: 'Confirm Password' })
+  @IsOptional()
+  @IsString()
+  confirmPassword?: string;
 }

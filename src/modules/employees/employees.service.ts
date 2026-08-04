@@ -1,4 +1,4 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Employee, EmployeeDocument } from './schemas/employee.schema';
@@ -103,6 +103,10 @@ export class EmployeesService {
   }
 
   async create(createEmployeeDto: CreateEmployeeDto): Promise<EmployeeDocument> {
+    if (createEmployeeDto.password && createEmployeeDto.password !== createEmployeeDto.confirmPassword) {
+      throw new BadRequestException('Passwords do not match');
+    }
+
     // Check if email already exists
     const existingByEmail = await this.employeeModel
       .findOne({ personalEmail: createEmployeeDto.personalEmail.toLowerCase().trim() })
@@ -204,5 +208,11 @@ export class EmployeesService {
     const employee = await this.findOne(id);
     await this.employeeModel.findByIdAndDelete(employee._id).exec();
     return { deleted: true };
+  }
+
+  async findOneByEmail(email: string): Promise<EmployeeDocument | null> {
+    return this.employeeModel
+      .findOne({ personalEmail: email.toLowerCase().trim() })
+      .exec();
   }
 }

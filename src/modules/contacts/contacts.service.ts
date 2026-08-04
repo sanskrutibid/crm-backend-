@@ -1642,4 +1642,33 @@ export class ContactsService implements OnModuleInit {
 
     return timeline;
   }
+
+  async countDuplicates() {
+    const duplicates = await this.contactModel.aggregate([
+      {
+        $match: {
+          isDeleted: { $ne: true },
+          mobile: { $exists: true, $nin: [null, ''] },
+        },
+      },
+      {
+        $group: {
+          _id: '$mobile',
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $match: {
+          count: { $gt: 1 },
+        },
+      },
+    ]).exec();
+
+    const totalDuplicates = duplicates.reduce(
+      (acc, curr) => acc + (curr.count - 1),
+      0,
+    );
+
+    return { totalDuplicates };
+  }
 }

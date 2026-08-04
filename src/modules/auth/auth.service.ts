@@ -9,6 +9,7 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { LogoutDto } from './dto/logout.dto';
 import { LoginHistoryService } from '../login-history/login-history.service';
+import { EmployeesService } from '../employees/employees.service';
 import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
 
@@ -18,7 +19,24 @@ export class AuthService {
     private usersService: UsersService,
     private configService: ConfigService,
     private loginHistoryService: LoginHistoryService,
+    private employeesService: EmployeesService,
   ) {}
+
+  async checkEmployee(email: string, name: string) {
+    if (!email || !name) {
+      throw new BadRequestException('Email and Name are required');
+    }
+    const employee = await this.employeesService.findOneByEmail(email);
+    if (!employee) {
+      return { exists: false, message: 'No employee found with this email' };
+    }
+    const enteredName = name.trim().toLowerCase();
+    const employeeName = `${employee.firstName} ${employee.lastName}`.trim().toLowerCase();
+    if (enteredName !== employeeName) {
+      return { exists: false, message: 'Name does not match the employee record' };
+    }
+    return { exists: true, message: 'Employee verified' };
+  }
 
   async register(registerDto: RegisterDto) {
     if (registerDto.password !== registerDto.confirmPassword) {
@@ -28,17 +46,58 @@ export class AuthService {
       throw new BadRequestException('You must accept the terms and conditions');
     }
 
+    // Check if user already exists
+    const existingUser = await this.usersService.findByEmail(registerDto.email);
+    if (existingUser) {
+      throw new BadRequestException('User with this email is already registered');
+    }
+
     const nameParts = registerDto.name.trim().split(/\s+/);
     const firstName = nameParts[0] || 'Unknown';
     const lastName = nameParts.slice(1).join(' ') || '';
 
+    // Check if employee exists
+    let employee = await this.employeesService.findOneByEmail(registerDto.email);
+    if (employee) {
+      // If employee exists, update their password
+      employee.password = registerDto.password;
+      await employee.save();
+    } else {
+      // If employee does not exist, create a new employee record so they show up in the employee table!
+      const baseId = this.employeesService.generateCombinationEmployeeId(
+        firstName,
+        lastName,
+        'Sales Agent', // Default designation
+        '1990-01-01', // Default DOB
+        new Date().toISOString().split('T')[0], // Default joiningDate
+        new Date(),
+      );
+      const employeeId = await this.employeesService.generateUniqueCombinationId(baseId);
+
+      employee = await this.employeesService.create({
+        employeeId,
+        firstName,
+        lastName,
+        personalEmail: registerDto.email.toLowerCase().trim(),
+        gender: 'Male', // Default gender
+        dob: '1990-01-01', // Default DOB
+        mobile: '0000000000', // Default placeholder mobile
+        department: 'Sales', // Default department
+        designation: 'Sales Agent', // Default designation
+        joiningDate: new Date().toISOString().split('T')[0],
+        employmentType: 'Permanent',
+        password: registerDto.password,
+        confirmPassword: registerDto.confirmPassword,
+      });
+    }
+
     const user = await this.usersService.create({
       email: registerDto.email,
-      password: registerDto.password,
       firstName,
       lastName,
-      role: registerDto.role,
+      role: registerDto.role || 'Agent/Broker',
     });
+
     const token = this.generateToken(user);
     return {
       user: {
@@ -56,17 +115,27 @@ export class AuthService {
     loginDto: LoginDto,
     clientInfo: { ip: string; userAgent: string },
   ) {
-    const user = await this.usersService.findByEmail(loginDto.email);
-    if (!user) {
+    const employee = await this.employeesService.findOneByEmail(loginDto.email);
+    
+    let isPasswordValid = false;
+    if (employee) {
+      // Employees authenticate using their password stored in the Employee record
+      isPasswordValid = employee.password === loginDto.password;
+    } else {
+      // Fallback: check User collection for non-employee user records (e.g. Admin/Super Admin)
+      const user = await this.usersService.findByEmail(loginDto.email);
+      if (user && user.password) {
+        isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
+      }
+    }
+
+    if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid email or password');
     }
 
-    const isPasswordValid = await bcrypt.compare(
-      loginDto.password,
-      user.password ?? '',
-    );
-    if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid email or password');
+    const user = await this.usersService.findByEmail(loginDto.email);
+    if (!user) {
+      throw new UnauthorizedException('User account has not been registered');
     }
 
     const token = this.generateToken(user);

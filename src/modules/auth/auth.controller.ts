@@ -6,6 +6,8 @@ import {
   Post,
   Req,
   UseGuards,
+  Get,
+  Query,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -26,6 +28,16 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
+  @Get('check-employee')
+  @ApiOperation({ summary: 'Check if employee name and email match' })
+  @ResponseMessage('Employee status checked successfully')
+  async checkEmployee(
+    @Query('email') email: string,
+    @Query('name') name: string,
+  ) {
+    return this.authService.checkEmployee(email, name);
+  }
 
   @Post('register')
   @ApiOperation({ summary: 'Register a new user' })

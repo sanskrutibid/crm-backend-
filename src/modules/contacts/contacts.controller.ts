@@ -193,6 +193,15 @@ export class ContactsController {
     return this.contactsService.autoMergeDuplicates();
   }
 
+  @Get('actions/duplicate-count')
+  @ApiOperation({
+    summary: 'Get total duplicate records count based on mobile number similarity',
+  })
+  @ResponseMessage('Duplicate contacts count retrieved successfully')
+  async getDuplicateCount() {
+    return this.contactsService.countDuplicates();
+  }
+
   @Post('email-verification/send')
   @ApiOperation({
     summary: 'Send a 6-digit OTP to the email address for verification',

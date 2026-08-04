@@ -153,6 +153,9 @@ export class Employee {
   // Image
   @Prop({ trim: true, default: '' })
   profileImage?: string;
+
+  @Prop({ trim: true, default: '' })
+  password?: string;
 }
 
 export const EmployeeSchema = SchemaFactory.createForClass(Employee);
