@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 async function main() {
-  const uri = 'mongodb+srv://sunnygill1706_db_user:T5GrRgujqKKCvH6K@cluster0.l351phj.mongodb.net/crm_app_db?retryWrites=true&w=majority&appName=Cluster0';
+  const uri = 'mongodb+srv://sunnygill1706_db_user:T5GrRgujqKKCvH6K@cluster0.l351phj.mongodb.net/crm_app?retryWrites=true&w=majority&appName=Cluster0';
   try {
     await mongoose.connect(uri);
     console.log('Connected to MongoDB Atlas');

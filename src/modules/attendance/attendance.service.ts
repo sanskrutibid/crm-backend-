@@ -402,7 +402,8 @@ export class AttendanceService {
   }
 
   /**
-   * Retrieves the live location of all agents who have punched in today.
+   * Retrieves the live location of all active agents who have punched in today,
+   * as well as agents who have logged in today but not yet punched in.
    */
   async getLiveLocations(): Promise<any[]> {
     const todayStr = new Date().toISOString().split('T')[0];
@@ -413,7 +414,12 @@ export class AttendanceService {
       .populate('userId')
       .exec();
 
-    return records.map((record) => {
+    // Map existing attendance user IDs
+    const attendanceUserIds = new Set(
+      records.map((r) => r.userId?._id?.toString() || r.userId?.toString()),
+    );
+
+    const result = records.map((record) => {
       const user = record.userId as any;
       const lastPoint =
         record.path && record.path.length > 0
@@ -433,6 +439,48 @@ export class AttendanceService {
         address: lastPoint?.address || (record.status === 'ACTIVE' ? 'Active Tracking' : 'Last Known Location'),
       };
     });
+
+    // Find all logins from LoginHistory for today
+    const start = new Date(`${todayStr}T00:00:00.000Z`);
+    const end = new Date(`${todayStr}T23:59:59.999Z`);
+    const logins = await this.loginHistoryModel
+      .find({
+        type: 'login',
+        timestamp: { $gte: start, $lte: end },
+      })
+      .populate('userId')
+      .exec();
+
+    // Group logins by userId to find the latest login for each user today who is not in attendanceUserIds
+    const userLatestLogin = new Map<string, any>();
+    for (const login of logins) {
+      if (!login.userId) continue;
+      const uId = typeof login.userId === 'object' ? (login.userId as any)._id.toString() : login.userId.toString();
+      if (attendanceUserIds.has(uId)) continue;
+
+      const existing = userLatestLogin.get(uId);
+      if (!existing || login.timestamp.getTime() > existing.timestamp.getTime()) {
+        userLatestLogin.set(uId, login);
+      }
+    }
+
+    for (const [uId, login] of userLatestLogin.entries()) {
+      const user = login.userId as any;
+      result.push({
+        userId: uId,
+        userName: user
+          ? `${user.firstName} ${user.lastName || ''}`.trim()
+          : 'Unknown Agent',
+        role: user?.role || 'Staff',
+        latitude: login.lat || 21.1458,
+        longitude: login.long || 79.0882,
+        lastUpdated: login.timestamp,
+        status: 'Inactive', // They logged in but didn't punch in yet
+        address: 'Logged in (not punched in)',
+      });
+    }
+
+    return result;
   }
 
   // ==========================================

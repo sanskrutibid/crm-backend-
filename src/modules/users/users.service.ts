@@ -2,12 +2,14 @@ import { Injectable, ConflictException, Inject, forwardRef } from '@nestjs/commo
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User, UserDocument } from './schemas/user.schema';
+import { Employee, EmployeeDocument } from '../employees/schemas/employee.schema';
 import { RolesService } from '../roles/roles.service';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @InjectModel(Employee.name) private employeeModel: Model<EmployeeDocument>,
     private readonly rolesService: RolesService,
   ) {}
 
@@ -79,9 +81,11 @@ export class UsersService {
   }
 
   async findAllAgents(): Promise<UserDocument[]> {
+    const employees = await this.employeeModel.find({}, { personalEmail: 1 }).exec();
+    const emails = employees.map(emp => emp.personalEmail.toLowerCase().trim());
     return this.userModel
       .find({
-        role: { $nin: ['Super Admin', 'ADMIN'] },
+        email: { $in: emails },
         isActive: true,
       })
       .exec();

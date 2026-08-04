@@ -4,11 +4,13 @@ import { Model } from 'mongoose';
 import { Employee, EmployeeDocument } from './schemas/employee.schema';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class EmployeesService {
   constructor(
     @InjectModel(Employee.name) private readonly employeeModel: Model<EmployeeDocument>,
+    private readonly usersService: UsersService,
   ) {}
 
   generateCombinationEmployeeId(
@@ -103,7 +105,7 @@ export class EmployeesService {
   }
 
   async create(createEmployeeDto: CreateEmployeeDto): Promise<EmployeeDocument> {
-    if (createEmployeeDto.password && createEmployeeDto.password !== createEmployeeDto.confirmPassword) {
+    if (createEmployeeDto.password && createEmployeeDto.confirmPassword && createEmployeeDto.password !== createEmployeeDto.confirmPassword) {
       throw new BadRequestException('Passwords do not match');
     }
 
@@ -143,7 +145,37 @@ export class EmployeesService {
       joiningDate: new Date(createEmployeeDto.joiningDate),
     });
 
-    return newEmployee.save();
+    const saved = await newEmployee.save();
+
+    // Auto-create corresponding User record
+    try {
+      const existingUser = await this.usersService.findByEmail(saved.personalEmail);
+      if (!existingUser) {
+        let userRole = 'Agent/Broker';
+        const des = (saved.designation || '').trim().toLowerCase();
+        if (des.includes('super admin') || des.includes('supper admin') || des.includes('superadmin')) {
+          userRole = 'Super Admin';
+        } else if (des.includes('admin')) {
+          userRole = 'Super Admin';
+        } else if (des.includes('editor')) {
+          userRole = 'Editor';
+        } else if (des.includes('client') || des.includes('buyer')) {
+          userRole = 'Client/Buyer';
+        }
+
+        await this.usersService.create({
+          email: saved.personalEmail,
+          firstName: saved.firstName,
+          lastName: saved.lastName || '',
+          role: userRole,
+          password: createEmployeeDto.password || 'CrmUser123!',
+        });
+      }
+    } catch (err) {
+      console.error('Failed to auto-create user for employee:', err);
+    }
+
+    return saved;
   }
 
   async findAll(): Promise<EmployeeDocument[]> {
@@ -168,6 +200,7 @@ export class EmployeesService {
 
   async update(id: string, updateEmployeeDto: UpdateEmployeeDto): Promise<EmployeeDocument> {
     const employee = await this.findOne(id);
+    const oldEmail = employee.personalEmail;
 
     if (updateEmployeeDto.personalEmail) {
       const emailLower = updateEmployeeDto.personalEmail.toLowerCase().trim();
@@ -201,12 +234,56 @@ export class EmployeesService {
       employee.joiningDate = new Date(joiningDate);
     }
 
-    return employee.save();
+    const saved = await employee.save();
+
+    // Sync to User collection
+    try {
+      const existingUser = await this.usersService.findByEmail(oldEmail);
+      if (existingUser) {
+        let userRole = existingUser.role;
+        const des = (updateEmployeeDto.designation || saved.designation || '').trim().toLowerCase();
+        if (des) {
+          if (des.includes('super admin') || des.includes('supper admin') || des.includes('superadmin')) {
+            userRole = 'Super Admin';
+          } else if (des.includes('admin')) {
+            userRole = 'Super Admin';
+          } else if (des.includes('editor')) {
+            userRole = 'Editor';
+          } else if (des.includes('client') || des.includes('buyer')) {
+            userRole = 'Client/Buyer';
+          } else {
+            userRole = 'Agent/Broker';
+          }
+        }
+        await this.usersService.update(existingUser._id.toString(), {
+          email: saved.personalEmail,
+          firstName: saved.firstName,
+          lastName: saved.lastName || '',
+          role: userRole,
+          ...(updateEmployeeDto.password ? { password: updateEmployeeDto.password } : {}),
+        });
+      }
+    } catch (err) {
+      console.error('Failed to sync user details for employee update:', err);
+    }
+
+    return saved;
   }
 
   async remove(id: string): Promise<{ deleted: boolean }> {
     const employee = await this.findOne(id);
     await this.employeeModel.findByIdAndDelete(employee._id).exec();
+
+    // Sync deletion to User collection
+    try {
+      const existingUser = await this.usersService.findByEmail(employee.personalEmail);
+      if (existingUser) {
+        await this.usersService.delete(existingUser._id.toString());
+      }
+    } catch (err) {
+      console.error('Failed to delete user for employee:', err);
+    }
+
     return { deleted: true };
   }
 
