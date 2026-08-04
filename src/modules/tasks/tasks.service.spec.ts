@@ -2,14 +2,12 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getModelToken } from '@nestjs/mongoose';
 import { TasksService } from './tasks.service';
 import { Task } from './schemas/task.schema';
-import { User } from '../users/schemas/user.schema';
 import { ActivitiesService } from '../activities/activities.service';
 import { BadRequestException } from '@nestjs/common';
 
 describe('TasksService', () => {
   let service: TasksService;
   let mockTaskModel: any;
-  let mockUserModel: any;
   let mockActivitiesService: any;
 
   const mockTaskDoc = (dto: any) => ({
@@ -48,12 +46,6 @@ describe('TasksService', () => {
       }),
     });
 
-    mockUserModel = {
-      findOne: jest.fn().mockReturnValue({
-        exec: jest.fn().mockResolvedValue(null),
-      }),
-    };
-
     mockActivitiesService = {
       log: jest.fn().mockResolvedValue(null),
     };
@@ -64,10 +56,6 @@ describe('TasksService', () => {
         {
           provide: getModelToken(Task.name),
           useValue: mockTaskModel,
-        },
-        {
-          provide: getModelToken(User.name),
-          useValue: mockUserModel,
         },
         {
           provide: ActivitiesService,

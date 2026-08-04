@@ -2,7 +2,6 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
-  OnModuleInit,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -16,86 +15,15 @@ import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { QueryTaskDto } from './dto/query-task.dto';
 import { AddHistoryDto } from './dto/add-history.dto';
-import { User, UserDocument } from '../users/schemas/user.schema';
 import { ActivitiesService } from '../activities/activities.service';
 import { ActivityType } from '../activities/schemas/activity.schema';
 
 @Injectable()
-export class TasksService implements OnModuleInit {
+export class TasksService {
   constructor(
     @InjectModel(Task.name) private readonly taskModel: Model<TaskDocument>,
-    @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     private readonly activitiesService: ActivitiesService,
   ) {}
-
-  /**
-   * Automatically seed initial follow-up tasks if the database collection is empty,
-   * assigning them to the first available user in the system.
-   */
-  async onModuleInit() {
-    const taskCount = await this.taskModel.countDocuments().exec();
-    if (taskCount === 0) {
-      const defaultUser = await this.userModel.findOne().exec();
-      if (defaultUser) {
-        const initialTasks: Partial<Task>[] = [
-          {
-            task: 'Schedule site escort visit for Vikram Singh',
-            description: 'Provide row villa structural updates',
-            scheduledDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000)
-              .toISOString()
-              .split('T')[0],
-            scheduleTime: '3:30pm',
-            branch: 'Mumbai Bandra',
-            status: TaskStatus.OPEN,
-            priority: TaskPriority.MEDIUM,
-            assignedTo: [defaultUser._id] as any,
-          },
-          {
-            task: 'Share booking forms & quotation draft',
-            description: 'Quotation details and payment link',
-            scheduledDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000)
-              .toISOString()
-              .split('T')[0],
-            scheduleTime: '11:00am',
-            branch: 'Noida Hub',
-            status: TaskStatus.CLOSED,
-            priority: TaskPriority.LOW,
-            assignedTo: [defaultUser._id] as any,
-          },
-          {
-            task: 'Follow-up call on token advance payment',
-            description: 'Confirm token advance with bank finance team',
-            scheduledDate: new Date().toISOString().split('T')[0],
-            scheduleTime: '5:45pm',
-            branch: 'Whitefield Bangalore',
-            status: TaskStatus.OPEN,
-            priority: TaskPriority.HIGH,
-            assignedTo: [defaultUser._id] as any,
-          },
-          {
-            task: 'Collect structural updates details from site manager',
-            description: 'Regular construction check log',
-            scheduledDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000)
-              .toISOString()
-              .split('T')[0],
-            scheduleTime: '10:00am',
-            branch: 'Pune Solitaire',
-            status: TaskStatus.OPEN,
-            priority: TaskPriority.MEDIUM,
-            assignedTo: [defaultUser._id] as any,
-          },
-        ];
-        await this.taskModel.insertMany(initialTasks);
-        console.log(
-          '🌱 Successfully seeded initial Task directory database collection.',
-        );
-      } else {
-        console.log(
-          '⚠️ No users found in database to assign seed Tasks to. Seeding skipped.',
-        );
-      }
-    }
-  }
 
   async create(
     createTaskDto: CreateTaskDto,

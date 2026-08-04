@@ -1,11 +1,10 @@
-import { Injectable, NotFoundException, BadRequestException, OnModuleInit } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { SiteVisit, SiteVisitDocument } from './schemas/site-visit.schema';
 import { CreateSiteVisitDto } from './dto/create-site-visit.dto';
 import { UpdateSiteVisitDto } from './dto/update-site-visit.dto';
 import { QuerySiteVisitDto } from './dto/query-site-visit.dto';
-import { User, UserDocument } from '../users/schemas/user.schema';
 import { Contact, ContactDocument } from '../contacts/schemas/contact.schema';
 import { Lead, LeadDocument } from '../leads/schemas/lead.schema';
 import { SmsService } from '../sms/sms.service';
@@ -16,12 +15,10 @@ import { Template, TemplateDocument } from '../templates/schemas/template.schema
 import { GoogleCalendarService } from '../google-calendar/google-calendar.service';
 
 @Injectable()
-export class SiteVisitsService implements OnModuleInit {
+export class SiteVisitsService {
   constructor(
     @InjectModel(SiteVisit.name)
     private readonly siteVisitModel: Model<SiteVisitDocument>,
-    @InjectModel(User.name)
-    private readonly userModel: Model<UserDocument>,
     @InjectModel(Contact.name)
     private readonly contactModel: Model<ContactDocument>,
     @InjectModel(Lead.name)
@@ -58,89 +55,6 @@ export class SiteVisitsService implements OnModuleInit {
     result = result.replace(/\{\{3\}\}/g, data.visitDate || '');
     result = result.replace(/\{\{4\}\}/g, data.timeIn || '');
     return result;
-  }
-
-  /**
-   * Seed default site visits on database start if the collection is empty.
-   */
-  async onModuleInit() {
-    const count = await this.siteVisitModel.countDocuments().exec();
-    if (count === 0) {
-      const defaultUser = await this.userModel.findOne().exec();
-      if (defaultUser) {
-        const initialVisits: Partial<SiteVisit>[] = [
-          {
-            visitor: 'Avinash Bhute',
-            visitType: 'First Visit',
-            module: 'Lead',
-            siteName: 'Metro City',
-            otherName: 'Building A',
-            visitDate: new Date().toISOString().split('T')[0],
-            timeIn: '11:26 AM',
-            timeOut: '12:10 PM',
-            remark:
-              'Interested in a 3 BHK flat. Wants to see banking partners.',
-            siteManager: 'Gourav Raut',
-            sourcingManager: 'Vikram Singh',
-            closingManager: 'Sneha Nair',
-            source: 'Direct',
-            branch: 'Mumbai Bandra',
-            assignee: defaultUser._id as any,
-            visitStatus: 'Scheduled',
-            sendSmsNotification: false,
-            sendEmailNotification: true,
-            isPrivate: false,
-            photograph: '',
-            latitude: 21.1458,
-            longitude: 79.0882,
-            createdBy: defaultUser._id as any,
-            lockingDaysLeft: 5,
-            noOfReVisit: 1,
-            reasons: 'Client satisfied with sample unit design layout',
-          },
-          {
-            visitor: 'Priya Sharma',
-            visitType: 'Follow-up Visit',
-            module: 'Contact',
-            siteName: 'Greenwood Luxury Residency',
-            otherName: 'Villa 12',
-            visitDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000)
-              .toISOString()
-              .split('T')[0],
-            timeIn: '02:00 PM',
-            timeOut: '03:30 PM',
-            remark:
-              'Amenities walkthrough and booking documentation discussion.',
-            siteManager: 'Sanjay Shah',
-            sourcingManager: 'Amit Roy',
-            closingManager: 'Rohan Kapoor',
-            source: 'Broker',
-            branch: 'Pune Solitaire',
-            assignee: defaultUser._id as any,
-            visitStatus: 'Completed',
-            sendSmsNotification: true,
-            sendEmailNotification: true,
-            isPrivate: true,
-            photograph: '',
-            latitude: 18.5204,
-            longitude: 73.8567,
-            createdBy: defaultUser._id as any,
-            lockingDaysLeft: 0,
-            noOfReVisit: 2,
-            reasons: 'Amenities tour completed, booking form signed',
-          },
-        ];
-
-        await this.siteVisitModel.insertMany(initialVisits);
-        console.log(
-          '🌱 Successfully seeded initial Site Visits database collection.',
-        );
-      } else {
-        console.log(
-          '⚠️ No users found in database to assign seed Site Visits to. Seeding skipped.',
-        );
-      }
-    }
   }
 
   async create(

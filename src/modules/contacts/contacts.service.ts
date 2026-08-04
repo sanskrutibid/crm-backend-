@@ -2,7 +2,6 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-  OnModuleInit,
   Logger,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -56,7 +55,7 @@ import {
 } from '../leads/schemas/lead-conversion-log.schema';
 
 @Injectable()
-export class ContactsService implements OnModuleInit {
+export class ContactsService {
   private readonly logger = new Logger(ContactsService.name);
 
   constructor(
@@ -73,68 +72,6 @@ export class ContactsService implements OnModuleInit {
     private readonly emailsService: EmailsService,
     private readonly smsService: SmsService,
   ) {}
-
-  /**
-   * Seed Dayamati Chirawali's contact details on boot if the database collection is empty.
-   */
-  async onModuleInit() {
-    const contactCount = await this.contactModel.countDocuments().exec();
-    if (contactCount === 0) {
-      const defaultUser = await this.userModel.findOne().exec();
-      if (defaultUser) {
-        const seedContact: Partial<Contact> = {
-          salutation: 'Mrs',
-          firstName: 'Dayamati',
-          lastName: 'Chirawali',
-          customerType: 'Customer',
-          contactType: 'Employee',
-          countryCode: '+91',
-          mobile: '9876543031',
-          dndStatus: DNDStatus.PENDING,
-          otherNumbers: '+91 8765432109',
-          email: 'dayamati.chirawali@gmail.com',
-          emailStatus: EmailStatus.SAFE,
-          uniqueNumber: 'GC170426-110807-2165',
-          address: 'Dhantoli, Nearby Lokmat Building',
-          city: 'Nagpur',
-          locality: 'Dhantoli',
-          pincode: '440012',
-          companyName: 'Chirawali Group LLC',
-          businessDomain: 'Real Estate & Landscaping',
-          companyType: 'Private Limited',
-          designation: 'Director Of Operations',
-          investCapacity: '₹5 Cr - ₹10 Cr',
-          bankName: 'State Bank of India',
-          bankAccountName: 'Dayamati Chirawali',
-          bankAccountNumber: '32104598734',
-          ifscCode: 'SBIN0001423',
-          professionalLocality: 'Dhantoli',
-          sendEmailGreeting: true,
-          sendSmsGreeting: true,
-          preferredLanguage: 'English',
-          rating: 4.5,
-          customerRemark:
-            'High intent buyer, looking for immediate flats in Dhantoli.',
-          keyword: 'Dhantoli, 172Sqft flat 2cr',
-          folder: 'Dhantoli Premium Folder',
-          source: 'Campaigns',
-          branch: 'Global Team',
-          assignedTo: defaultUser._id as any,
-          visibility: ContactVisibility.PRIVATE,
-          isConfidential: false,
-          subscribePromotions: true,
-        };
-        await this.contactModel.create(seedContact);
-        console.log(
-          '🌱 Successfully seeded initial Contacts directory database collection.',
-        );
-      } else {
-        console.log(
-          '⚠️ No users found in database to assign seed Contacts to. Seeding skipped.',
-        );
-      }
-    }
-  }
 
   /**
    * Generates a hyper-realistic contact unique number in the format GC[YYMMDD]-[HHMMSS]-[RAND4]

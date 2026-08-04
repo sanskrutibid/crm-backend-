@@ -1,7 +1,6 @@
 import {
   Injectable,
   NotFoundException,
-  OnModuleInit,
   BadRequestException,
   Inject,
 } from '@nestjs/common';
@@ -53,7 +52,7 @@ import { EmailsService } from '../emails/emails.service';
 import { GoogleCalendarService } from '../google-calendar/google-calendar.service';
 
 @Injectable()
-export class LeadsService implements OnModuleInit {
+export class LeadsService {
   constructor(
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
     @InjectModel(Lead.name) private readonly leadModel: Model<LeadDocument>,
@@ -105,56 +104,6 @@ export class LeadsService implements OnModuleInit {
       return ret;
     }
     return doc;
-  }
-
-  /**
-   * Seed Chirag Ashtankar's lead profile linked to Dayamati's contact profile on boot if collection is empty.
-   */
-  async onModuleInit() {
-    const leadCount = await this.leadModel.countDocuments().exec();
-    if (leadCount === 0) {
-      const defaultUser = await this.userModel.findOne().exec();
-      const defaultContact = await this.contactModel
-        .findOne({ firstName: 'Dayamati' })
-        .exec();
-
-      if (defaultUser && defaultContact) {
-        const seedLead: Partial<Lead> = {
-          contactId: defaultContact._id as any,
-          requirement:
-            'Y88006356 Rs. 1.38 Crore, 3 Bed, for Sale in Riddhi Siddhi, Pande Layout , for',
-          followupNote: 'Followup on flat details and pricing terms',
-          scheduleDate: '2026-06-19', // 19-Jun-2026 YYYY-MM-DD
-          scheduleTime: '12:39pm',
-          score: 4.5,
-          keywords: 'Dhantoli ,172Sqft flat 2cr',
-          folder: 'Dhantoli Premium Folder',
-          source: 'Campaigns',
-          branch: 'Global Team',
-          assignedTo: defaultUser._id as any,
-          visibility: LeadVisibility.PRIVATE,
-          termsShared: true,
-          temperature: LeadTemperature.COLD,
-          status: LeadStatus.IN_PROGRESS,
-          nextRemark: 'no response',
-          outcome: 'Said Not Looking Any Property Now',
-          interestedIn:
-            'Rs. 1.38 Crore, 3 Bed, for Sale in Riddhi Siddhi, Pande Layout',
-          purpose: 'Follow-Up Scheduled',
-          assignDate: new Date(),
-          createdBy: defaultUser._id as any,
-          updatedBy: defaultUser._id as any,
-        };
-        await this.leadModel.create(seedLead);
-        console.log(
-          '🌱 Successfully seeded initial CRM Leads database collection.',
-        );
-      } else {
-        console.log(
-          '⚠️ No users or contacts found in database to assign seed Lead to. Seeding skipped.',
-        );
-      }
-    }
   }
 
   async create(
