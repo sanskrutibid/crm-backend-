@@ -14,7 +14,7 @@ export class UsersService {
   ) {}
 
   async findByEmail(email: string): Promise<UserDocument | null> {
-    return this.userModel.findOne({ email }).exec();
+    return this.userModel.findOne({ email: email.toLowerCase().trim() }).exec();
   }
 
   async findById(id: string): Promise<UserDocument | null> {
@@ -22,12 +22,14 @@ export class UsersService {
   }
 
   async create(userData: any): Promise<UserDocument> {
-    const existingUser = await this.findByEmail(userData.email!);
+    const cleanEmail = userData.email!.toLowerCase().trim();
+    const existingUser = await this.findByEmail(cleanEmail);
     if (existingUser) {
       throw new ConflictException('User with this email already exists');
     }
     const newUser = new this.userModel({
       ...userData,
+      email: cleanEmail,
       customPermissions: userData.customPermissions
         ? new Map(Object.entries(userData.customPermissions))
         : new Map(),

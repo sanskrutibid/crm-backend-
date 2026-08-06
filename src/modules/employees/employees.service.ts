@@ -109,12 +109,25 @@ export class EmployeesService {
       throw new BadRequestException('Passwords do not match');
     }
 
-    // Check if email already exists
-    const existingByEmail = await this.employeeModel
-      .findOne({ personalEmail: createEmployeeDto.personalEmail.toLowerCase().trim() })
+    const personalEmailClean = createEmployeeDto.personalEmail.toLowerCase().trim();
+    const officialEmailClean = createEmployeeDto.officialEmail?.toLowerCase().trim() || '';
+
+    // Check if personal email is already used by an employee
+    const existingByPersonalEmail = await this.employeeModel
+      .findOne({ personalEmail: personalEmailClean })
       .exec();
-    if (existingByEmail) {
+    if (existingByPersonalEmail) {
       throw new ConflictException('Employee with this personal email already exists');
+    }
+
+    // Check if official email is already used by an employee
+    if (officialEmailClean) {
+      const existingByOfficialEmail = await this.employeeModel
+        .findOne({ officialEmail: officialEmailClean })
+        .exec();
+      if (existingByOfficialEmail) {
+        throw new ConflictException('Employee with this official email already exists');
+      }
     }
 
     // Auto-generate employeeId if not provided or format is invalid
@@ -140,36 +153,40 @@ export class EmployeesService {
     const newEmployee = new this.employeeModel({
       ...createEmployeeDto,
       employeeId,
-      personalEmail: createEmployeeDto.personalEmail.toLowerCase().trim(),
+      personalEmail: personalEmailClean,
+      officialEmail: officialEmailClean,
       dob: new Date(createEmployeeDto.dob),
       joiningDate: new Date(createEmployeeDto.joiningDate),
     });
 
     const saved = await newEmployee.save();
 
-    // Auto-create corresponding User record
+    // Auto-create corresponding User record using officialEmail (fallback to personalEmail)
     try {
-      const existingUser = await this.usersService.findByEmail(saved.personalEmail);
-      if (!existingUser) {
-        let userRole = 'Agent/Broker';
-        const des = (saved.designation || '').trim().toLowerCase();
-        if (des.includes('super admin') || des.includes('supper admin') || des.includes('superadmin')) {
-          userRole = 'Super Admin';
-        } else if (des.includes('admin')) {
-          userRole = 'Super Admin';
-        } else if (des.includes('editor')) {
-          userRole = 'Editor';
-        } else if (des.includes('client') || des.includes('buyer')) {
-          userRole = 'Client/Buyer';
-        }
+      const emailToUse = officialEmailClean || personalEmailClean;
+      if (emailToUse) {
+        const existingUser = await this.usersService.findByEmail(emailToUse);
+        if (!existingUser) {
+          let userRole = 'Agent/Broker';
+          const des = (saved.designation || '').trim().toLowerCase();
+          if (des.includes('super admin') || des.includes('supper admin') || des.includes('superadmin')) {
+            userRole = 'Super Admin';
+          } else if (des.includes('admin')) {
+            userRole = 'Super Admin';
+          } else if (des.includes('editor')) {
+            userRole = 'Editor';
+          } else if (des.includes('client') || des.includes('buyer')) {
+            userRole = 'Client/Buyer';
+          }
 
-        await this.usersService.create({
-          email: saved.personalEmail,
-          firstName: saved.firstName,
-          lastName: saved.lastName || '',
-          role: userRole,
-          password: createEmployeeDto.password || 'CrmUser123!',
-        });
+          await this.usersService.create({
+            email: emailToUse,
+            firstName: saved.firstName,
+            lastName: saved.lastName || '',
+            role: userRole,
+            password: createEmployeeDto.password || 'CrmUser123!',
+          });
+        }
       }
     } catch (err) {
       console.error('Failed to auto-create user for employee:', err);
@@ -200,7 +217,8 @@ export class EmployeesService {
 
   async update(id: string, updateEmployeeDto: UpdateEmployeeDto): Promise<EmployeeDocument> {
     const employee = await this.findOne(id);
-    const oldEmail = employee.personalEmail;
+    const oldPersonalEmail = employee.personalEmail;
+    const oldOfficialEmail = employee.officialEmail;
 
     if (updateEmployeeDto.personalEmail) {
       const emailLower = updateEmployeeDto.personalEmail.toLowerCase().trim();
@@ -213,6 +231,19 @@ export class EmployeesService {
       }
     }
 
+    if (updateEmployeeDto.officialEmail) {
+      const officialLower = updateEmployeeDto.officialEmail.toLowerCase().trim();
+      if (officialLower !== employee.officialEmail) {
+        const existingByOfficial = await this.employeeModel.findOne({ officialEmail: officialLower }).exec();
+        if (existingByOfficial) {
+          throw new ConflictException('Employee with this official email already exists');
+        }
+        employee.officialEmail = officialLower;
+      }
+    } else if (updateEmployeeDto.officialEmail === '') {
+      employee.officialEmail = '';
+    }
+
     if (updateEmployeeDto.employeeId && updateEmployeeDto.employeeId !== employee.employeeId) {
       const existingById = await this.employeeModel.findOne({ employeeId: updateEmployeeDto.employeeId }).exec();
       if (existingById) {
@@ -222,7 +253,7 @@ export class EmployeesService {
     }
 
     // Update remaining properties
-    const { personalEmail, employeeId, dob, joiningDate, ...rest } = updateEmployeeDto;
+    const { personalEmail, officialEmail, employeeId, dob, joiningDate, ...rest } = updateEmployeeDto;
     
     // Assign fields
     Object.assign(employee, rest);
@@ -238,9 +269,11 @@ export class EmployeesService {
 
     // Sync to User collection
     try {
-      const existingUser = await this.usersService.findByEmail(oldEmail);
-      if (existingUser) {
-        let userRole = existingUser.role;
+      const oldEmailToUse = (oldOfficialEmail || oldPersonalEmail || '').toLowerCase().trim();
+      const newEmailToUse = (saved.officialEmail || saved.personalEmail || '').toLowerCase().trim();
+      if (oldEmailToUse && newEmailToUse) {
+        const existingUser = await this.usersService.findByEmail(oldEmailToUse);
+        let userRole = 'Agent/Broker';
         const des = (updateEmployeeDto.designation || saved.designation || '').trim().toLowerCase();
         if (des) {
           if (des.includes('super admin') || des.includes('supper admin') || des.includes('superadmin')) {
@@ -251,17 +284,26 @@ export class EmployeesService {
             userRole = 'Editor';
           } else if (des.includes('client') || des.includes('buyer')) {
             userRole = 'Client/Buyer';
-          } else {
-            userRole = 'Agent/Broker';
           }
         }
-        await this.usersService.update(existingUser._id.toString(), {
-          email: saved.personalEmail,
-          firstName: saved.firstName,
-          lastName: saved.lastName || '',
-          role: userRole,
-          ...(updateEmployeeDto.password ? { password: updateEmployeeDto.password } : {}),
-        });
+        if (existingUser) {
+          await this.usersService.update(existingUser._id.toString(), {
+            email: newEmailToUse,
+            firstName: saved.firstName,
+            lastName: saved.lastName || '',
+            role: userRole,
+            ...(updateEmployeeDto.password ? { password: updateEmployeeDto.password } : {}),
+          });
+        } else {
+          // If User doesn't exist, create it
+          await this.usersService.create({
+            email: newEmailToUse,
+            firstName: saved.firstName,
+            lastName: saved.lastName || '',
+            role: userRole,
+            password: updateEmployeeDto.password || 'CrmUser123!',
+          });
+        }
       }
     } catch (err) {
       console.error('Failed to sync user details for employee update:', err);
@@ -276,9 +318,12 @@ export class EmployeesService {
 
     // Sync deletion to User collection
     try {
-      const existingUser = await this.usersService.findByEmail(employee.personalEmail);
-      if (existingUser) {
-        await this.usersService.delete(existingUser._id.toString());
+      const emailToUse = (employee.officialEmail || employee.personalEmail || '').toLowerCase().trim();
+      if (emailToUse) {
+        const existingUser = await this.usersService.findByEmail(emailToUse);
+        if (existingUser) {
+          await this.usersService.delete(existingUser._id.toString());
+        }
       }
     } catch (err) {
       console.error('Failed to delete user for employee:', err);
@@ -288,8 +333,14 @@ export class EmployeesService {
   }
 
   async findOneByEmail(email: string): Promise<EmployeeDocument | null> {
+    const cleanEmail = email.toLowerCase().trim();
     return this.employeeModel
-      .findOne({ personalEmail: email.toLowerCase().trim() })
+      .findOne({
+        $or: [
+          { personalEmail: cleanEmail },
+          { officialEmail: cleanEmail }
+        ]
+      })
       .exec();
   }
 }

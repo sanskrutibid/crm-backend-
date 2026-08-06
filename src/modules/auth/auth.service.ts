@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../users/users.service';
+import { UserDocument } from '../users/schemas/user.schema';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { LogoutDto } from './dto/logout.dto';
@@ -46,9 +47,13 @@ export class AuthService {
       throw new BadRequestException('You must accept the terms and conditions');
     }
 
+    const email = registerDto.email.toLowerCase().trim();
+
     // Check if user already exists
-    const existingUser = await this.usersService.findByEmail(registerDto.email);
-    if (existingUser) {
+    const existingUser = await this.usersService.findByEmail(email);
+    let employee = await this.employeesService.findOneByEmail(email);
+
+    if (existingUser && !employee) {
       throw new BadRequestException('User with this email is already registered');
     }
 
@@ -56,8 +61,6 @@ export class AuthService {
     const firstName = nameParts[0] || 'Unknown';
     const lastName = nameParts.slice(1).join(' ') || '';
 
-    // Check if employee exists
-    let employee = await this.employeesService.findOneByEmail(registerDto.email);
     if (employee) {
       // If employee exists, update their password
       employee.password = registerDto.password;
@@ -78,7 +81,7 @@ export class AuthService {
         employeeId,
         firstName,
         lastName,
-        personalEmail: registerDto.email.toLowerCase().trim(),
+        personalEmail: email,
         gender: 'Male', // Default gender
         dob: '1990-01-01', // Default DOB
         mobile: '0000000000', // Default placeholder mobile
@@ -91,12 +94,28 @@ export class AuthService {
       });
     }
 
-    const user = await this.usersService.create({
-      email: registerDto.email,
-      firstName,
-      lastName,
-      role: registerDto.role || 'Agent/Broker',
-    });
+    let user = await this.usersService.findByEmail(email);
+    if (!user) {
+      user = await this.usersService.create({
+        email: email,
+        firstName,
+        lastName,
+        role: registerDto.role || 'Agent/Broker',
+        password: registerDto.password,
+      });
+    } else {
+      // Update name and password if user record already exists (auto-created by admin)
+      await this.usersService.update(user._id.toString(), {
+        firstName,
+        lastName,
+        password: registerDto.password,
+      });
+      user = await this.usersService.findById(user._id.toString());
+    }
+
+    if (!user) {
+      throw new BadRequestException('User record could not be retrieved or created');
+    }
 
     const token = this.generateToken(user);
     return {
@@ -115,15 +134,27 @@ export class AuthService {
     loginDto: LoginDto,
     clientInfo: { ip: string; userAgent: string },
   ) {
-    const employee = await this.employeesService.findOneByEmail(loginDto.email);
+    const cleanEmail = loginDto.email.toLowerCase().trim();
+    const employee = await this.employeesService.findOneByEmail(cleanEmail);
     
     let isPasswordValid = false;
+    let user: UserDocument | null = null;
+
     if (employee) {
-      // Employees authenticate using their password stored in the Employee record
+      // Employees authenticate using their password stored in the Employee record (plain text)
       isPasswordValid = employee.password === loginDto.password;
+      if (isPasswordValid) {
+        // Retrieve the corresponding User using either their official or personal email
+        if (employee.officialEmail) {
+          user = await this.usersService.findByEmail(employee.officialEmail);
+        }
+        if (!user && employee.personalEmail) {
+          user = await this.usersService.findByEmail(employee.personalEmail);
+        }
+      }
     } else {
       // Fallback: check User collection for non-employee user records (e.g. Admin/Super Admin)
-      const user = await this.usersService.findByEmail(loginDto.email);
+      user = await this.usersService.findByEmail(cleanEmail);
       if (user && user.password) {
         isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
       }
@@ -133,7 +164,6 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password');
     }
 
-    const user = await this.usersService.findByEmail(loginDto.email);
     if (!user) {
       throw new UnauthorizedException('User account has not been registered');
     }
