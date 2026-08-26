@@ -185,6 +185,7 @@ export class EmployeesService {
             lastName: saved.lastName || '',
             role: userRole,
             password: createEmployeeDto.password || 'CrmUser123!',
+            isActive: saved.status === 'Active',
           });
         }
       }
@@ -292,6 +293,7 @@ export class EmployeesService {
             firstName: saved.firstName,
             lastName: saved.lastName || '',
             role: userRole,
+            isActive: saved.status === 'Active',
             ...(updateEmployeeDto.password ? { password: updateEmployeeDto.password } : {}),
           });
         } else {
@@ -301,6 +303,7 @@ export class EmployeesService {
             firstName: saved.firstName,
             lastName: saved.lastName || '',
             role: userRole,
+            isActive: saved.status === 'Active',
             password: updateEmployeeDto.password || 'CrmUser123!',
           });
         }
@@ -342,5 +345,13 @@ export class EmployeesService {
         ]
       })
       .exec();
+  }
+
+  async updateStatus(id: string, status: string): Promise<EmployeeDocument> {
+    const cleanStatus = status.trim();
+    if (cleanStatus !== 'Active' && cleanStatus !== 'Inactive') {
+      throw new BadRequestException('Status must be either Active or Inactive');
+    }
+    return this.update(id, { status: cleanStatus });
   }
 }

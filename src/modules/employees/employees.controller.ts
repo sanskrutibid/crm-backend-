@@ -78,6 +78,17 @@ export class EmployeesController {
     return this.employeesService.update(id, updateEmployeeDto);
   }
 
+  @Put(':id/status')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Update employee status (Active/Inactive)' })
+  @ResponseMessage('Employee status updated successfully')
+  async updateStatus(
+    @Param('id') id: string,
+    @Body('status') status: string,
+  ) {
+    return this.employeesService.updateStatus(id, status);
+  }
+
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Delete/Remove an employee' })

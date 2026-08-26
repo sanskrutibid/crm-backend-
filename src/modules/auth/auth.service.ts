@@ -53,6 +53,10 @@ export class AuthService {
     const existingUser = await this.usersService.findByEmail(email);
     let employee = await this.employeesService.findOneByEmail(email);
 
+    if (employee && employee.officialEmail && employee.officialEmail.toLowerCase().trim() !== email) {
+      throw new BadRequestException(`Please sign up using your official email: ${employee.officialEmail}`);
+    }
+
     if (existingUser && !employee) {
       throw new BadRequestException('User with this email is already registered');
     }
@@ -141,16 +145,21 @@ export class AuthService {
     let user: UserDocument | null = null;
 
     if (employee) {
+      // Enforce active status
+      if (employee.status !== 'Active') {
+        throw new UnauthorizedException('Your account is inactive. Please contact the administrator.');
+      }
+
+      // Enforce official email login if set
+      if (employee.officialEmail && employee.officialEmail.toLowerCase().trim() !== cleanEmail) {
+        throw new UnauthorizedException(`Please log in using your official email: ${employee.officialEmail}`);
+      }
+
       // Employees authenticate using their password stored in the Employee record (plain text)
       isPasswordValid = employee.password === loginDto.password;
       if (isPasswordValid) {
-        // Retrieve the corresponding User using either their official or personal email
-        if (employee.officialEmail) {
-          user = await this.usersService.findByEmail(employee.officialEmail);
-        }
-        if (!user && employee.personalEmail) {
-          user = await this.usersService.findByEmail(employee.personalEmail);
-        }
+        // Retrieve the corresponding User using the exact login email
+        user = await this.usersService.findByEmail(cleanEmail);
       }
     } else {
       // Fallback: check User collection for non-employee user records (e.g. Admin/Super Admin)
@@ -166,6 +175,11 @@ export class AuthService {
 
     if (!user) {
       throw new UnauthorizedException('User account has not been registered');
+    }
+
+    // Enforce active status on User document
+    if (!user.isActive) {
+      throw new UnauthorizedException('Your account is inactive. Please contact the administrator.');
     }
 
     const token = this.generateToken(user);
