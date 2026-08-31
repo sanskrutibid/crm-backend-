@@ -66,8 +66,11 @@ export class AuthService {
     const lastName = nameParts.slice(1).join(' ') || '';
 
     if (employee) {
-      // If employee exists, update their password
+      // If employee exists, update their password and ensure officialEmail is set
       employee.password = registerDto.password;
+      if (!employee.officialEmail) {
+        employee.officialEmail = email;
+      }
       await employee.save();
     } else {
       // If employee does not exist, create a new employee record so they show up in the employee table!
@@ -86,6 +89,7 @@ export class AuthService {
         firstName,
         lastName,
         personalEmail: email,
+        officialEmail: email,
         gender: 'Male', // Default gender
         dob: '1990-01-01', // Default DOB
         mobile: '0000000000', // Default placeholder mobile
