@@ -61,10 +61,10 @@ export class SiteVisit {
   @Prop({
     type: MongooseSchema.Types.ObjectId,
     ref: 'User',
-    required: true,
+    required: false,
     index: true,
   })
-  assignee: User;
+  assignee?: User;
 
   @Prop({ required: true, trim: true, index: true })
   visitStatus: string; // matches Status field

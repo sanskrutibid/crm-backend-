@@ -162,6 +162,8 @@ export class PropertiesService implements OnModuleInit {
       /^[0-9a-fA-F]{24}$/.test(mapped.assignee)
     ) {
       mapped.assignedTo = mapped.assignee;
+    } else if (mapped.assignee === '' || mapped.assignee === 'Select') {
+      delete mapped.assignee;
     }
 
     return mapped;
@@ -177,9 +179,6 @@ export class PropertiesService implements OnModuleInit {
     if (defaultUserId) {
       if (!mappedDto.createdBy) {
         mappedDto.createdBy = defaultUserId;
-      }
-      if (!mappedDto.assignedTo) {
-        mappedDto.assignedTo = defaultUserId;
       }
     }
 

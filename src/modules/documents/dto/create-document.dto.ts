@@ -71,13 +71,13 @@ export class CreateDocumentDto {
   @IsNotEmpty({ message: 'Branch is required' })
   branch: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: '60d5ecb8b394142e88a38c20',
     description: 'User ID of assigned owner/handler',
   })
   @IsString()
-  @IsNotEmpty({ message: 'Assignee is required' })
-  assignee: string;
+  @IsOptional()
+  assignee?: string;
 
   @ApiPropertyOptional({
     example: true,
