@@ -9,6 +9,7 @@ import {
   IsArray,
   Min,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { PropertyStatus } from '../schemas/property.schema';
 
 export class CreatePropertyDto {
@@ -897,6 +898,37 @@ export class CreatePropertyDto {
   @IsBoolean()
   @IsOptional()
   dockLevellers?: boolean;
+
+  // ==========================================
+  // Media / Photos / Images
+  // ==========================================
+  @ApiPropertyOptional({
+    example: [
+      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c',
+      'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9',
+    ],
+    description: 'Array of property photo URLs or base64 data URIs',
+    type: [String],
+  })
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  @Transform(({ value }) => (Array.isArray(value) ? value : value ? [value] : []))
+  photos?: string[];
+
+  @ApiPropertyOptional({
+    example: [
+      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c',
+      'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9',
+    ],
+    description: 'Array of property image URLs or base64 data URIs',
+    type: [String],
+  })
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  @Transform(({ value }) => (Array.isArray(value) ? value : value ? [value] : []))
+  images?: string[];
 
   // ==========================================
   // Step 6: Save and Publish

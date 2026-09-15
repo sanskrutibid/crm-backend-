@@ -642,6 +642,29 @@ export class PropertyResponseDto {
   dockLevellers?: boolean;
 
   // ==========================================
+  // Media / Photos / Images
+  // ==========================================
+  @ApiPropertyOptional({
+    example: [
+      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c',
+      'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9',
+    ],
+    description: 'List of property photos',
+    type: [String],
+  })
+  photos?: string[];
+
+  @ApiPropertyOptional({
+    example: [
+      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c',
+      'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9',
+    ],
+    description: 'List of property images',
+    type: [String],
+  })
+  images?: string[];
+
+  // ==========================================
   // Step 6: Save and Publish
   // ==========================================
   @ApiPropertyOptional({

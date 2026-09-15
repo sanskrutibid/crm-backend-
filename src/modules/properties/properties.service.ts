@@ -15,6 +15,8 @@ import { ActivityType } from '../activities/schemas/activity.schema';
 import { Contact, ContactDocument } from '../contacts/schemas/contact.schema';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { generateExcelBuffer } from '../../common/utils/excel.util';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class PropertiesService implements OnModuleInit {
@@ -169,16 +171,95 @@ export class PropertiesService implements OnModuleInit {
     return mapped;
   }
 
+  /**
+   * Process an array of image strings.
+   * If an item is a Base64 data URI (data:image/...;base64,...), it decodes and writes
+   * the image to `uploads/properties/photos/` and returns the static URL `/uploads/properties/photos/...`.
+   * If it is already an HTTP URL or local path, it is retained as is.
+   */
+  async processImages(images?: string[]): Promise<string[]> {
+    if (!images || !Array.isArray(images) || images.length === 0) {
+      return [];
+    }
+
+    const uploadDir = path.join(process.cwd(), 'uploads', 'properties', 'photos');
+    try {
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+    } catch {
+      // Directory creation error handler
+    }
+
+    const processedList: string[] = [];
+
+    for (let i = 0; i < images.length; i++) {
+      const item = images[i];
+      if (typeof item !== 'string' || !item.trim()) continue;
+
+      const trimmed = item.trim();
+      const base64Match = trimmed.match(/^data:image\/([a-zA-Z0-9+.-]+);base64,(.+)$/);
+      if (base64Match) {
+        try {
+          let ext = base64Match[1].toLowerCase();
+          if (ext === 'jpeg') ext = 'jpg';
+          if (ext === 'svg+xml') ext = 'svg';
+          const base64Data = base64Match[2];
+          const buffer = Buffer.from(base64Data, 'base64');
+          const fileName = `prop_${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${ext}`;
+          const filePath = path.join(uploadDir, fileName);
+
+          await fs.promises.writeFile(filePath, buffer);
+          processedList.push(`/uploads/properties/photos/${fileName}`);
+          continue;
+        } catch {
+          // If saving fails, fallback to keeping the original string
+          processedList.push(trimmed);
+          continue;
+        }
+      }
+
+      processedList.push(trimmed);
+    }
+
+    return processedList;
+  }
+
   async create(
     createPropertyDto: CreatePropertyDto,
     defaultUserId?: string,
   ): Promise<PropertyDocument> {
     const mappedDto = this.mapLegacyFields(createPropertyDto, true);
 
+    // Process and synchronize photos & images
+    let images = mappedDto.images || [];
+    let photos = mappedDto.photos || [];
+
+    if (photos.length > 0 && images.length === 0) {
+      images = [...photos];
+    } else if (images.length > 0 && photos.length === 0) {
+      photos = [...images];
+    }
+
+    if (photos.length > 0) {
+      mappedDto.photos = await this.processImages(photos);
+    }
+    if (images.length > 0) {
+      mappedDto.images = await this.processImages(images);
+    }
+    if (mappedDto.photos?.length && (!mappedDto.images || mappedDto.images.length === 0)) {
+      mappedDto.images = [...mappedDto.photos];
+    } else if (mappedDto.images?.length && (!mappedDto.photos || mappedDto.photos.length === 0)) {
+      mappedDto.photos = [...mappedDto.images];
+    }
+
     // Populate createdBy and assignedTo if defaultUserId is available and they are not already set
     if (defaultUserId) {
       if (!mappedDto.createdBy) {
         mappedDto.createdBy = defaultUserId;
+      }
+      if (!mappedDto.assignedTo) {
+        mappedDto.assignedTo = defaultUserId;
       }
     }
 
@@ -380,6 +461,13 @@ export class PropertiesService implements OnModuleInit {
     if (!property) {
       throw new NotFoundException(`Property listing with ID "${id}" not found`);
     }
+    if (!property.photos) property.photos = [];
+    if (!property.images) property.images = [];
+    if (property.photos.length > 0 && property.images.length === 0) {
+      property.images = [...property.photos];
+    } else if (property.images.length > 0 && property.photos.length === 0) {
+      property.photos = [...property.images];
+    }
     return property;
   }
 
@@ -388,6 +476,30 @@ export class PropertiesService implements OnModuleInit {
     updatePropertyDto: UpdatePropertyDto,
   ): Promise<PropertyDocument> {
     const mappedDto = this.mapLegacyFields(updatePropertyDto, false);
+
+    if (mappedDto.photos !== undefined || mappedDto.images !== undefined) {
+      let photos = mappedDto.photos;
+      let images = mappedDto.images;
+
+      if (photos && !images) {
+        images = [...photos];
+      } else if (images && !photos) {
+        photos = [...images];
+      }
+
+      if (photos) {
+        mappedDto.photos = await this.processImages(photos);
+      }
+      if (images) {
+        mappedDto.images = await this.processImages(images);
+      }
+      if (mappedDto.photos && !mappedDto.images) {
+        mappedDto.images = [...mappedDto.photos];
+      } else if (mappedDto.images && !mappedDto.photos) {
+        mappedDto.photos = [...mappedDto.images];
+      }
+    }
+
     const updatedProperty = await this.propertyModel
       .findByIdAndUpdate(id, mappedDto, { new: true })
       .populate(['createdBy', 'assignedTo', 'ownerLandlord'])

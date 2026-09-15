@@ -422,6 +422,15 @@ export class Property {
   dockLevellers?: boolean;
 
   // ==========================================
+  // Media / Photos / Images
+  // ==========================================
+  @Prop({ required: false, type: [String], default: [] })
+  photos?: string[];
+
+  @Prop({ required: false, type: [String], default: [] })
+  images?: string[];
+
+  // ==========================================
   // Step 6: Save and Publish
   // ==========================================
   @Prop({ required: false, trim: true })
