@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: crm-backend
+    runtime: node
+    repo: https://github.com/${GITHUB_REPOSITORY} # Dynamically mapped on Render
+    buildCommand: npm install && npm run build
+    startCommand: npm run start:prod
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: MONGO_URI
+        sync: false # Set manually in Render dashboard
+      - key: JWT_SECRET
+        generateValue: true # Generates secure key if not set
+      - key: API_PREFIX
+        value: api
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: crm-cache
+          property: connectionString
+
+  - type: redis
+    name: crm-cache
+    plan: free # Can be upgraded to higher tiers
+    ipAllowList: [] # Restrict to internal Render network access only

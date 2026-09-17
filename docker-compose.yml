@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: crm_backend_app
+    ports:
+      - '3000:3000'
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - REDIS_URL=redis://cache:6379
+    depends_on:
+      - cache
+    restart: always
+
+  cache:
+    image: redis:7-alpine
+    container_name: crm_backend_cache
+    expose:
+      - '6379'
+    restart: always
