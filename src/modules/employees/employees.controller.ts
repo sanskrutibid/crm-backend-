@@ -9,11 +9,17 @@ import {
   UseGuards,
   Query,
 } from '@nestjs/common';
+
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+
 import { EmployeesService } from './employees.service';
+
 import { CreateEmployeeDto } from './dto/create-employee.dto';
+
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
+
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
 
 @ApiTags('Employees')
@@ -56,12 +62,32 @@ export class EmployeesController {
       dob,
       joiningDate,
     });
+
     return { nextId };
+  }
+
+  /*
+   * IMPORTANT:
+   * This route MUST be above @Get(':id').
+   *
+   * It gets employee names directly from the Employee collection
+   * for the Opportunity Source dropdown.
+   */
+  @Get('source-options')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: 'Retrieve employees for the Source dropdown',
+  })
+  @ResponseMessage('Employee source options retrieved successfully')
+  async findSourceOptions() {
+    return this.employeesService.findSourceOptions();
   }
 
   @Get(':id')
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Retrieve specific employee details by ID or Employee ID' })
+  @ApiOperation({
+    summary: 'Retrieve specific employee details by ID or Employee ID',
+  })
   @ResponseMessage('Employee retrieved successfully')
   async findOne(@Param('id') id: string) {
     return this.employeesService.findOne(id);
@@ -80,7 +106,9 @@ export class EmployeesController {
 
   @Put(':id/status')
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Update employee status (Active/Inactive)' })
+  @ApiOperation({
+    summary: 'Update employee status (Active/Inactive)',
+  })
   @ResponseMessage('Employee status updated successfully')
   async updateStatus(
     @Param('id') id: string,
