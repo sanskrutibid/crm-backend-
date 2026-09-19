@@ -8,6 +8,8 @@ import {
 import helmet from '@fastify/helmet';
 import compress from '@fastify/compress';
 import rateLimit from '@fastify/rate-limit';
+import fastifyStatic from '@fastify/static';
+import { join } from 'path';
 
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
@@ -24,15 +26,24 @@ async function bootstrap() {
     AppModule,
     new FastifyAdapter({
       logger: false,
-
+      bodyLimit: 52428800, // 50MB for photo & video uploads
     }),
   );
 
   console.timeEnd('NestFactory.create');
 
   // Security headers & compression
-  await app.register(helmet);
+  await app.register(helmet, {
+    crossOriginResourcePolicy: false, // allow loading static uploads cross-origin
+  });
   await app.register(compress);
+
+  // Serve static files from uploads directory
+  await app.register(fastifyStatic, {
+    root: join(process.cwd(), 'uploads'),
+    prefix: '/uploads/',
+    decorateReply: false,
+  });
 
   // Enable CORS for frontend API calls (essential for localhost port cross-talk)
   app.enableCors({

@@ -137,6 +137,17 @@ export class PropertiesController {
     return this.propertiesService.groupDelete(groupDeleteDto);
   }
 
+  @Post('upload-photos')
+  @ApiOperation({ summary: 'Upload multiple property photos / images (Base64 data URIs)' })
+  @ResponseMessage('Photos uploaded successfully')
+  async uploadPhotos(
+    @Body() body: { photos?: string[]; images?: string[] },
+  ) {
+    const input = body.photos || body.images || [];
+    const urls = await this.propertiesService.processImages(input);
+    return { urls };
+  }
+
   @Delete(':id')
   @ApiOperation({ summary: 'Delete a Property listing' })
   @ApiOkResponse({

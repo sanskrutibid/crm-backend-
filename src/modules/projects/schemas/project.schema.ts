@@ -219,6 +219,15 @@ export class Project {
 
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: false })
   updatedBy?: User;
+
+  @Prop({ trim: true })
+  possessionDate?: string;
+
+  @Prop({ type: [Object], default: [] })
+  documents?: Record<string, any>[];
+
+  @Prop({ type: [Object], default: [] })
+  images?: Record<string, any>[];
 }
 
 export const ProjectSchema = SchemaFactory.createForClass(Project);

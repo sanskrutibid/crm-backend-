@@ -2,12 +2,16 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getModelToken } from '@nestjs/mongoose';
 import { PropertiesService } from './properties.service';
 import { Property, PropertyStatus } from './schemas/property.schema';
+import { Contact } from '../contacts/schemas/contact.schema';
+import { User } from '../users/schemas/user.schema';
 import { ActivitiesService } from '../activities/activities.service';
 import { ActivityType } from '../activities/schemas/activity.schema';
 
 describe('PropertiesService', () => {
   let service: PropertiesService;
   let mockPropertyModel: any;
+  let mockContactModel: any;
+  let mockUserModel: any;
   let mockActivitiesService: any;
 
   const mockPropertyDoc = (dto: any) => ({
@@ -56,6 +60,9 @@ describe('PropertiesService', () => {
       }),
     });
 
+    mockContactModel = {};
+    mockUserModel = {};
+
     mockActivitiesService = {
       log: jest.fn().mockResolvedValue(null),
     };
@@ -66,6 +73,14 @@ describe('PropertiesService', () => {
         {
           provide: getModelToken(Property.name),
           useValue: mockPropertyModel,
+        },
+        {
+          provide: getModelToken(Contact.name),
+          useValue: mockContactModel,
+        },
+        {
+          provide: getModelToken(User.name),
+          useValue: mockUserModel,
         },
         {
           provide: ActivitiesService,
@@ -157,6 +172,34 @@ describe('PropertiesService', () => {
         }),
       );
     });
+
+    it('should save multiple photos and images and synchronize them if one is provided', async () => {
+      const photosDto = {
+        name: 'Villa with Photos',
+        photos: [
+          'https://example.com/photo1.jpg',
+          'https://example.com/photo2.jpg',
+          'https://example.com/photo3.jpg',
+        ],
+      };
+
+      await service.create(photosDto);
+
+      expect(mockPropertyModel).toHaveBeenCalledWith(
+        expect.objectContaining({
+          photos: [
+            'https://example.com/photo1.jpg',
+            'https://example.com/photo2.jpg',
+            'https://example.com/photo3.jpg',
+          ],
+          images: [
+            'https://example.com/photo1.jpg',
+            'https://example.com/photo2.jpg',
+            'https://example.com/photo3.jpg',
+          ],
+        }),
+      );
+    });
   });
 
   describe('getMyProperties', () => {
@@ -233,6 +276,33 @@ describe('PropertiesService', () => {
         }),
         expect.any(Object),
       );
+    });
+  });
+
+  describe('findOne', () => {
+    it('should return multiple photos and images for property details', async () => {
+      const mockDoc = {
+        name: 'Grand Horizon',
+        photos: ['https://example.com/p1.jpg', 'https://example.com/p2.jpg'],
+        images: [],
+      };
+
+      mockPropertyModel.findById = jest.fn().mockReturnValue({
+        populate: jest.fn().mockReturnValue({
+          exec: jest.fn().mockResolvedValue(mockDoc),
+        }),
+      });
+
+      const result = await service.findOne('mock-id');
+
+      expect(result.photos).toEqual([
+        'https://example.com/p1.jpg',
+        'https://example.com/p2.jpg',
+      ]);
+      expect(result.images).toEqual([
+        'https://example.com/p1.jpg',
+        'https://example.com/p2.jpg',
+      ]);
     });
   });
 });

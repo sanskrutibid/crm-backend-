@@ -40,7 +40,7 @@ export class ProjectsService {
     createProjectDto: CreateProjectDto,
     defaultUserId?: string,
   ): Promise<ProjectDocument> {
-    const assignedTo = createProjectDto.assignedTo || defaultUserId;
+    const assignedTo = createProjectDto.assignedTo || undefined;
     let targetContactId = createProjectDto.contactId;
 
     // 1. Handle on-the-fly Contact creation if requested

@@ -110,7 +110,7 @@ export class LeadsService {
     createLeadDto: CreateLeadDto,
     defaultUserId?: string,
   ): Promise<LeadDocument> {
-    const assignedTo = createLeadDto.assignedTo || defaultUserId;
+    const assignedTo = createLeadDto.assignedTo || undefined;
 
     let targetContactId = createLeadDto.contactId;
 

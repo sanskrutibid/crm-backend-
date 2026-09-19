@@ -120,13 +120,13 @@ export class CreateSiteVisitDto {
   @IsNotEmpty({ message: 'Branch is required' })
   branch: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: '60d5ecb8b394142e88a38c21',
     description: 'Assigned CRM Agent/User MongoDB ID',
   })
   @IsString()
-  @IsNotEmpty({ message: 'Assignee is required' })
-  assignee: string;
+  @IsOptional()
+  assignee?: string;
 
   @ApiProperty({
     example: 'Scheduled',

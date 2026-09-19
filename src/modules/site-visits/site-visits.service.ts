@@ -61,7 +61,7 @@ export class SiteVisitsService {
     createDto: CreateSiteVisitDto,
     defaultUserId?: string,
   ): Promise<SiteVisitDocument> {
-    const assignee = createDto.assignee || defaultUserId;
+    const assignee = createDto.assignee || undefined;
     const createdBy = createDto.createdBy || defaultUserId;
 
     let otp: string | null = null;
@@ -108,7 +108,7 @@ export class SiteVisitsService {
             closingManager: createDto.closingManager,
             source: createDto.source,
             branch: createDto.branch,
-            assignee: String(assignee),
+            assignee: assignee ? String(assignee) : undefined,
             visitStatus: createDto.visitStatus,
             sendSmsNotification: createDto.sendSmsNotification === true,
             sendEmailNotification: createDto.sendEmailNotification === true,

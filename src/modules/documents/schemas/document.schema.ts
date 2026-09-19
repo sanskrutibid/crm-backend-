@@ -43,10 +43,10 @@ export class DocumentClass {
   @Prop({
     type: MongooseSchema.Types.ObjectId,
     ref: 'User',
-    required: true,
+    required: false,
     index: true,
   })
-  assignee: User;
+  assignee?: User;
 
   @Prop({ type: Boolean, default: true })
   isPublic: boolean;
