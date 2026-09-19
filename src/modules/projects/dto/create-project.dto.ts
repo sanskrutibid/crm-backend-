@@ -458,4 +458,19 @@ export class CreateProjectDto {
   @IsArray()
   @IsOptional()
   plans?: any[];
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  possessionDate?: string;
+
+  @ApiPropertyOptional({ type: [Object], default: [] })
+  @IsArray()
+  @IsOptional()
+  documents?: any[];
+
+  @ApiPropertyOptional({ type: [Object], default: [] })
+  @IsArray()
+  @IsOptional()
+  images?: any[];
 }
