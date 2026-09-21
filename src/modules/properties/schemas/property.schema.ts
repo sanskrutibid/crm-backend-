@@ -17,6 +17,7 @@ export enum PropertyStatus {
 
 @Schema({
   timestamps: true,
+  strict: false,
   toJSON: {
     transform: (doc, ret: any) => {
       /* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return */
@@ -482,6 +483,30 @@ export class Property {
   sendWhatsAppToCustomer?: boolean;
 
   @Prop({ required: false, type: Boolean, default: false })
+  closingManagerContact?: string;
+
+  @Prop({ required: false, trim: true })
+  holder?: string;
+
+  @Prop({ required: false, trim: true })
+  source?: string;
+
+  @Prop({ required: false, trim: true })
+  hotness?: string;
+
+  @Prop({ required: false, trim: true })
+  assignee?: string;
+
+  @Prop({ required: false, type: Boolean, default: false })
+  featured?: boolean;
+
+  @Prop({ required: false, type: Boolean, default: false })
+  sendWhatsAppToAssignee?: boolean;
+
+  @Prop({ required: false, type: Boolean, default: false })
+  sendWhatsAppToCustomer?: boolean;
+
+  @Prop({ required: false, type: Boolean, default: false })
   sendEmailToAssignee?: boolean;
 
   @Prop({ required: false, type: Boolean, default: false })
@@ -492,6 +517,18 @@ export class Property {
 
   @Prop({ required: false, type: Boolean, default: false })
   hideContactNumber?: boolean;
+
+  @Prop({ required: false, trim: true })
+  virtualVideoUrl?: string;
+
+  @Prop({ required: false, type: [Object], default: [] })
+  videos?: Record<string, any>[];
+
+  @Prop({ required: false, type: [String], default: [] })
+  keywords?: string[];
+
+  @Prop({ required: false, type: [Object], default: [] })
+  documents?: Record<string, any>[];
 }
 
 export const PropertySchema = SchemaFactory.createForClass(Property);

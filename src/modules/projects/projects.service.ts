@@ -235,6 +235,7 @@ export class ProjectsService {
         { keyword: new RegExp(search, 'i') },
         { description: new RegExp(search, 'i') },
         { websiteKeywords: new RegExp(search, 'i') },
+        { keywords: { $in: [new RegExp(search, 'i')] } },
         { reraNumber: new RegExp(search, 'i') },
       ];
     }
@@ -432,6 +433,11 @@ export class ProjectsService {
       }
     }
     projObj['daysSinceLaunch'] = daysSinceLaunch;
+    projObj['images'] = projObj['images'] || [];
+    projObj['videos'] = projObj['videos'] || [];
+    projObj['documents'] = projObj['documents'] || [];
+    projObj['plans'] = projObj['plans'] || [];
+    projObj['keywords'] = projObj['keywords'] || [];
 
     return projObj;
   }

@@ -9,6 +9,7 @@ import {
   Min,
   IsArray,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { ProjectVisibility, ProjectStatus } from '../schemas/project.schema';
 
 export class CreateProjectDto {
@@ -521,4 +522,24 @@ export class CreateProjectDto {
   @IsArray()
   @IsOptional()
   images?: any[];
+
+  @ApiPropertyOptional({ type: [Object], default: [] })
+  @IsArray()
+  @IsOptional()
+  videos?: any[];
+
+  @ApiPropertyOptional({
+    example: ['Luxury', 'Nagpur', 'Villa'],
+    description: 'Multiple project keywords array or comma-separated list',
+  })
+  @IsArray()
+  @IsOptional()
+  @Transform(({ value }) =>
+    Array.isArray(value)
+      ? value
+      : typeof value === 'string'
+      ? value.split(',').map((s) => s.trim()).filter(Boolean)
+      : [],
+  )
+  keywords?: string[];
 }

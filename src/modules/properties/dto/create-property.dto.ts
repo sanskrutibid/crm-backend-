@@ -1059,6 +1059,80 @@ export class CreatePropertyDto {
   @ApiPropertyOptional({
     example: 'Shared',
     description: 'Privacy visibility: Private or Shared',
+  closingManagerContact?: string;
+
+  @ApiPropertyOptional({ example: 'Broker', description: 'Secondary holder' })
+  @IsString()
+  @IsOptional()
+  holder?: string;
+
+  @ApiPropertyOptional({
+    example: 'Campaigns',
+    description: 'Lead generation source',
+  })
+  @IsString()
+  @IsOptional()
+  source?: string;
+
+  @ApiPropertyOptional({
+    example: 'Hot',
+    description: 'Deal hotness classification level',
+  })
+  @IsString()
+  @IsOptional()
+  hotness?: string;
+
+  @ApiPropertyOptional({
+    example: 'Alex Mercer',
+    description: 'Assignee staff name/ID',
+  })
+  @IsString()
+  @IsOptional()
+  assignee?: string;
+
+  @ApiPropertyOptional({
+    example: true,
+    description: 'Featured banner premium priority listing status',
+  })
+  @IsBoolean()
+  @IsOptional()
+  featured?: boolean;
+
+  @ApiPropertyOptional({
+    example: true,
+    description: 'Auto dispatch WhatsApp copy alert to employee assignee',
+  })
+  @IsBoolean()
+  @IsOptional()
+  sendWhatsAppToAssignee?: boolean;
+
+  @ApiPropertyOptional({
+    example: true,
+    description: 'Auto dispatch WhatsApp flyer to customer',
+  })
+  @IsBoolean()
+  @IsOptional()
+  sendWhatsAppToCustomer?: boolean;
+
+  @ApiPropertyOptional({
+    example: true,
+    description: 'Auto dispatch Email alert copy to employee assignee',
+  })
+  @IsBoolean()
+  @IsOptional()
+  sendEmailToAssignee?: boolean;
+
+  @ApiPropertyOptional({
+    example: true,
+    description: 'Auto dispatch Email summary brochure to customer',
+  })
+  @IsBoolean()
+  @IsOptional()
+  sendEmailToCustomer?: boolean;
+
+  @ApiPropertyOptional({
+    example: 'Shared',
+    description: 'Privacy visibility: Private or Shared',
   })
   @IsString()
   @IsOptional()
@@ -1071,4 +1145,45 @@ export class CreatePropertyDto {
   @IsBoolean()
   @IsOptional()
   hideContactNumber?: boolean;
+
+  @ApiPropertyOptional({
+    example: 'https://vimeo.com/mock-id',
+    description: 'Virtual video walk-through url',
+  })
+  @IsString()
+  @IsOptional()
+  virtualVideoUrl?: string;
+
+  @ApiPropertyOptional({
+    type: [Object],
+    description: 'Uploaded video files or video object list',
+    default: [],
+  })
+  @IsArray()
+  @IsOptional()
+  videos?: any[];
+
+  @ApiPropertyOptional({
+    example: ['Residential', 'Flat', 'Bandra'],
+    description: 'Multiple property keywords array or comma-separated list',
+  })
+  @IsArray()
+  @IsOptional()
+  @Transform(({ value }) =>
+    Array.isArray(value)
+      ? value
+      : typeof value === 'string'
+      ? value.split(',').map((s) => s.trim()).filter(Boolean)
+      : [],
+  )
+  keywords?: string[];
+
+  @ApiPropertyOptional({
+    type: [Object],
+    description: 'Property documents array',
+    default: [],
+  })
+  @IsArray()
+  @IsOptional()
+  documents?: any[];
 }

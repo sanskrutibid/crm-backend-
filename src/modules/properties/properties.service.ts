@@ -428,6 +428,10 @@ export class PropertiesService implements OnModuleInit {
         { location: new RegExp(search, 'i') },
         { builder: new RegExp(search, 'i') },
         { type: new RegExp(search, 'i') },
+        { keyword: new RegExp(search, 'i') },
+        { websiteKeyword: new RegExp(search, 'i') },
+        { description: new RegExp(search, 'i') },
+        { keywords: { $in: [new RegExp(search, 'i')] } },
       ];
       if (/^[0-9a-fA-F]{24}$/.test(search.trim())) {
         orConditions.push({ _id: search.trim() });
@@ -465,6 +469,9 @@ export class PropertiesService implements OnModuleInit {
     }
     if (!property.photos) property.photos = [];
     if (!property.images) property.images = [];
+    if (!property.videos) property.videos = [];
+    if (!property.keywords) property.keywords = [];
+    if (!property.documents) property.documents = [];
     if (property.photos.length > 0 && property.images.length === 0) {
       property.images = [...property.photos];
     } else if (property.images.length > 0 && property.photos.length === 0) {

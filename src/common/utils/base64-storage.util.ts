@@ -27,6 +27,12 @@ export async function saveBase64ToFile(
   else if (mimeType.includes('webp')) ext = 'webp';
   else if (mimeType.includes('gif')) ext = 'gif';
   else if (mimeType.includes('svg')) ext = 'svg';
+  else if (mimeType.includes('mp4')) ext = 'mp4';
+  else if (mimeType.includes('webm')) ext = 'webm';
+  else if (mimeType.includes('ogg') || mimeType.includes('ogv')) ext = 'mp4';
+  else if (mimeType.includes('quicktime') || mimeType.includes('mov')) ext = 'mov';
+  else if (mimeType.includes('avi')) ext = 'avi';
+  else if (mimeType.includes('mkv')) ext = 'mkv';
   else if (mimeType.includes('pdf')) ext = 'pdf';
   else if (mimeType.includes('word') || mimeType.includes('docx')) ext = 'docx';
   else if (mimeType.includes('doc')) ext = 'doc';

@@ -17,6 +17,7 @@ export enum ProjectVisibility {
 
 @Schema({
   timestamps: true,
+  strict: false,
   toJSON: {
     transform: (doc, ret: any) => {
       ret.id = ret._id.toString();
@@ -246,6 +247,12 @@ export class Project {
 
   @Prop({ type: [Object], default: [] })
   images?: Record<string, any>[];
+
+  @Prop({ type: [Object], default: [] })
+  videos?: Record<string, any>[];
+
+  @Prop({ type: [String], default: [] })
+  keywords?: string[];
 }
 
 export const ProjectSchema = SchemaFactory.createForClass(Project);
