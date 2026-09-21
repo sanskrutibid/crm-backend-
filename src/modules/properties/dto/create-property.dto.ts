@@ -957,6 +957,36 @@ export class CreatePropertyDto {
   @IsOptional()
   keyHolder?: string;
 
+  @ApiPropertyOptional({ example: 'Ramesh Sharma', description: 'Site Manager Name' })
+  @IsString()
+  @IsOptional()
+  siteManager?: string;
+
+  @ApiPropertyOptional({ example: '9876543210', description: 'Site Manager Contact Number' })
+  @IsString()
+  @IsOptional()
+  siteManagerContact?: string;
+
+  @ApiPropertyOptional({ example: 'Suresh Kumar', description: 'Sourcing Manager Name' })
+  @IsString()
+  @IsOptional()
+  sourcingManager?: string;
+
+  @ApiPropertyOptional({ example: '9876543211', description: 'Sourcing Manager Contact Number' })
+  @IsString()
+  @IsOptional()
+  sourcingManagerContact?: string;
+
+  @ApiPropertyOptional({ example: 'Vijay Patil', description: 'Closing Manager Name' })
+  @IsString()
+  @IsOptional()
+  closingManager?: string;
+
+  @ApiPropertyOptional({ example: '9876543212', description: 'Closing Manager Contact Number' })
+  @IsString()
+  @IsOptional()
+  closingManagerContact?: string;
+
   @ApiPropertyOptional({ example: 'Broker', description: 'Secondary holder' })
   @IsString()
   @IsOptional()

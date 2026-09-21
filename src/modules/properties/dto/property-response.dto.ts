@@ -685,6 +685,24 @@ export class PropertyResponseDto {
   })
   keyHolder?: string;
 
+  @ApiPropertyOptional({ example: 'Ramesh Sharma', description: 'Site Manager Name' })
+  siteManager?: string;
+
+  @ApiPropertyOptional({ example: '9876543210', description: 'Site Manager Contact Number' })
+  siteManagerContact?: string;
+
+  @ApiPropertyOptional({ example: 'Suresh Kumar', description: 'Sourcing Manager Name' })
+  sourcingManager?: string;
+
+  @ApiPropertyOptional({ example: '9876543211', description: 'Sourcing Manager Contact Number' })
+  sourcingManagerContact?: string;
+
+  @ApiPropertyOptional({ example: 'Vijay Patil', description: 'Closing Manager Name' })
+  closingManager?: string;
+
+  @ApiPropertyOptional({ example: '9876543212', description: 'Closing Manager Contact Number' })
+  closingManagerContact?: string;
+
   @ApiPropertyOptional({ example: 'Broker', description: 'Secondary holder' })
   holder?: string;
 

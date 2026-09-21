@@ -443,6 +443,24 @@ export class Property {
   keyHolder?: string;
 
   @Prop({ required: false, trim: true })
+  siteManager?: string;
+
+  @Prop({ required: false, trim: true })
+  siteManagerContact?: string;
+
+  @Prop({ required: false, trim: true })
+  sourcingManager?: string;
+
+  @Prop({ required: false, trim: true })
+  sourcingManagerContact?: string;
+
+  @Prop({ required: false, trim: true })
+  closingManager?: string;
+
+  @Prop({ required: false, trim: true })
+  closingManagerContact?: string;
+
+  @Prop({ required: false, trim: true })
   holder?: string;
 
   @Prop({ required: false, trim: true })
