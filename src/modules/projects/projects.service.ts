@@ -20,6 +20,7 @@ import { SendProjectProposalDto } from './dto/send-project-proposal.dto';
 import { ActivitiesService } from '../activities/activities.service';
 import { ActivityType } from '../activities/schemas/activity.schema';
 import { EmailsService } from '../emails/emails.service';
+import { sanitizeBase64Payload } from '../../common/utils/base64-storage.util';
 
 @Injectable()
 export class ProjectsService {
@@ -134,14 +135,16 @@ export class ProjectsService {
       ? `${targetContact.firstName} ${targetContact.lastName || ''}`.trim()
       : 'Unknown Owner';
 
-    // 3. Create and Save the Project
+    // 3. Sanitize and Create Project (extract base64 images/docs to disk)
+    const sanitizedDto = await sanitizeBase64Payload(createProjectDto, 'projects');
+
     const newProject = new this.projectModel({
-      ...createProjectDto,
+      ...sanitizedDto,
       contactId: targetContactId,
       assignedTo: assignedTo,
       createdBy: defaultUserId,
       updatedBy: defaultUserId,
-      status: createProjectDto.status || ProjectStatus.AVAILABLE,
+      status: sanitizedDto.status || ProjectStatus.AVAILABLE,
     });
 
     const savedProject = await newProject.save();
@@ -427,8 +430,10 @@ export class ProjectsService {
       throw new NotFoundException(`Project with ID "${id}" not found`);
     }
 
+    const sanitizedDto = await sanitizeBase64Payload(updateProjectDto, 'projects');
+
     const updatedProject = await this.projectModel
-      .findByIdAndUpdate(id, updateProjectDto, { new: true })
+      .findByIdAndUpdate(id, sanitizedDto, { new: true })
       .populate(['contactId', 'assignedTo', 'createdBy', 'updatedBy'])
       .exec();
 

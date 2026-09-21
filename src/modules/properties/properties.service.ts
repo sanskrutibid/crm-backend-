@@ -15,6 +15,7 @@ import { ActivityType } from '../activities/schemas/activity.schema';
 import { Contact, ContactDocument } from '../contacts/schemas/contact.schema';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { generateExcelBuffer } from '../../common/utils/excel.util';
+import { sanitizeBase64Payload } from '../../common/utils/base64-storage.util';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -263,7 +264,8 @@ export class PropertiesService implements OnModuleInit {
       }
     }
 
-    const newProperty = new this.propertyModel(mappedDto);
+    const sanitizedDto = await sanitizeBase64Payload(mappedDto, 'properties');
+    const newProperty = new this.propertyModel(sanitizedDto);
     const savedProperty = await newProperty.save();
 
     // Log the addition in activity stream
@@ -500,8 +502,9 @@ export class PropertiesService implements OnModuleInit {
       }
     }
 
+    const sanitizedDto = await sanitizeBase64Payload(mappedDto, 'properties');
     const updatedProperty = await this.propertyModel
-      .findByIdAndUpdate(id, mappedDto, { new: true })
+      .findByIdAndUpdate(id, sanitizedDto, { new: true })
       .populate(['createdBy', 'assignedTo', 'ownerLandlord'])
       .exec();
 
