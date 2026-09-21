@@ -483,30 +483,6 @@ export class Property {
   sendWhatsAppToCustomer?: boolean;
 
   @Prop({ required: false, type: Boolean, default: false })
-  closingManagerContact?: string;
-
-  @Prop({ required: false, trim: true })
-  holder?: string;
-
-  @Prop({ required: false, trim: true })
-  source?: string;
-
-  @Prop({ required: false, trim: true })
-  hotness?: string;
-
-  @Prop({ required: false, trim: true })
-  assignee?: string;
-
-  @Prop({ required: false, type: Boolean, default: false })
-  featured?: boolean;
-
-  @Prop({ required: false, type: Boolean, default: false })
-  sendWhatsAppToAssignee?: boolean;
-
-  @Prop({ required: false, type: Boolean, default: false })
-  sendWhatsAppToCustomer?: boolean;
-
-  @Prop({ required: false, type: Boolean, default: false })
   sendEmailToAssignee?: boolean;
 
   @Prop({ required: false, type: Boolean, default: false })
