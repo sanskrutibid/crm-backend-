@@ -81,6 +81,24 @@ export class Project {
   developerName?: string; // Labeled "Developer Name"
 
   @Prop({ trim: true })
+  siteManager?: string; // Labeled "Site Manager"
+
+  @Prop({ trim: true })
+  siteManagerContact?: string; // Labeled "Site Manager Contact"
+
+  @Prop({ trim: true })
+  sourcingManager?: string; // Labeled "Sourcing Manager"
+
+  @Prop({ trim: true })
+  sourcingManagerContact?: string; // Labeled "Sourcing Manager Contact"
+
+  @Prop({ trim: true })
+  closingManager?: string; // Labeled "Closing Manager"
+
+  @Prop({ trim: true })
+  closingManagerContact?: string; // Labeled "Closing Manager Contact"
+
+  @Prop({ trim: true })
   description?: string; // Labeled "Description" (Max 2000 chars)
 
   @Prop({ trim: true })

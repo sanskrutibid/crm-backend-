@@ -224,6 +224,12 @@ export class ProjectsService {
         { contactId: { $in: contactIds } },
         { projectName: new RegExp(search, 'i') },
         { developerName: new RegExp(search, 'i') },
+        { siteManager: new RegExp(search, 'i') },
+        { siteManagerContact: new RegExp(search, 'i') },
+        { sourcingManager: new RegExp(search, 'i') },
+        { sourcingManagerContact: new RegExp(search, 'i') },
+        { closingManager: new RegExp(search, 'i') },
+        { closingManagerContact: new RegExp(search, 'i') },
         { locality: new RegExp(search, 'i') },
         { city: new RegExp(search, 'i') },
         { keyword: new RegExp(search, 'i') },
@@ -236,6 +242,18 @@ export class ProjectsService {
     // 2. Step 2 Advanced Filters (Screenshot 3 & 5)
     if (projectName) {
       filter.projectName = new RegExp(projectName, 'i');
+    }
+
+    if (query.siteManager) {
+      filter.siteManager = new RegExp(query.siteManager, 'i');
+    }
+
+    if (query.sourcingManager) {
+      filter.sourcingManager = new RegExp(query.sourcingManager, 'i');
+    }
+
+    if (query.closingManager) {
+      filter.closingManager = new RegExp(query.closingManager, 'i');
     }
 
     if (reraNumber) {
@@ -595,6 +613,12 @@ export class ProjectsService {
         folder: item.PreferName || '',
         websiteKeywords: item.WebsiteKeyword || '',
         preferredFacls: item.Preferred_Facls || '',
+        siteManager: item.SiteManager || item.siteManager || '',
+        siteManagerContact: item.SiteManagerContact || item.siteManagerContact || item.SiteManagerPhone || '',
+        sourcingManager: item.SourcingManager || item.sourcingManager || '',
+        sourcingManagerContact: item.SourcingManagerContact || item.sourcingManagerContact || item.SourcingManagerPhone || '',
+        closingManager: item.ClosingManager || item.closingManager || '',
+        closingManagerContact: item.ClosingManagerContact || item.closingManagerContact || item.ClosingManagerPhone || '',
         createdBy: assignedToId,
         status: ProjectStatus.AVAILABLE,
         visibility: ProjectVisibility.PRIVATE,

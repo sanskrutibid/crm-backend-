@@ -130,6 +130,54 @@ export class UpdateProjectDto {
   developerName?: string;
 
   @ApiPropertyOptional({
+    example: 'Rajesh Kumar',
+    description: 'Site Manager Name',
+  })
+  @IsString()
+  @IsOptional()
+  siteManager?: string;
+
+  @ApiPropertyOptional({
+    example: '+91 9876543210',
+    description: 'Site Manager Contact Number',
+  })
+  @IsString()
+  @IsOptional()
+  siteManagerContact?: string;
+
+  @ApiPropertyOptional({
+    example: 'Amit Sharma',
+    description: 'Sourcing Manager Name',
+  })
+  @IsString()
+  @IsOptional()
+  sourcingManager?: string;
+
+  @ApiPropertyOptional({
+    example: '+91 9876543211',
+    description: 'Sourcing Manager Contact Number',
+  })
+  @IsString()
+  @IsOptional()
+  sourcingManagerContact?: string;
+
+  @ApiPropertyOptional({
+    example: 'Priya Verma',
+    description: 'Closing Manager Name',
+  })
+  @IsString()
+  @IsOptional()
+  closingManager?: string;
+
+  @ApiPropertyOptional({
+    example: '+91 9876543212',
+    description: 'Closing Manager Contact Number',
+  })
+  @IsString()
+  @IsOptional()
+  closingManagerContact?: string;
+
+  @ApiPropertyOptional({
     example: 'Luxury residential township with state of the art amenities.',
     description: 'Descriptive details',
   })

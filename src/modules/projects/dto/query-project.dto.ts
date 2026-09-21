@@ -160,6 +160,30 @@ export class QueryProjectDto {
   branch?: string;
 
   @ApiPropertyOptional({
+    example: 'Rajesh Kumar',
+    description: 'Filter by Site Manager name',
+  })
+  @IsString()
+  @IsOptional()
+  siteManager?: string;
+
+  @ApiPropertyOptional({
+    example: 'Amit Sharma',
+    description: 'Filter by Sourcing Manager name',
+  })
+  @IsString()
+  @IsOptional()
+  sourcingManager?: string;
+
+  @ApiPropertyOptional({
+    example: 'Priya Verma',
+    description: 'Filter by Closing Manager name',
+  })
+  @IsString()
+  @IsOptional()
+  closingManager?: string;
+
+  @ApiPropertyOptional({
     example: '60d5ecb8b394142e88a38c21',
     description:
       'Filter projects assigned to a specific CRM Agent User ID (Assign to)',
