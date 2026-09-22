@@ -178,7 +178,7 @@ export class PropertiesService implements OnModuleInit {
    * the image to `uploads/properties/photos/` and returns the static URL `/uploads/properties/photos/...`.
    * If it is already an HTTP URL or local path, it is retained as is.
    */
-  async processImages(images?: string[]): Promise<string[]> {
+  async processImages(images?: any[]): Promise<string[]> {
     if (!images || !Array.isArray(images) || images.length === 0) {
       return [];
     }
@@ -195,7 +195,11 @@ export class PropertiesService implements OnModuleInit {
     const processedList: string[] = [];
 
     for (let i = 0; i < images.length; i++) {
-      const item = images[i];
+      let item = images[i];
+      if (!item) continue;
+      if (typeof item === 'object') {
+        item = item.url || item.path || item.src || item.link || JSON.stringify(item);
+      }
       if (typeof item !== 'string' || !item.trim()) continue;
 
       const trimmed = item.trim();

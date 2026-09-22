@@ -107,6 +107,24 @@ export class Property {
   @Prop({ required: false, trim: true })
   transaction?: string;
 
+  @Prop({ required: false })
+  forType?: any;
+
+  @Prop({ required: false })
+  localities?: any;
+
+  @Prop({ required: false })
+  branch?: any;
+
+  @Prop({ required: false })
+  pollutionZone?: any;
+
+  @Prop({ required: false })
+  paidByLicensor?: any;
+
+  @Prop({ required: false })
+  isPreLeaseEnabled?: any;
+
   @Prop({ required: false, trim: true })
   ownership?: string;
 

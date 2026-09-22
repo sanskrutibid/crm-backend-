@@ -139,6 +139,30 @@ export class CreatePropertyDto {
   @IsOptional()
   transaction?: string;
 
+  @ApiPropertyOptional({ example: 'Sell', description: 'Property for type (e.g. Sell, Rent, Lease)' })
+  @IsOptional()
+  forType?: any;
+
+  @ApiPropertyOptional({ description: 'Locality list or array' })
+  @IsOptional()
+  localities?: any;
+
+  @ApiPropertyOptional({ description: 'Branch identifier or details' })
+  @IsOptional()
+  branch?: any;
+
+  @ApiPropertyOptional({ description: 'Pollution zone classification' })
+  @IsOptional()
+  pollutionZone?: any;
+
+  @ApiPropertyOptional({ description: 'Paid by licensor flag or details' })
+  @IsOptional()
+  paidByLicensor?: any;
+
+  @ApiPropertyOptional({ description: 'Is pre-lease feature enabled' })
+  @IsOptional()
+  isPreLeaseEnabled?: any;
+
   @ApiPropertyOptional({
     example: 'Freehold',
     description: 'Ownership details',
@@ -903,32 +927,40 @@ export class CreatePropertyDto {
   // Media / Photos / Images
   // ==========================================
   @ApiPropertyOptional({
-    example: [
-      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c',
-      'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9',
-    ],
-    description: 'Array of property photo URLs or base64 data URIs',
-    type: [String],
+    description: 'Array of property photo URLs, objects, or base64 data URIs',
   })
   @IsArray()
-  @IsString({ each: true })
   @IsOptional()
-  @Transform(({ value }) => (Array.isArray(value) ? value : value ? [value] : []))
-  photos?: string[];
+  @Transform(({ value }) => {
+    if (!value) return [];
+    const arr = Array.isArray(value) ? value : [value];
+    return arr.map((item: any) => {
+      if (typeof item === 'string') return item;
+      if (item && typeof item === 'object') {
+        return item.url || item.path || item.src || item.link || JSON.stringify(item);
+      }
+      return String(item);
+    });
+  })
+  photos?: any[];
 
   @ApiPropertyOptional({
-    example: [
-      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c',
-      'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9',
-    ],
-    description: 'Array of property image URLs or base64 data URIs',
-    type: [String],
+    description: 'Array of property image URLs, objects, or base64 data URIs',
   })
   @IsArray()
-  @IsString({ each: true })
   @IsOptional()
-  @Transform(({ value }) => (Array.isArray(value) ? value : value ? [value] : []))
-  images?: string[];
+  @Transform(({ value }) => {
+    if (!value) return [];
+    const arr = Array.isArray(value) ? value : [value];
+    return arr.map((item: any) => {
+      if (typeof item === 'string') return item;
+      if (item && typeof item === 'object') {
+        return item.url || item.path || item.src || item.link || JSON.stringify(item);
+      }
+      return String(item);
+    });
+  })
+  images?: any[];
 
   // ==========================================
   // Step 6: Save and Publish
