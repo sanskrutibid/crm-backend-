@@ -107,22 +107,22 @@ export class Property {
   @Prop({ required: false, trim: true })
   transaction?: string;
 
-  @Prop({ required: false })
+  @Prop({ required: false, type: MongooseSchema.Types.Mixed })
   forType?: any;
 
-  @Prop({ required: false })
+  @Prop({ required: false, type: MongooseSchema.Types.Mixed })
   localities?: any;
 
-  @Prop({ required: false })
+  @Prop({ required: false, type: MongooseSchema.Types.Mixed })
   branch?: any;
 
-  @Prop({ required: false })
+  @Prop({ required: false, type: MongooseSchema.Types.Mixed })
   pollutionZone?: any;
 
-  @Prop({ required: false })
+  @Prop({ required: false, type: MongooseSchema.Types.Mixed })
   paidByLicensor?: any;
 
-  @Prop({ required: false })
+  @Prop({ required: false, type: MongooseSchema.Types.Mixed })
   isPreLeaseEnabled?: any;
 
   @Prop({ required: false, trim: true })
