@@ -1,9 +1,16 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+
+import {
+  ConfigModule,
+  ConfigService,
+} from '@nestjs/config';
+
 import { MongooseModule } from '@nestjs/mongoose';
+
 import { CrmCacheModule } from './common/cache/cache.module';
+
 import { UsersModule } from './modules/users/users.module';
 import { RolesModule } from './modules/roles/roles.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -29,6 +36,7 @@ import { HistoriesModule } from './modules/histories/histories.module';
 import { LoginHistoryModule } from './modules/login-history/login-history.module';
 import { DatabackupModule } from './modules/databackup/databackup.module';
 import { LocationsModule } from './modules/locations/locations.module';
+import { LocalitiesModule } from './modules/locality/localities.module';
 import { BranchesModule } from './modules/branches/branches.module';
 import { FoldersModule } from './modules/folders/folders.module';
 import { SourcesModule } from './modules/sources/sources.module';
@@ -41,34 +49,69 @@ import { PayrollModule } from './modules/payroll/payroll.module';
 import { LeavesModule } from './modules/leaves/leaves.module';
 import { GoogleCalendarModule } from './modules/google-calendar/google-calendar.module';
 
+/**
+ * Cities Module
+ *
+ * New module for:
+ * GET  /api/v1/cities
+ * POST /api/v1/cities/sync
+ */
+import { CitiesModule } from './modules/cities/cities.module';
+
 @Module({
   imports: [
+
+    /**
+     * Global configuration
+     */
     ConfigModule.forRoot({
       isGlobal: true,
     }),
 
+    /**
+     * MongoDB connection
+     */
     MongooseModule.forRootAsync({
       inject: [ConfigService],
-     useFactory: (configService: ConfigService) => {
 
-  return {
-    uri:
-      configService.get<string>('MONGO_URI') ||
-      'mongodb://localhost:27017/crm_app',
-  };
-},
+      useFactory: (
+        configService: ConfigService,
+      ) => {
+
+        return {
+          uri:
+            configService.get<string>(
+              'MONGO_URI',
+            ) ||
+            'mongodb://localhost:27017/crm_app',
+        };
+      },
     }),
 
+    /**
+     * CRM Cache
+     */
     CrmCacheModule,
 
+    /**
+     * Core modules
+     */
     UsersModule,
     EmployeesModule,
     HolidaysModule,
     EmployeeDocumentsModule,
     PayrollModule,
     LeavesModule,
+
+    /**
+     * Authentication & authorization
+     */
     RolesModule,
     AuthModule,
+
+    /**
+     * CRM modules
+     */
     LeadsModule,
     AttendanceModule,
     PropertiesModule,
@@ -90,7 +133,25 @@ import { GoogleCalendarModule } from './modules/google-calendar/google-calendar.
     HistoriesModule,
     LoginHistoryModule,
     DatabackupModule,
+
+    /**
+     * Location modules
+     */
     LocationsModule,
+    LocalitiesModule,
+
+    /**
+     * Cities module
+     *
+     * API:
+     * GET  /api/v1/cities
+     * POST /api/v1/cities/sync
+     */
+    CitiesModule,
+
+    /**
+     * Other modules
+     */
     BranchesModule,
     FoldersModule,
     SourcesModule,
@@ -98,7 +159,13 @@ import { GoogleCalendarModule } from './modules/google-calendar/google-calendar.
     MatchmakingModule,
     GoogleCalendarModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
+
+  controllers: [
+    AppController,
+  ],
+
+  providers: [
+    AppService,
+  ],
 })
 export class AppModule {}
