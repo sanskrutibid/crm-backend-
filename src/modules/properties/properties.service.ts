@@ -230,6 +230,79 @@ export class PropertiesService implements OnModuleInit {
     return processedList;
   }
 
+  /**
+   * Process an array of video items/strings.
+   * If an item is a Base64 data URI (data:video/...;base64,...), it decodes and writes
+   * the video to `uploads/properties/videos/` and returns the static URL `/uploads/properties/videos/...`.
+   * If it is already an HTTP URL or local path, it is retained as is.
+   */
+  async processVideos(videos?: any[]): Promise<any[]> {
+    if (!videos || !Array.isArray(videos) || videos.length === 0) {
+      return [];
+    }
+
+    const uploadDir = path.join(process.cwd(), 'uploads', 'properties', 'videos');
+    try {
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+    } catch {
+      // Directory creation error handler
+    }
+
+    const processedList: any[] = [];
+
+    for (let i = 0; i < videos.length; i++) {
+      let item = videos[i];
+      if (!item) continue;
+
+      let strVal = '';
+      if (typeof item === 'string') {
+        strVal = item;
+      } else if (typeof item === 'object') {
+        strVal = item.url || item.path || item.src || item.link || item.data || '';
+      }
+
+      const trimmed = strVal ? strVal.trim() : '';
+      if (trimmed) {
+        const base64Match = trimmed.match(/^data:(video|application)\/([a-zA-Z0-9+.-]+);base64,([\s\S]+)$/);
+        if (base64Match) {
+          try {
+            let ext = base64Match[2].toLowerCase();
+            if (ext.includes('mp4')) ext = 'mp4';
+            else if (ext.includes('webm')) ext = 'webm';
+            else if (ext.includes('quicktime') || ext.includes('mov')) ext = 'mov';
+            else if (ext.includes('avi')) ext = 'avi';
+            else if (ext.includes('mkv')) ext = 'mkv';
+            else if (ext.includes('ogg') || ext.includes('ogv')) ext = 'mp4';
+            else ext = 'mp4';
+
+            const base64Data = base64Match[3].replace(/[\r\n\s]/g, '');
+            const buffer = Buffer.from(base64Data, 'base64');
+            const fileName = `prop_vid_${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${ext}`;
+            const filePath = path.join(uploadDir, fileName);
+
+            await fs.promises.writeFile(filePath, buffer);
+            const relativeUrl = `/uploads/properties/videos/${fileName}`;
+
+            if (typeof item === 'object') {
+              processedList.push({ ...item, url: relativeUrl, path: relativeUrl, link: relativeUrl });
+            } else {
+              processedList.push(relativeUrl);
+            }
+            continue;
+          } catch (err) {
+            console.error('Failed to save base64 video file:', err);
+          }
+        }
+      }
+
+      processedList.push(item);
+    }
+
+    return processedList;
+  }
+
   async create(
     createPropertyDto: CreatePropertyDto,
     defaultUserId?: string,
@@ -256,6 +329,30 @@ export class PropertiesService implements OnModuleInit {
       mappedDto.images = [...mappedDto.photos];
     } else if (mappedDto.images?.length && (!mappedDto.photos || mappedDto.photos.length === 0)) {
       mappedDto.photos = [...mappedDto.images];
+    }
+
+    // Process and synchronize property videos
+    let videos = mappedDto.videos || [];
+    if (videos.length > 0) {
+      mappedDto.videos = await this.processVideos(videos);
+    }
+    if (mappedDto.videoUrl && mappedDto.videoUrl.startsWith('data:')) {
+      const processed = await this.processVideos([mappedDto.videoUrl]);
+      if (processed.length > 0) {
+        mappedDto.videoUrl = typeof processed[0] === 'string' ? processed[0] : processed[0].url || processed[0].path;
+      }
+    }
+    if (mappedDto.virtualVideoUrl && mappedDto.virtualVideoUrl.startsWith('data:')) {
+      const processed = await this.processVideos([mappedDto.virtualVideoUrl]);
+      if (processed.length > 0) {
+        mappedDto.virtualVideoUrl = typeof processed[0] === 'string' ? processed[0] : processed[0].url || processed[0].path;
+      }
+    }
+    if (mappedDto.videos?.length && !mappedDto.videoUrl) {
+      const firstVid = mappedDto.videos[0];
+      mappedDto.videoUrl = typeof firstVid === 'string' ? firstVid : firstVid?.url || firstVid?.path || '';
+    } else if (mappedDto.videoUrl && (!mappedDto.videos || mappedDto.videos.length === 0)) {
+      mappedDto.videos = [{ url: mappedDto.videoUrl, title: 'Main Property Video' }];
     }
 
     // Populate createdBy and assignedTo if defaultUserId is available and they are not already set
@@ -481,7 +578,85 @@ export class PropertiesService implements OnModuleInit {
     } else if (property.images.length > 0 && property.photos.length === 0) {
       property.photos = [...property.images];
     }
+    if (property.videos.length > 0 && !property.videoUrl) {
+      const firstVid = property.videos[0];
+      property.videoUrl = typeof firstVid === 'string' ? firstVid : (firstVid as any)?.url || (firstVid as any)?.path || '';
+    } else if (property.videoUrl && (!property.videos || property.videos.length === 0)) {
+      property.videos = [{ url: property.videoUrl, title: 'Main Property Video' }];
+    }
     return property;
+  }
+
+  async getShareDetails(id: string, baseUrl?: string) {
+    const property = await this.findOne(id);
+    const host = (baseUrl || '').replace(/\/$/, '');
+
+    const formatUrl = (url?: string) => {
+      if (!url) return '';
+      if (url.startsWith('http://') || url.startsWith('https://')) return url;
+      if (url.startsWith('/')) return host ? `${host}${url}` : url;
+      return url;
+    };
+
+    const photos = (property.photos || property.images || []).map((p: string) => formatUrl(p));
+    const videos = (property.videos || []).map((v: any) => {
+      const urlStr = typeof v === 'string' ? v : v?.url || v?.path || v?.link || '';
+      const formatted = formatUrl(urlStr);
+      return typeof v === 'object' ? { ...v, url: formatted } : formatted;
+    });
+
+    let mainVideoUrl = formatUrl(property.videoUrl || property.virtualVideoUrl || '');
+    if (!mainVideoUrl && videos.length > 0) {
+      mainVideoUrl = typeof videos[0] === 'string' ? videos[0] : videos[0]?.url || '';
+    }
+
+    const title = property.name || 'Property Listing';
+    const type = property.propertyType || property.type || 'Real Estate';
+    const transaction = property.transaction || 'Available';
+    const price = property.price || (property.expectedPrice ? `₹${property.expectedPrice}` : 'Price on Request');
+    const location = property.location || property.address || property.locality || property.city || '';
+    const area = property.sqft || property.area || property.builtUpArea || property.carpetArea ? `${property.sqft || property.area || property.builtUpArea || property.carpetArea} sq.ft.` : '';
+    const bedroom = property.bedroom ? `${property.bedroom} BHK` : '';
+    const description = property.description || property.remark || '';
+    const amenities = property.amenities && property.amenities.length > 0 ? property.amenities.join(', ') : '';
+
+    let formattedShareText = `🏠 *${title}*\n`;
+    if (location) formattedShareText += `📍 *Location:* ${location}\n`;
+    if (type) formattedShareText += `🏷️ *Category:* ${type} (${transaction})\n`;
+    if (price) formattedShareText += `💰 *Price:* ${price}\n`;
+    if (bedroom) formattedShareText += `🛏️ *Configuration:* ${bedroom}\n`;
+    if (area) formattedShareText += `📐 *Area:* ${area}\n`;
+    if (amenities) formattedShareText += `✨ *Amenities:* ${amenities}\n`;
+    if (description) formattedShareText += `\n📝 *Description:* ${description}\n`;
+
+    if (photos.length > 0) {
+      formattedShareText += `\n📸 *Property Photos (${photos.length}):*\n`;
+      photos.slice(0, 5).forEach((p: string, idx: number) => {
+        formattedShareText += `• Photo ${idx + 1}: ${p}\n`;
+      });
+    }
+
+    if (mainVideoUrl || videos.length > 0) {
+      formattedShareText += `\n🎥 *Property Video Preview:*\n`;
+      if (mainVideoUrl) {
+        formattedShareText += `▶️ Watch Video: ${mainVideoUrl}\n`;
+      }
+      videos.forEach((v: any, idx: number) => {
+        const vUrl = typeof v === 'string' ? v : v?.url;
+        if (vUrl && vUrl !== mainVideoUrl) {
+          formattedShareText += `▶️ Video ${idx + 1}: ${vUrl}\n`;
+        }
+      });
+    }
+
+    return {
+      property,
+      photos,
+      videos,
+      mainVideoUrl,
+      virtualVideoUrl: formatUrl(property.virtualVideoUrl),
+      formattedShareText,
+    };
   }
 
   async update(
@@ -510,6 +685,30 @@ export class PropertiesService implements OnModuleInit {
         mappedDto.images = [...mappedDto.photos];
       } else if (mappedDto.images && !mappedDto.photos) {
         mappedDto.photos = [...mappedDto.images];
+      }
+    }
+
+    if (mappedDto.videos !== undefined || mappedDto.videoUrl !== undefined || mappedDto.virtualVideoUrl !== undefined) {
+      if (mappedDto.videos && mappedDto.videos.length > 0) {
+        mappedDto.videos = await this.processVideos(mappedDto.videos);
+      }
+      if (mappedDto.videoUrl && mappedDto.videoUrl.startsWith('data:')) {
+        const processed = await this.processVideos([mappedDto.videoUrl]);
+        if (processed.length > 0) {
+          mappedDto.videoUrl = typeof processed[0] === 'string' ? processed[0] : processed[0].url || processed[0].path;
+        }
+      }
+      if (mappedDto.virtualVideoUrl && mappedDto.virtualVideoUrl.startsWith('data:')) {
+        const processed = await this.processVideos([mappedDto.virtualVideoUrl]);
+        if (processed.length > 0) {
+          mappedDto.virtualVideoUrl = typeof processed[0] === 'string' ? processed[0] : processed[0].url || processed[0].path;
+        }
+      }
+      if (mappedDto.videos?.length && !mappedDto.videoUrl) {
+        const firstVid = mappedDto.videos[0];
+        mappedDto.videoUrl = typeof firstVid === 'string' ? firstVid : firstVid?.url || firstVid?.path || '';
+      } else if (mappedDto.videoUrl && (!mappedDto.videos || mappedDto.videos.length === 0)) {
+        mappedDto.videos = [{ url: mappedDto.videoUrl, title: 'Main Property Video' }];
       }
     }
 
