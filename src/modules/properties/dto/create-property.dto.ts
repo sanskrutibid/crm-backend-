@@ -1136,6 +1136,46 @@ export class CreatePropertyDto {
   )
   keywords?: string[];
 
+  @ApiPropertyOptional({ example: true })
+  @IsBoolean()
+  @IsOptional()
+  completionCertificate?: boolean;
+
+  @ApiPropertyOptional({ example: '/uploads/properties/documents/doc_123.pdf' })
+  @IsString()
+  @IsOptional()
+  completionCertificateDoc?: string;
+
+  @ApiPropertyOptional({ example: true })
+  @IsBoolean()
+  @IsOptional()
+  occupationCertificate?: boolean;
+
+  @ApiPropertyOptional({ example: '/uploads/properties/documents/doc_124.pdf' })
+  @IsString()
+  @IsOptional()
+  occupationCertificateDoc?: string;
+
+  @ApiPropertyOptional({ example: true })
+  @IsBoolean()
+  @IsOptional()
+  nocCertificate?: boolean;
+
+  @ApiPropertyOptional({ example: '/uploads/properties/documents/doc_125.pdf' })
+  @IsString()
+  @IsOptional()
+  nocCertificateDoc?: string;
+
+  @ApiPropertyOptional({ example: true })
+  @IsBoolean()
+  @IsOptional()
+  fireCertificate?: boolean;
+
+  @ApiPropertyOptional({ example: '/uploads/properties/documents/doc_126.pdf' })
+  @IsString()
+  @IsOptional()
+  fireCertificateDoc?: string;
+
   @ApiPropertyOptional({
     type: [Object],
     description: 'Property documents array',

@@ -236,6 +236,59 @@ export class PropertiesService implements OnModuleInit {
    * the video to `uploads/properties/videos/` and returns the static URL `/uploads/properties/videos/...`.
    * If it is already an HTTP URL or local path, it is retained as is.
    */
+  /**
+   * Process a single document item (string/base64/object).
+   * If it is a Base64 data URI (data:...;base64,...),
+   * it decodes and writes the file to uploads/properties/documents/ and returns the static URL /uploads/properties/documents/....
+   */
+  async processDocumentFile(documentInput?: any): Promise<string | undefined> {
+    if (!documentInput) return undefined;
+    let strVal = '';
+    if (typeof documentInput === 'string') {
+      strVal = documentInput;
+    } else if (typeof documentInput === 'object') {
+      strVal = documentInput.url || documentInput.path || documentInput.src || documentInput.link || documentInput.data || '';
+    }
+
+    if (!strVal || typeof strVal !== 'string') return undefined;
+    const trimmed = strVal.trim();
+    if (!trimmed) return undefined;
+
+    const base64Match = trimmed.match(/^data:([a-zA-Z0-9+\/.-]+);base64,([\s\S]+)$/);
+    if (base64Match) {
+      const uploadDir = path.join(process.cwd(), 'uploads', 'properties', 'documents');
+      try {
+        if (!fs.existsSync(uploadDir)) {
+          fs.mkdirSync(uploadDir, { recursive: true });
+        }
+      } catch {}
+
+      try {
+        let mime = base64Match[1].toLowerCase();
+        let ext = 'pdf';
+        if (mime.includes('pdf')) ext = 'pdf';
+        else if (mime.includes('png')) ext = 'png';
+        else if (mime.includes('jpg') || mime.includes('jpeg')) ext = 'jpg';
+        else if (mime.includes('webp')) ext = 'webp';
+        else if (mime.includes('word') || mime.includes('docx')) ext = 'docx';
+        else if (mime.includes('doc')) ext = 'doc';
+        else if (mime.includes('text') || mime.includes('plain')) ext = 'txt';
+
+        const base64Data = base64Match[2].replace(/[\r\n\s]/g, '');
+        const buffer = Buffer.from(base64Data, 'base64');
+        const fileName = `doc_${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${ext}`;
+        const filePath = path.join(uploadDir, fileName);
+
+        await fs.promises.writeFile(filePath, buffer);
+        return `/uploads/properties/documents/${fileName}`;
+      } catch (err) {
+        console.error('Failed to save base64 document file:', err);
+      }
+    }
+
+    return trimmed;
+  }
+
   async processVideos(videos?: any[]): Promise<any[]> {
     if (!videos || !Array.isArray(videos) || videos.length === 0) {
       return [];
@@ -363,6 +416,20 @@ export class PropertiesService implements OnModuleInit {
       if (!mappedDto.assignedTo) {
         mappedDto.assignedTo = defaultUserId;
       }
+    }
+
+    // Process Certificate Documents
+    if (mappedDto.completionCertificateDoc) {
+      mappedDto.completionCertificateDoc = await this.processDocumentFile(mappedDto.completionCertificateDoc);
+    }
+    if (mappedDto.occupationCertificateDoc) {
+      mappedDto.occupationCertificateDoc = await this.processDocumentFile(mappedDto.occupationCertificateDoc);
+    }
+    if (mappedDto.nocCertificateDoc) {
+      mappedDto.nocCertificateDoc = await this.processDocumentFile(mappedDto.nocCertificateDoc);
+    }
+    if (mappedDto.fireCertificateDoc) {
+      mappedDto.fireCertificateDoc = await this.processDocumentFile(mappedDto.fireCertificateDoc);
     }
 
     const sanitizedDto = await sanitizeBase64Payload(mappedDto, 'properties');
@@ -710,6 +777,20 @@ export class PropertiesService implements OnModuleInit {
       } else if (mappedDto.videoUrl && (!mappedDto.videos || mappedDto.videos.length === 0)) {
         mappedDto.videos = [{ url: mappedDto.videoUrl, title: 'Main Property Video' }];
       }
+    }
+
+    // Process Certificate Documents
+    if (mappedDto.completionCertificateDoc) {
+      mappedDto.completionCertificateDoc = await this.processDocumentFile(mappedDto.completionCertificateDoc);
+    }
+    if (mappedDto.occupationCertificateDoc) {
+      mappedDto.occupationCertificateDoc = await this.processDocumentFile(mappedDto.occupationCertificateDoc);
+    }
+    if (mappedDto.nocCertificateDoc) {
+      mappedDto.nocCertificateDoc = await this.processDocumentFile(mappedDto.nocCertificateDoc);
+    }
+    if (mappedDto.fireCertificateDoc) {
+      mappedDto.fireCertificateDoc = await this.processDocumentFile(mappedDto.fireCertificateDoc);
     }
 
     const sanitizedDto = await sanitizeBase64Payload(mappedDto, 'properties');

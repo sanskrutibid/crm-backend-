@@ -521,6 +521,33 @@ export class Property {
   @Prop({ required: false, type: [String], default: [] })
   keywords?: string[];
 
+  // ==========================================
+  // Certificates & Legal Verification Documents
+  // ==========================================
+  @Prop({ required: false, type: Boolean, default: false })
+  completionCertificate?: boolean;
+
+  @Prop({ required: false, trim: true })
+  completionCertificateDoc?: string;
+
+  @Prop({ required: false, type: Boolean, default: false })
+  occupationCertificate?: boolean;
+
+  @Prop({ required: false, trim: true })
+  occupationCertificateDoc?: string;
+
+  @Prop({ required: false, type: Boolean, default: false })
+  nocCertificate?: boolean;
+
+  @Prop({ required: false, trim: true })
+  nocCertificateDoc?: string;
+
+  @Prop({ required: false, type: Boolean, default: false })
+  fireCertificate?: boolean;
+
+  @Prop({ required: false, trim: true })
+  fireCertificateDoc?: string;
+
   @Prop({ required: false, type: [Object], default: [] })
   documents?: Record<string, any>[];
 }
