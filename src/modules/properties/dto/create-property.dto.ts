@@ -139,7 +139,10 @@ export class CreatePropertyDto {
   @IsOptional()
   transaction?: string;
 
-  @ApiPropertyOptional({ example: 'Sell', description: 'Property for type (e.g. Sell, Rent, Lease)' })
+  @ApiPropertyOptional({
+    example: 'Sell',
+    description: 'Property for type (e.g. Sell, Rent, Lease)',
+  })
   @IsOptional()
   forType?: any;
 
@@ -414,7 +417,10 @@ export class CreatePropertyDto {
   @IsOptional()
   carpetArea?: number;
 
-  @ApiPropertyOptional({ example: 'Sq. Ft.', description: 'Carpet area unit' })
+  @ApiPropertyOptional({
+    example: 'Sq. Ft.',
+    description: 'Carpet area unit',
+  })
   @IsString()
   @IsOptional()
   carpetAreaUnit?: string;
@@ -424,7 +430,10 @@ export class CreatePropertyDto {
   @IsOptional()
   terraceArea?: number;
 
-  @ApiPropertyOptional({ example: 'Sq. Ft.', description: 'Terrace area unit' })
+  @ApiPropertyOptional({
+    example: 'Sq. Ft.',
+    description: 'Terrace area unit',
+  })
   @IsString()
   @IsOptional()
   terraceAreaUnit?: string;
@@ -570,17 +579,26 @@ export class CreatePropertyDto {
   @IsOptional()
   jvRatio?: number;
 
-  @ApiPropertyOptional({ example: 3, description: 'Lock-in period in years' })
+  @ApiPropertyOptional({
+    example: 3,
+    description: 'Lock-in period in years',
+  })
   @IsNumber()
   @IsOptional()
   lockInPeriod?: number;
 
-  @ApiPropertyOptional({ example: 5, description: 'Lease period in years' })
+  @ApiPropertyOptional({
+    example: 5,
+    description: 'Lease period in years',
+  })
   @IsNumber()
   @IsOptional()
   leasePeriod?: number;
 
-  @ApiPropertyOptional({ example: 12000, description: 'Lease hold charges' })
+  @ApiPropertyOptional({
+    example: 12000,
+    description: 'Lease hold charges',
+  })
   @IsNumber()
   @IsOptional()
   leaseHoldCharges?: number;
@@ -679,13 +697,19 @@ export class CreatePropertyDto {
   @IsOptional()
   childRoom?: number;
 
-  @ApiPropertyOptional({ example: 2, description: 'Number of bathrooms' })
+  @ApiPropertyOptional({
+    example: 2,
+    description: 'Number of bathrooms',
+  })
   @IsNumber()
   @Min(0)
   @IsOptional()
   bathroom?: number;
 
-  @ApiPropertyOptional({ example: 1, description: 'Number of common bathrooms' })
+  @ApiPropertyOptional({
+    example: 1,
+    description: 'Number of common bathrooms',
+  })
   @IsNumber()
   @Min(0)
   @IsOptional()
@@ -909,17 +933,26 @@ export class CreatePropertyDto {
   @IsOptional()
   stpEtpCapacity?: number;
 
-  @ApiPropertyOptional({ example: 4, description: 'Number of washrooms' })
+  @ApiPropertyOptional({
+    example: 4,
+    description: 'Number of washrooms',
+  })
   @IsNumber()
   @IsOptional()
   noOfWashrooms?: number;
 
-  @ApiPropertyOptional({ example: 12, description: 'Canopy structure length' })
+  @ApiPropertyOptional({
+    example: 12,
+    description: 'Canopy structure length',
+  })
   @IsNumber()
   @IsOptional()
   canopyLength?: number;
 
-  @ApiPropertyOptional({ example: 8, description: 'Canopy structure width' })
+  @ApiPropertyOptional({
+    example: 8,
+    description: 'Canopy structure width',
+  })
   @IsNumber()
   @IsOptional()
   canopyWidth?: number;
@@ -958,12 +991,22 @@ export class CreatePropertyDto {
   @IsOptional()
   @Transform(({ value }) => {
     if (!value) return [];
+
     const arr = Array.isArray(value) ? value : [value];
+
     return arr.map((item: any) => {
       if (typeof item === 'string') return item;
+
       if (item && typeof item === 'object') {
-        return item.url || item.path || item.src || item.link || JSON.stringify(item);
+        return (
+          item.url ||
+          item.path ||
+          item.src ||
+          item.link ||
+          JSON.stringify(item)
+        );
       }
+
       return String(item);
     });
   })
@@ -976,12 +1019,22 @@ export class CreatePropertyDto {
   @IsOptional()
   @Transform(({ value }) => {
     if (!value) return [];
+
     const arr = Array.isArray(value) ? value : [value];
+
     return arr.map((item: any) => {
       if (typeof item === 'string') return item;
+
       if (item && typeof item === 'object') {
-        return item.url || item.path || item.src || item.link || JSON.stringify(item);
+        return (
+          item.url ||
+          item.path ||
+          item.src ||
+          item.link ||
+          JSON.stringify(item)
+        );
       }
+
       return String(item);
     });
   })
@@ -1014,37 +1067,58 @@ export class CreatePropertyDto {
   @IsOptional()
   keyHolder?: string;
 
-  @ApiPropertyOptional({ example: 'Ramesh Sharma', description: 'Site Manager Name' })
+  @ApiPropertyOptional({
+    example: 'Ramesh Sharma',
+    description: 'Site Manager Name',
+  })
   @IsString()
   @IsOptional()
   siteManager?: string;
 
-  @ApiPropertyOptional({ example: '9876543210', description: 'Site Manager Contact Number' })
+  @ApiPropertyOptional({
+    example: '9876543210',
+    description: 'Site Manager Contact Number',
+  })
   @IsString()
   @IsOptional()
   siteManagerContact?: string;
 
-  @ApiPropertyOptional({ example: 'Suresh Kumar', description: 'Sourcing Manager Name' })
+  @ApiPropertyOptional({
+    example: 'Suresh Kumar',
+    description: 'Sourcing Manager Name',
+  })
   @IsString()
   @IsOptional()
   sourcingManager?: string;
 
-  @ApiPropertyOptional({ example: '9876543211', description: 'Sourcing Manager Contact Number' })
+  @ApiPropertyOptional({
+    example: '9876543211',
+    description: 'Sourcing Manager Contact Number',
+  })
   @IsString()
   @IsOptional()
   sourcingManagerContact?: string;
 
-  @ApiPropertyOptional({ example: 'Vijay Patil', description: 'Closing Manager Name' })
+  @ApiPropertyOptional({
+    example: 'Vijay Patil',
+    description: 'Closing Manager Name',
+  })
   @IsString()
   @IsOptional()
   closingManager?: string;
 
-  @ApiPropertyOptional({ example: '9876543212', description: 'Closing Manager Contact Number' })
+  @ApiPropertyOptional({
+    example: '9876543212',
+    description: 'Closing Manager Contact Number',
+  })
   @IsString()
   @IsOptional()
   closingManagerContact?: string;
 
-  @ApiPropertyOptional({ example: 'Broker', description: 'Secondary holder' })
+  @ApiPropertyOptional({
+    example: 'Broker',
+    description: 'Secondary holder',
+  })
   @IsString()
   @IsOptional()
   holder?: string;
@@ -1156,17 +1230,25 @@ export class CreatePropertyDto {
     Array.isArray(value)
       ? value
       : typeof value === 'string'
-      ? value.split(',').map((s) => s.trim()).filter(Boolean)
-      : [],
+        ? value
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : [],
   )
   keywords?: string[];
 
+  // ==========================================
+  // Certificates & Legal Verification Documents
+  // ==========================================
   @ApiPropertyOptional({ example: true })
   @IsBoolean()
   @IsOptional()
   completionCertificate?: boolean;
 
-  @ApiPropertyOptional({ example: '/uploads/properties/documents/doc_123.pdf' })
+  @ApiPropertyOptional({
+    example: '/uploads/properties/documents/doc_123.pdf',
+  })
   @IsString()
   @IsOptional()
   completionCertificateDoc?: string;
@@ -1176,7 +1258,9 @@ export class CreatePropertyDto {
   @IsOptional()
   occupationCertificate?: boolean;
 
-  @ApiPropertyOptional({ example: '/uploads/properties/documents/doc_124.pdf' })
+  @ApiPropertyOptional({
+    example: '/uploads/properties/documents/doc_124.pdf',
+  })
   @IsString()
   @IsOptional()
   occupationCertificateDoc?: string;
@@ -1186,7 +1270,9 @@ export class CreatePropertyDto {
   @IsOptional()
   nocCertificate?: boolean;
 
-  @ApiPropertyOptional({ example: '/uploads/properties/documents/doc_125.pdf' })
+  @ApiPropertyOptional({
+    example: '/uploads/properties/documents/doc_125.pdf',
+  })
   @IsString()
   @IsOptional()
   nocCertificateDoc?: string;
@@ -1196,11 +1282,31 @@ export class CreatePropertyDto {
   @IsOptional()
   fireCertificate?: boolean;
 
-  @ApiPropertyOptional({ example: '/uploads/properties/documents/doc_126.pdf' })
+  @ApiPropertyOptional({
+    example: '/uploads/properties/documents/doc_126.pdf',
+  })
   @IsString()
   @IsOptional()
   fireCertificateDoc?: string;
 
+  // ==========================================
+  // Legal Documents
+  // 7/12, 8A, Nakasha, Tax Receipt, KML
+  // and other legal/property documents
+  // ==========================================
+  @ApiPropertyOptional({
+    type: [Object],
+    description:
+      '7/12, 8A, Nakasha, Tax Receipt, KML and other legal documents',
+    default: [],
+  })
+  @IsArray()
+  @IsOptional()
+  legalDocuments?: any[];
+
+  // ==========================================
+  // General Documents
+  // ==========================================
   @ApiPropertyOptional({
     type: [Object],
     description: 'Property documents array',
