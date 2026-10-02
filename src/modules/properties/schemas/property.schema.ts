@@ -558,6 +558,17 @@ export class Property {
   @Prop({ required: false, trim: true })
   fireCertificateDoc?: string;
 
+  // ==========================================
+  // Legal Documents
+  // 7/12, 8A, Nakasha, Tax Receipt, KML
+  // and other legal/property documents
+  // ==========================================
+  @Prop({ required: false, type: [Object], default: [] })
+  legalDocuments?: Record<string, any>[];
+
+  // ==========================================
+  // General Documents
+  // ==========================================
   @Prop({ required: false, type: [Object], default: [] })
   documents?: Record<string, any>[];
 }

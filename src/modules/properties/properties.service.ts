@@ -467,6 +467,189 @@ export class PropertiesService implements OnModuleInit {
     return trimmed;
   }
 
+  /**
+   * Save legalDocuments (7/12, 8A, Nakasha, Tax Receipt, KML, custom docs).
+   *
+   * Base64 data URIs are written to:
+   * uploads/properties/documents/
+   *
+   * Existing URLs/paths are kept.
+   *
+   * Expected document shape:
+   * {
+   *   name: '7/12 Extract',
+   *   type: '7/12',
+   *   url: 'data:application/pdf;base64,...',
+   *   size: '12345',
+   *   date: '2026-01-01'
+   * }
+   */
+  private async processLegalDocuments(
+    docs?: any[],
+  ): Promise<any[] | undefined> {
+    if (!Array.isArray(docs)) {
+      return undefined;
+    }
+
+    const uploadDir = path.join(
+      process.cwd(),
+      'uploads',
+      'properties',
+      'documents',
+    );
+
+    try {
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, {
+          recursive: true,
+        });
+      }
+    } catch {
+      // Directory creation error handler
+    }
+
+    const allowedExt = [
+      'pdf',
+      'png',
+      'jpg',
+      'jpeg',
+      'webp',
+      'gif',
+      'doc',
+      'docx',
+      'kml',
+    ];
+
+    const mimeToExt: Record<string, string> = {
+      'application/pdf': 'pdf',
+      'image/png': 'png',
+      'image/jpeg': 'jpg',
+      'image/jpg': 'jpg',
+      'image/webp': 'webp',
+      'image/gif': 'gif',
+      'application/msword': 'doc',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+        'docx',
+      'application/vnd.google-earth.kml+xml': 'kml',
+    };
+
+    const result: any[] = [];
+
+    for (const doc of docs) {
+      if (!doc || typeof doc !== 'object') {
+        continue;
+      }
+
+      let url = (
+        doc.url ||
+        doc.data ||
+        doc.path ||
+        ''
+      )
+        .toString()
+        .trim();
+
+      if (!url) {
+        continue;
+      }
+
+      const match = url.match(
+        /^data:([^;,]*)[^,]*?;base64,([\s\S]+)$/,
+      );
+
+      if (match) {
+        try {
+          const mime = (
+            match[1] || ''
+          ).toLowerCase();
+
+          let ext = '';
+
+          const nameExt = (
+            doc.name || ''
+          ).match(
+            /\.([a-zA-Z0-9]{2,5})$/,
+          );
+
+          if (
+            nameExt &&
+            allowedExt.includes(
+              nameExt[1].toLowerCase(),
+            )
+          ) {
+            ext =
+              nameExt[1].toLowerCase();
+          } else if (mimeToExt[mime]) {
+            ext = mimeToExt[mime];
+          } else {
+            ext = 'pdf';
+          }
+
+          const buffer = Buffer.from(
+            match[2].replace(
+              /[\r\n\s]/g,
+              '',
+            ),
+            'base64',
+          );
+
+          const fileName = `legal_${Date.now()}_${Math.random()
+            .toString(36)
+            .substring(2, 9)}.${ext}`;
+
+          await fs.promises.writeFile(
+            path.join(
+              uploadDir,
+              fileName,
+            ),
+            buffer,
+          );
+
+          url = `/uploads/properties/documents/${fileName}`;
+        } catch (err) {
+          console.error(
+            'Failed to save legal document file:',
+            err,
+          );
+        }
+      } else if (
+        url.startsWith('http://') ||
+        url.startsWith('https://')
+      ) {
+        // Store only the relative path so it works on any server host.
+        const idx = url.indexOf(
+          '/uploads/',
+        );
+
+        if (idx > -1) {
+          url = url.substring(idx);
+        }
+      }
+
+      result.push({
+        name:
+          doc.name ||
+          'Document',
+
+        type:
+          doc.type ||
+          'Legal Document',
+
+        url,
+
+        size:
+          doc.size ||
+          '',
+
+        date:
+          doc.date ||
+          '',
+      });
+    }
+
+    return result;
+  }
+
   async processVideos(videos?: any[]): Promise<any[]> {
     if (
       !videos ||
@@ -756,6 +939,29 @@ export class PropertiesService implements OnModuleInit {
       mappedDto.fireCertificateDoc =
         await this.processDocumentFile(
           mappedDto.fireCertificateDoc,
+        );
+    }
+
+    /**
+     * Process Legal Documents
+     *
+     * Handles:
+     * - 7/12
+     * - 8A
+     * - Nakasha
+     * - Tax Receipt
+     * - KML
+     * - Custom documents
+     *
+     * Base64 files are saved to:
+     * uploads/properties/documents/
+     */
+    if (
+      Array.isArray(mappedDto.legalDocuments)
+    ) {
+      mappedDto.legalDocuments =
+        await this.processLegalDocuments(
+          mappedDto.legalDocuments,
         );
     }
 
@@ -1577,6 +1783,26 @@ export class PropertiesService implements OnModuleInit {
       mappedDto.fireCertificateDoc =
         await this.processDocumentFile(
           mappedDto.fireCertificateDoc,
+        );
+    }
+
+    /**
+     * Process Legal Documents
+     *
+     * Handles:
+     * - 7/12
+     * - 8A
+     * - Nakasha
+     * - Tax Receipt
+     * - KML
+     * - Custom documents
+     */
+    if (
+      Array.isArray(mappedDto.legalDocuments)
+    ) {
+      mappedDto.legalDocuments =
+        await this.processLegalDocuments(
+          mappedDto.legalDocuments,
         );
     }
 
