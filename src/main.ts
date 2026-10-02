@@ -26,7 +26,7 @@ async function bootstrap() {
     AppModule,
     new FastifyAdapter({
       logger: false,
-      bodyLimit: 52428800, // 50MB for photo & video uploads
+      bodyLimit: 262144000, // 250MB for photo & video uploads
     }),
   );
 

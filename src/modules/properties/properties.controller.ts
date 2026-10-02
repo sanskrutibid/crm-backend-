@@ -137,6 +137,19 @@ export class PropertiesController {
     return this.propertiesService.groupDelete(groupDeleteDto);
   }
 
+  @Get(':id/share')
+  @ApiOperation({ summary: 'Get formatted property share details with photo & video previews' })
+  @ApiOkResponse({
+    description: 'Property share payload with formatted text, photos, and video links.',
+  })
+  @ResponseMessage('Property share details generated successfully')
+  async getShareDetails(
+    @Param('id') id: string,
+    @Query('baseUrl') baseUrl?: string,
+  ) {
+    return this.propertiesService.getShareDetails(id, baseUrl);
+  }
+
   @Post('upload-photos')
   @ApiOperation({ summary: 'Upload multiple property photos / images (Base64 data URIs)' })
   @ResponseMessage('Photos uploaded successfully')
@@ -145,6 +158,17 @@ export class PropertiesController {
   ) {
     const input = body.photos || body.images || [];
     const urls = await this.propertiesService.processImages(input);
+    return { urls };
+  }
+
+  @Post('upload-videos')
+  @ApiOperation({ summary: 'Upload multiple property videos (Base64 data URIs)' })
+  @ResponseMessage('Videos uploaded successfully')
+  async uploadVideos(
+    @Body() body: { videos?: any[]; videoUrl?: string },
+  ) {
+    const input = body.videos || (body.videoUrl ? [body.videoUrl] : []);
+    const urls = await this.propertiesService.processVideos(input);
     return { urls };
   }
 

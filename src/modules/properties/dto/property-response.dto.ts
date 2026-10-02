@@ -766,11 +766,49 @@ export class PropertyResponseDto {
   })
   hideContactNumber?: boolean;
 
+  @ApiPropertyOptional({
+    example: '/uploads/properties/videos/prop_vid_123.mp4',
+    description: 'Virtual video walk-through url',
+  })
+  virtualVideoUrl?: string;
+
+  @ApiPropertyOptional({
+    type: [Object],
+    description: 'Uploaded video files or video object list',
+    default: [],
+  })
+  videos?: any[];
+
+  @ApiPropertyOptional({ example: true })
+  completionCertificate?: boolean;
+
+  @ApiPropertyOptional({ example: '/uploads/properties/documents/doc_123.pdf' })
+  completionCertificateDoc?: string;
+
+  @ApiPropertyOptional({ example: true })
+  occupationCertificate?: boolean;
+
+  @ApiPropertyOptional({ example: '/uploads/properties/documents/doc_124.pdf' })
+  occupationCertificateDoc?: string;
+
+  @ApiPropertyOptional({ example: true })
+  nocCertificate?: boolean;
+
+  @ApiPropertyOptional({ example: '/uploads/properties/documents/doc_125.pdf' })
+  nocCertificateDoc?: string;
+
+  @ApiPropertyOptional({ example: true })
+  fireCertificate?: boolean;
+
+  @ApiPropertyOptional({ example: '/uploads/properties/documents/doc_126.pdf' })
+  fireCertificateDoc?: string;
+
   @ApiProperty({
     example: '2026-05-26T14:04:03.000Z',
     description: 'Timestamp of project registration',
   })
   createdAt: string;
+
 
   @ApiProperty({
     example: '2026-05-26T14:04:03.000Z',

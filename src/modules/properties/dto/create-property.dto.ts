@@ -302,6 +302,31 @@ export class CreatePropertyDto {
   @IsOptional()
   surveyName?: string;
 
+  // ---- Agricultural property address fields (new) ----
+  @ApiPropertyOptional({
+    example: '123/4',
+    description: 'Khasra number (Agricultural properties)',
+  })
+  @IsString()
+  @IsOptional()
+  khasraNumber?: string;
+
+  @ApiPropertyOptional({
+    example: 'Kamptee',
+    description: 'Village name (Agricultural properties)',
+  })
+  @IsString()
+  @IsOptional()
+  village?: string;
+
+  @ApiPropertyOptional({
+    example: 'Nagpur',
+    description: 'District name (Agricultural properties)',
+  })
+  @IsString()
+  @IsOptional()
+  district?: string;
+
   @ApiPropertyOptional({
     example: 'Skyline Residency',
     description: 'Project or developer brand',
@@ -1135,6 +1160,46 @@ export class CreatePropertyDto {
       : [],
   )
   keywords?: string[];
+
+  @ApiPropertyOptional({ example: true })
+  @IsBoolean()
+  @IsOptional()
+  completionCertificate?: boolean;
+
+  @ApiPropertyOptional({ example: '/uploads/properties/documents/doc_123.pdf' })
+  @IsString()
+  @IsOptional()
+  completionCertificateDoc?: string;
+
+  @ApiPropertyOptional({ example: true })
+  @IsBoolean()
+  @IsOptional()
+  occupationCertificate?: boolean;
+
+  @ApiPropertyOptional({ example: '/uploads/properties/documents/doc_124.pdf' })
+  @IsString()
+  @IsOptional()
+  occupationCertificateDoc?: string;
+
+  @ApiPropertyOptional({ example: true })
+  @IsBoolean()
+  @IsOptional()
+  nocCertificate?: boolean;
+
+  @ApiPropertyOptional({ example: '/uploads/properties/documents/doc_125.pdf' })
+  @IsString()
+  @IsOptional()
+  nocCertificateDoc?: string;
+
+  @ApiPropertyOptional({ example: true })
+  @IsBoolean()
+  @IsOptional()
+  fireCertificate?: boolean;
+
+  @ApiPropertyOptional({ example: '/uploads/properties/documents/doc_126.pdf' })
+  @IsString()
+  @IsOptional()
+  fireCertificateDoc?: string;
 
   @ApiPropertyOptional({
     type: [Object],

@@ -3,6 +3,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Opportunity, OpportunitySchema } from './schemas/opportunity.schema';
 import { Contact, ContactSchema } from '../contacts/schemas/contact.schema';
 import { User, UserSchema } from '../users/schemas/user.schema';
+import { Property, PropertySchema } from '../properties/schemas/property.schema';
 import { OpportunitiesController } from './opportunities.controller';
 import { OpportunitiesService } from './opportunities.service';
 import { AuthModule } from '../auth/auth.module';
@@ -17,6 +18,7 @@ import { SmsModule } from '../sms/sms.module';
       { name: Opportunity.name, schema: OpportunitySchema },
       { name: Contact.name, schema: ContactSchema },
       { name: User.name, schema: UserSchema },
+      { name: Property.name, schema: PropertySchema },
     ]),
     AuthModule,
     ConfigModule,

@@ -269,6 +269,36 @@ export class OpportunitiesController {
     return this.opportunitiesService.findOne(id);
   }
 
+  @Get(':id/matching-properties')
+  @ApiOperation({ summary: 'Get properties matching an opportunity requirement' })
+  @ApiOkResponse({
+    description: 'Matching properties retrieved successfully.',
+  })
+  @ApiQuery({
+    name: 'minScore',
+    required: false,
+    description: 'Minimum match percentage (default: 50)',
+    example: 50,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Maximum properties to return (default: 50)',
+    example: 50,
+  })
+  @ResponseMessage('Matching properties retrieved successfully')
+  async getMatchingProperties(
+    @Param('id') id: string,
+    @Query('minScore') minScore = 50,
+    @Query('limit') limit = 50,
+  ) {
+    return this.opportunitiesService.getMatchingProperties(
+      id,
+      Number(minScore),
+      Number(limit),
+    );
+  }
+
   @Patch(':id')
   @ApiOperation({ summary: 'Modify an existing CRM Opportunity' })
   @ApiOkResponse({

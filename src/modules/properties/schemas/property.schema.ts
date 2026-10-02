@@ -179,6 +179,16 @@ export class Property {
   @Prop({ required: false, trim: true })
   surveyName?: string;
 
+  // ---- Agricultural property address fields (new) ----
+  @Prop({ required: false, trim: true })
+  khasraNumber?: string;
+
+  @Prop({ required: false, trim: true })
+  village?: string;
+
+  @Prop({ required: false, trim: true })
+  district?: string;
+
   @Prop({ required: false, trim: true })
   projectDeveloperName?: string;
 
@@ -520,6 +530,33 @@ export class Property {
 
   @Prop({ required: false, type: [String], default: [] })
   keywords?: string[];
+
+  // ==========================================
+  // Certificates & Legal Verification Documents
+  // ==========================================
+  @Prop({ required: false, type: Boolean, default: false })
+  completionCertificate?: boolean;
+
+  @Prop({ required: false, trim: true })
+  completionCertificateDoc?: string;
+
+  @Prop({ required: false, type: Boolean, default: false })
+  occupationCertificate?: boolean;
+
+  @Prop({ required: false, trim: true })
+  occupationCertificateDoc?: string;
+
+  @Prop({ required: false, type: Boolean, default: false })
+  nocCertificate?: boolean;
+
+  @Prop({ required: false, trim: true })
+  nocCertificateDoc?: string;
+
+  @Prop({ required: false, type: Boolean, default: false })
+  fireCertificate?: boolean;
+
+  @Prop({ required: false, trim: true })
+  fireCertificateDoc?: string;
 
   @Prop({ required: false, type: [Object], default: [] })
   documents?: Record<string, any>[];

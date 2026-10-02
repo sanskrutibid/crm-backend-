@@ -5,7 +5,9 @@
 */
 
 import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
+
 import { InjectModel } from '@nestjs/mongoose';
+
 import { Model } from 'mongoose';
 
 import {
@@ -15,21 +17,28 @@ import {
 } from './schemas/property.schema';
 
 import { CreatePropertyDto } from './dto/create-property.dto';
+
 import { UpdatePropertyDto } from './dto/update-property.dto';
+
 import {
   QueryPropertyDto,
   GroupDeletePropertiesDto,
 } from './dto/query-property.dto';
 
 import { ActivitiesService } from '../activities/activities.service';
+
 import { ActivityType } from '../activities/schemas/activity.schema';
+
 import { Contact, ContactDocument } from '../contacts/schemas/contact.schema';
+
 import { User, UserDocument } from '../users/schemas/user.schema';
 
 import { generateExcelBuffer } from '../../common/utils/excel.util';
+
 import { sanitizeBase64Payload } from '../../common/utils/base64-storage.util';
 
 import * as fs from 'fs';
+
 import * as path from 'path';
 
 @Injectable()
@@ -299,6 +308,7 @@ export class PropertiesService implements OnModuleInit {
           }
 
           const base64Data = base64Match[2];
+
           const buffer = Buffer.from(
             base64Data,
             'base64',
@@ -330,6 +340,262 @@ export class PropertiesService implements OnModuleInit {
       }
 
       processedList.push(trimmed);
+    }
+
+    return processedList;
+  }
+
+  /**
+   * Process a single document item (string/base64/object).
+   *
+   * If it is a Base64 data URI (data:...;base64,...),
+   * it decodes and writes the file to uploads/properties/documents/
+   * and returns the static URL /uploads/properties/documents/....
+   */
+  async processDocumentFile(
+    documentInput?: any,
+  ): Promise<string | undefined> {
+    if (!documentInput) return undefined;
+
+    let strVal = '';
+
+    if (typeof documentInput === 'string') {
+      strVal = documentInput;
+    } else if (typeof documentInput === 'object') {
+      strVal =
+        documentInput.url ||
+        documentInput.path ||
+        documentInput.src ||
+        documentInput.link ||
+        documentInput.data ||
+        '';
+    }
+
+    if (!strVal || typeof strVal !== 'string') {
+      return undefined;
+    }
+
+    const trimmed = strVal.trim();
+
+    if (!trimmed) {
+      return undefined;
+    }
+
+    const base64Match = trimmed.match(
+      /^data:([a-zA-Z0-9+\/.-]+);base64,([\s\S]+)$/,
+    );
+
+    if (base64Match) {
+      const uploadDir = path.join(
+        process.cwd(),
+        'uploads',
+        'properties',
+        'documents',
+      );
+
+      try {
+        if (!fs.existsSync(uploadDir)) {
+          fs.mkdirSync(uploadDir, {
+            recursive: true,
+          });
+        }
+      } catch {}
+
+      try {
+        const mime = base64Match[1].toLowerCase();
+
+        let ext = 'pdf';
+
+        if (mime.includes('pdf')) {
+          ext = 'pdf';
+        } else if (mime.includes('png')) {
+          ext = 'png';
+        } else if (
+          mime.includes('jpg') ||
+          mime.includes('jpeg')
+        ) {
+          ext = 'jpg';
+        } else if (mime.includes('webp')) {
+          ext = 'webp';
+        } else if (
+          mime.includes('word') ||
+          mime.includes('docx')
+        ) {
+          ext = 'docx';
+        } else if (mime.includes('doc')) {
+          ext = 'doc';
+        } else if (
+          mime.includes('text') ||
+          mime.includes('plain')
+        ) {
+          ext = 'txt';
+        }
+
+        const base64Data = base64Match[2].replace(
+          /[\r\n\s]/g,
+          '',
+        );
+
+        const buffer = Buffer.from(
+          base64Data,
+          'base64',
+        );
+
+        const fileName = `doc_${Date.now()}_${Math.random()
+          .toString(36)
+          .substring(2, 9)}.${ext}`;
+
+        const filePath = path.join(
+          uploadDir,
+          fileName,
+        );
+
+        await fs.promises.writeFile(
+          filePath,
+          buffer,
+        );
+
+        return `/uploads/properties/documents/${fileName}`;
+      } catch (err) {
+        console.error(
+          'Failed to save base64 document file:',
+          err,
+        );
+      }
+    }
+
+    return trimmed;
+  }
+
+  async processVideos(videos?: any[]): Promise<any[]> {
+    if (
+      !videos ||
+      !Array.isArray(videos) ||
+      videos.length === 0
+    ) {
+      return [];
+    }
+
+    const uploadDir = path.join(
+      process.cwd(),
+      'uploads',
+      'properties',
+      'videos',
+    );
+
+    try {
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, {
+          recursive: true,
+        });
+      }
+    } catch {
+      // Directory creation error handler
+    }
+
+    const processedList: any[] = [];
+
+    for (let i = 0; i < videos.length; i++) {
+      let item = videos[i];
+
+      if (!item) continue;
+
+      let strVal = '';
+
+      if (typeof item === 'string') {
+        strVal = item;
+      } else if (typeof item === 'object') {
+        strVal =
+          item.url ||
+          item.path ||
+          item.src ||
+          item.link ||
+          item.data ||
+          '';
+      }
+
+      const trimmed = strVal ? strVal.trim() : '';
+
+      if (trimmed) {
+        const base64Match = trimmed.match(
+          /^data:(video|application)\/([a-zA-Z0-9+.-]+);base64,([\s\S]+)$/,
+        );
+
+        if (base64Match) {
+          try {
+            let ext = base64Match[2].toLowerCase();
+
+            if (ext.includes('mp4')) {
+              ext = 'mp4';
+            } else if (ext.includes('webm')) {
+              ext = 'webm';
+            } else if (
+              ext.includes('quicktime') ||
+              ext.includes('mov')
+            ) {
+              ext = 'mov';
+            } else if (ext.includes('avi')) {
+              ext = 'avi';
+            } else if (ext.includes('mkv')) {
+              ext = 'mkv';
+            } else if (
+              ext.includes('ogg') ||
+              ext.includes('ogv')
+            ) {
+              ext = 'mp4';
+            } else {
+              ext = 'mp4';
+            }
+
+            const base64Data =
+              base64Match[3].replace(
+                /[\r\n\s]/g,
+                '',
+              );
+
+            const buffer = Buffer.from(
+              base64Data,
+              'base64',
+            );
+
+            const fileName = `prop_vid_${Date.now()}_${Math.random()
+              .toString(36)
+              .substring(2, 9)}.${ext}`;
+
+            const filePath = path.join(
+              uploadDir,
+              fileName,
+            );
+
+            await fs.promises.writeFile(
+              filePath,
+              buffer,
+            );
+
+            const relativeUrl = `/uploads/properties/videos/${fileName}`;
+
+            if (typeof item === 'object') {
+              processedList.push({
+                ...item,
+                url: relativeUrl,
+                path: relativeUrl,
+                link: relativeUrl,
+              });
+            } else {
+              processedList.push(relativeUrl);
+            }
+
+            continue;
+          } catch (err) {
+            console.error(
+              'Failed to save base64 video file:',
+              err,
+            );
+          }
+        }
+      }
+
+      processedList.push(item);
     }
 
     return processedList;
@@ -383,6 +649,77 @@ export class PropertiesService implements OnModuleInit {
       mappedDto.photos = [...mappedDto.images];
     }
 
+    // Process and synchronize property videos
+    let videos = mappedDto.videos || [];
+
+    if (videos.length > 0) {
+      mappedDto.videos =
+        await this.processVideos(videos);
+    }
+
+    if (
+      mappedDto.videoUrl &&
+      mappedDto.videoUrl.startsWith('data:')
+    ) {
+      const processed =
+        await this.processVideos([
+          mappedDto.videoUrl,
+        ]);
+
+      if (processed.length > 0) {
+        mappedDto.videoUrl =
+          typeof processed[0] === 'string'
+            ? processed[0]
+            : processed[0].url ||
+              processed[0].path;
+      }
+    }
+
+    if (
+      mappedDto.virtualVideoUrl &&
+      mappedDto.virtualVideoUrl.startsWith('data:')
+    ) {
+      const processed =
+        await this.processVideos([
+          mappedDto.virtualVideoUrl,
+        ]);
+
+      if (processed.length > 0) {
+        mappedDto.virtualVideoUrl =
+          typeof processed[0] === 'string'
+            ? processed[0]
+            : processed[0].url ||
+              processed[0].path;
+      }
+    }
+
+    if (
+      mappedDto.videos?.length &&
+      !mappedDto.videoUrl
+    ) {
+      const firstVid = mappedDto.videos[0];
+
+      mappedDto.videoUrl =
+        typeof firstVid === 'string'
+          ? firstVid
+          : firstVid?.url ||
+            firstVid?.path ||
+            '';
+    } else if (
+      mappedDto.videoUrl &&
+      (!mappedDto.videos ||
+        mappedDto.videos.length === 0)
+    ) {
+      mappedDto.videos = [
+        {
+          url: mappedDto.videoUrl,
+          title: 'Main Property Video',
+        },
+      ];
+    }
+
+    // Populate createdBy and assignedTo if defaultUserId is available
+    // and they are not already set
     if (defaultUserId) {
       if (!mappedDto.createdBy) {
         mappedDto.createdBy = defaultUserId;
@@ -391,6 +728,35 @@ export class PropertiesService implements OnModuleInit {
       if (!mappedDto.assignedTo) {
         mappedDto.assignedTo = defaultUserId;
       }
+    }
+
+    // Process Certificate Documents
+    if (mappedDto.completionCertificateDoc) {
+      mappedDto.completionCertificateDoc =
+        await this.processDocumentFile(
+          mappedDto.completionCertificateDoc,
+        );
+    }
+
+    if (mappedDto.occupationCertificateDoc) {
+      mappedDto.occupationCertificateDoc =
+        await this.processDocumentFile(
+          mappedDto.occupationCertificateDoc,
+        );
+    }
+
+    if (mappedDto.nocCertificateDoc) {
+      mappedDto.nocCertificateDoc =
+        await this.processDocumentFile(
+          mappedDto.nocCertificateDoc,
+        );
+    }
+
+    if (mappedDto.fireCertificateDoc) {
+      mappedDto.fireCertificateDoc =
+        await this.processDocumentFile(
+          mappedDto.fireCertificateDoc,
+        );
     }
 
     const sanitizedDto =
@@ -798,7 +1164,256 @@ export class PropertiesService implements OnModuleInit {
       ];
     }
 
+    if (
+      property.videos.length > 0 &&
+      !property.videoUrl
+    ) {
+      const firstVid = property.videos[0];
+
+      property.videoUrl =
+        typeof firstVid === 'string'
+          ? firstVid
+          : (firstVid as any)?.url ||
+            (firstVid as any)?.path ||
+            '';
+    } else if (
+      property.videoUrl &&
+      (!property.videos ||
+        property.videos.length === 0)
+    ) {
+      property.videos = [
+        {
+          url: property.videoUrl,
+          title: 'Main Property Video',
+        },
+      ];
+    }
+
     return property;
+  }
+
+  async getShareDetails(
+    id: string,
+    baseUrl?: string,
+  ) {
+    const property = await this.findOne(id);
+
+    const host = (baseUrl || '').replace(
+      /\/$/,
+      '',
+    );
+
+    const formatUrl = (url?: string) => {
+      if (!url) return '';
+
+      if (
+        url.startsWith('http://') ||
+        url.startsWith('https://')
+      ) {
+        return url;
+      }
+
+      if (url.startsWith('/')) {
+        return host ? `${host}${url}` : url;
+      }
+
+      return url;
+    };
+
+    const photos = (
+      property.photos ||
+      property.images ||
+      []
+    ).map((p: string) =>
+      formatUrl(p),
+    );
+
+    const videos = (
+      property.videos || []
+    ).map((v: any) => {
+      const urlStr =
+        typeof v === 'string'
+          ? v
+          : v?.url ||
+            v?.path ||
+            v?.link ||
+            '';
+
+      const formatted = formatUrl(urlStr);
+
+      return typeof v === 'object'
+        ? { ...v, url: formatted }
+        : formatted;
+    });
+
+    let mainVideoUrl = formatUrl(
+      property.videoUrl ||
+        property.virtualVideoUrl ||
+        '',
+    );
+
+    if (
+      !mainVideoUrl &&
+      videos.length > 0
+    ) {
+      mainVideoUrl =
+        typeof videos[0] === 'string'
+          ? videos[0]
+          : videos[0]?.url || '';
+    }
+
+    const title =
+      property.name ||
+      'Property Listing';
+
+    const type =
+      property.propertyType ||
+      property.type ||
+      'Real Estate';
+
+    const transaction =
+      property.transaction ||
+      'Available';
+
+    const price =
+      property.price ||
+      (property.expectedPrice
+        ? `₹${property.expectedPrice}`
+        : 'Price on Request');
+
+    const location =
+      property.location ||
+      property.address ||
+      property.locality ||
+      property.city ||
+      '';
+
+    const area =
+      property.sqft ||
+      property.area ||
+      property.builtUpArea ||
+      property.carpetArea
+        ? `${
+            property.sqft ||
+            property.area ||
+            property.builtUpArea ||
+            property.carpetArea
+          } sq.ft.`
+        : '';
+
+    const bedroom = property.bedroom
+      ? `${property.bedroom} BHK`
+      : '';
+
+    const description =
+      property.description ||
+      property.remark ||
+      '';
+
+    const amenities =
+      property.amenities &&
+      property.amenities.length > 0
+        ? property.amenities.join(', ')
+        : '';
+
+    let formattedShareText =
+      `🏠 *${title}*\n`;
+
+    if (location) {
+      formattedShareText +=
+        `📍 *Location:* ${location}\n`;
+    }
+
+    if (type) {
+      formattedShareText +=
+        `🏷️ *Category:* ${type} (${transaction})\n`;
+    }
+
+    if (price) {
+      formattedShareText +=
+        `💰 *Price:* ${price}\n`;
+    }
+
+    if (bedroom) {
+      formattedShareText +=
+        `🛏️ *Configuration:* ${bedroom}\n`;
+    }
+
+    if (area) {
+      formattedShareText +=
+        `📐 *Area:* ${area}\n`;
+    }
+
+    if (amenities) {
+      formattedShareText +=
+        `✨ *Amenities:* ${amenities}\n`;
+    }
+
+    if (description) {
+      formattedShareText +=
+        `\n📝 *Description:* ${description}\n`;
+    }
+
+    if (photos.length > 0) {
+      formattedShareText +=
+        `\n📸 *Property Photos (${photos.length}):*\n`;
+
+      photos
+        .slice(0, 5)
+        .forEach(
+          (
+            p: string,
+            idx: number,
+          ) => {
+            formattedShareText +=
+              `• Photo ${idx + 1}: ${p}\n`;
+          },
+        );
+    }
+
+    if (
+      mainVideoUrl ||
+      videos.length > 0
+    ) {
+      formattedShareText +=
+        `\n🎥 *Property Video Preview:*\n`;
+
+      if (mainVideoUrl) {
+        formattedShareText +=
+          `▶️ Watch Video: ${mainVideoUrl}\n`;
+      }
+
+      videos.forEach(
+        (
+          v: any,
+          idx: number,
+        ) => {
+          const vUrl =
+            typeof v === 'string'
+              ? v
+              : v?.url;
+
+          if (
+            vUrl &&
+            vUrl !== mainVideoUrl
+          ) {
+            formattedShareText +=
+              `▶️ Video ${idx + 1}: ${vUrl}\n`;
+          }
+        },
+      );
+    }
+
+    return {
+      property,
+      photos,
+      videos,
+      mainVideoUrl,
+      virtualVideoUrl: formatUrl(
+        property.virtualVideoUrl,
+      ),
+      formattedShareText,
+    };
   }
 
   async update(
@@ -856,6 +1471,113 @@ export class PropertiesService implements OnModuleInit {
           ...mappedDto.images,
         ];
       }
+    }
+
+    if (
+      mappedDto.videos !== undefined ||
+      mappedDto.videoUrl !== undefined ||
+      mappedDto.virtualVideoUrl !== undefined
+    ) {
+      if (
+        mappedDto.videos &&
+        mappedDto.videos.length > 0
+      ) {
+        mappedDto.videos =
+          await this.processVideos(
+            mappedDto.videos,
+          );
+      }
+
+      if (
+        mappedDto.videoUrl &&
+        mappedDto.videoUrl.startsWith('data:')
+      ) {
+        const processed =
+          await this.processVideos([
+            mappedDto.videoUrl,
+          ]);
+
+        if (processed.length > 0) {
+          mappedDto.videoUrl =
+            typeof processed[0] === 'string'
+              ? processed[0]
+              : processed[0].url ||
+                processed[0].path;
+        }
+      }
+
+      if (
+        mappedDto.virtualVideoUrl &&
+        mappedDto.virtualVideoUrl.startsWith('data:')
+      ) {
+        const processed =
+          await this.processVideos([
+            mappedDto.virtualVideoUrl,
+          ]);
+
+        if (processed.length > 0) {
+          mappedDto.virtualVideoUrl =
+            typeof processed[0] === 'string'
+              ? processed[0]
+              : processed[0].url ||
+                processed[0].path;
+        }
+      }
+
+      if (
+        mappedDto.videos?.length &&
+        !mappedDto.videoUrl
+      ) {
+        const firstVid =
+          mappedDto.videos[0];
+
+        mappedDto.videoUrl =
+          typeof firstVid === 'string'
+            ? firstVid
+            : firstVid?.url ||
+              firstVid?.path ||
+              '';
+      } else if (
+        mappedDto.videoUrl &&
+        (!mappedDto.videos ||
+          mappedDto.videos.length === 0)
+      ) {
+        mappedDto.videos = [
+          {
+            url: mappedDto.videoUrl,
+            title: 'Main Property Video',
+          },
+        ];
+      }
+    }
+
+    // Process Certificate Documents
+    if (mappedDto.completionCertificateDoc) {
+      mappedDto.completionCertificateDoc =
+        await this.processDocumentFile(
+          mappedDto.completionCertificateDoc,
+        );
+    }
+
+    if (mappedDto.occupationCertificateDoc) {
+      mappedDto.occupationCertificateDoc =
+        await this.processDocumentFile(
+          mappedDto.occupationCertificateDoc,
+        );
+    }
+
+    if (mappedDto.nocCertificateDoc) {
+      mappedDto.nocCertificateDoc =
+        await this.processDocumentFile(
+          mappedDto.nocCertificateDoc,
+        );
+    }
+
+    if (mappedDto.fireCertificateDoc) {
+      mappedDto.fireCertificateDoc =
+        await this.processDocumentFile(
+          mappedDto.fireCertificateDoc,
+        );
     }
 
     const sanitizedDto =
@@ -1110,16 +1832,21 @@ export class PropertiesService implements OnModuleInit {
             'https://oauth2.googleapis.com/token',
             {
               method: 'POST',
+
               headers: {
                 'Content-Type':
                   'application/json',
               },
+
               body: JSON.stringify({
                 client_id: clientId,
+
                 client_secret:
                   clientSecret,
+
                 refresh_token:
                   refreshToken,
+
                 grant_type:
                   'refresh_token',
               }),
@@ -1146,6 +1873,7 @@ export class PropertiesService implements OnModuleInit {
 
         const metadata = {
           name: fileName,
+
           mimeType:
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         };
@@ -1170,7 +1898,9 @@ export class PropertiesService implements OnModuleInit {
               header,
               'utf-8',
             ),
+
             buffer,
+
             Buffer.from(
               footer,
               'utf-8',
@@ -1182,12 +1912,18 @@ export class PropertiesService implements OnModuleInit {
             'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',
             {
               method: 'POST',
+
               headers: {
-                Authorization: `Bearer ${accessToken}`,
-                'Content-Type': `multipart/related; boundary=${boundary}`,
+                Authorization:
+                  `Bearer ${accessToken}`,
+
+                'Content-Type':
+                  `multipart/related; boundary=${boundary}`,
+
                 'Content-Length':
                   multipartBody.length.toString(),
               },
+
               body: multipartBody,
             },
           );
@@ -1206,8 +1942,10 @@ export class PropertiesService implements OnModuleInit {
 
         return {
           success: true,
+
           message:
             'File successfully uploaded to Google Drive!',
+
           fileId: fileData.id,
         };
       } catch (err: any) {
@@ -1257,10 +1995,14 @@ export class PropertiesService implements OnModuleInit {
 
       return {
         success: true,
+
         message:
           'Google Drive credentials not set in .env. Saved locally in backups folder instead.',
+
         fileName: backupFileName,
+
         webViewLink: downloadLink,
+
         isMock: true,
       };
     } catch (err: any) {
@@ -1341,9 +2083,11 @@ export class PropertiesService implements OnModuleInit {
             u.firstName
               .toLowerCase() ===
               cleanVal ||
+
             u.email
               .toLowerCase() ===
               cleanVal ||
+
             `${u.firstName} ${
               u.lastName || ''
             }`
@@ -1400,8 +2144,10 @@ export class PropertiesService implements OnModuleInit {
           .findOne({
             mobile:
               parsedPhone.mobile,
+
             countryCode:
               parsedPhone.countryCode,
+
             isDeleted: {
               $ne: true,
             },
@@ -1415,6 +2161,7 @@ export class PropertiesService implements OnModuleInit {
           undefined;
 
         let fName = name;
+
         let lName:
           | string
           | undefined =
@@ -1466,7 +2213,9 @@ export class PropertiesService implements OnModuleInit {
         contact =
           new this.contactModel({
             salutation,
+
             firstName: fName,
+
             lastName: lName,
 
             countryCode:
