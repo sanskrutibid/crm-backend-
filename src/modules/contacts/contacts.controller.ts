@@ -43,7 +43,7 @@ import {
   TermsConditionsDto,
 } from './dto/single-actions.dto';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
-import { SendEmailOtpDto, VerifyEmailOtpDto } from './dto/email-verification.dto';
+import { SendEmailOtpDto, VerifyEmailOtpDto, ConfirmEmailVerificationDto } from './dto/email-verification.dto';
 
 @ApiTags('Contacts')
 @Controller('contacts')
@@ -209,6 +209,36 @@ export class ContactsController {
   @ResponseMessage('OTP sent successfully')
   async sendEmailOtp(@Body() sendEmailOtpDto: SendEmailOtpDto) {
     return this.contactsService.sendEmailOtp(sendEmailOtpDto.email);
+  }
+
+  @Get('email-verification/confirm')
+  @ApiOperation({
+    summary: 'Confirm email verification via token & email link (GET)',
+  })
+  @ResponseMessage('Email verified successfully')
+  async confirmEmailVerificationGet(
+    @Query('token') token: string,
+    @Query('email') email: string,
+  ) {
+    return this.contactsService.confirmEmailVerification(token, email);
+  }
+
+  @Post('email-verification/confirm')
+  @ApiOperation({
+    summary: 'Confirm email verification via token & email link (POST)',
+  })
+  @ResponseMessage('Email verified successfully')
+  async confirmEmailVerificationPost(@Body() dto: ConfirmEmailVerificationDto) {
+    return this.contactsService.confirmEmailVerification(dto.token, dto.email);
+  }
+
+  @Get('email-verification/status')
+  @ApiOperation({
+    summary: 'Check if an email address is verified',
+  })
+  @ResponseMessage('Email verification status retrieved')
+  async checkVerificationStatus(@Query('email') email: string) {
+    return this.contactsService.checkEmailVerificationStatus(email);
   }
 
   @Post('email-verification/verify')

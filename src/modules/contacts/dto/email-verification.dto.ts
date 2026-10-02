@@ -1,8 +1,8 @@
-import { IsEmail, IsNotEmpty, IsString, Length, Matches } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString, Length, Matches } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class SendEmailOtpDto {
-  @ApiProperty({ example: 'user@example.com', description: 'Email address to send OTP' })
+  @ApiProperty({ example: 'user@example.com', description: 'Email address to send verification link' })
   @IsEmail({}, { message: 'Please enter a valid email address' })
   @IsNotEmpty({ message: 'Email address is required' })
   email: string;
@@ -20,4 +20,16 @@ export class VerifyEmailOtpDto {
   @Length(6, 6, { message: 'OTP must be exactly 6 digits' })
   @Matches(/^\d{6}$/, { message: 'OTP must be a 6-digit number' })
   otp: string;
+}
+
+export class ConfirmEmailVerificationDto {
+  @ApiProperty({ example: 'user@example.com', description: 'Email address to verify' })
+  @IsEmail({}, { message: 'Please enter a valid email address' })
+  @IsNotEmpty({ message: 'Email address is required' })
+  email: string;
+
+  @ApiProperty({ example: 'a1b2c3d4e5...', description: 'Verification token from email link' })
+  @IsString()
+  @IsNotEmpty({ message: 'Token is required' })
+  token: string;
 }

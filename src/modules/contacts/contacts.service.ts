@@ -1,3 +1,4 @@
+import * as crypto from 'crypto';
 import {
   Injectable,
   NotFoundException,
@@ -1381,37 +1382,80 @@ export class ContactsService {
       throw new BadRequestException(checkResult.reason || 'Invalid email address');
     }
     
-    // Generate a 6-digit OTP
+    // Generate secure token & 6-digit OTP
+    const token = crypto.randomBytes(32).toString('hex');
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-    // Upsert verification record - marked as verified automatically
+    // Upsert verification record with verified = false until user clicks link
     await this.emailVerificationModel.findOneAndUpdate(
       { email: cleanEmail },
-      { otp, expiresAt, verified: true },
+      { token, otp, expiresAt, verified: false },
       { upsert: true, new: true }
     ).exec();
 
-    // Do NOT send the email with the OTP using EmailsService, as requested: no OTP should be sent
-    /*
-    await this.emailsService.schedule({
-      to: cleanEmail,
-      subject: 'Email Verification OTP',
-      body: `
-        <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 8px; max-width: 500px;">
-          <h2 style="color: #062b1b;">VaultStone CRM Email Verification</h2>
-          <p>Hello,</p>
-          <p>Please use the following 6-digit One-Time Password (OTP) to verify your email address. This OTP is valid for 10 minutes.</p>
-          <div style="background-color: #f5f5f5; padding: 15px; border-radius: 6px; font-size: 24px; font-weight: bold; text-align: center; letter-spacing: 4px; color: #062b1b; margin: 20px 0;">
-            ${otp}
-          </div>
-          <p style="color: #666; font-size: 12px; margin-top: 30px;">If you did not request this verification, you can safely ignore this email.</p>
-        </div>
-      `,
-    });
-    */
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:4200';
+    const verifyUrl = `${frontendUrl}/verify-email?token=${token}&email=${encodeURIComponent(cleanEmail)}`;
 
-    return { success: true, message: 'Email address auto-verified successfully' };
+    const emailHtml = `
+      <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f8; padding: 40px 15px;">
+        <div style="max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 1px solid #e5e7eb;">
+          
+          <div style="background: linear-gradient(135deg, #062b1b 0%, #0f766e 100%); padding: 32px 24px; text-align: center;">
+            <h1 style="color: #ffffff; margin: 0; font-size: 26px; font-weight: 700; letter-spacing: 0.5px;">VaultStone CRM</h1>
+            <p style="color: #a7f3d0; margin: 8px 0 0; font-size: 14px;">Contact Email Verification</p>
+          </div>
+
+          <div style="padding: 36px 30px; color: #1f2937;">
+            <h2 style="margin: 0 0 16px; font-size: 20px; color: #111827;">Verify Your Email Address</h2>
+            <p style="font-size: 15px; line-height: 1.6; color: #4b5563; margin-bottom: 16px;">
+              Hello,
+            </p>
+            <p style="font-size: 15px; line-height: 1.6; color: #4b5563; margin-bottom: 28px;">
+              Please click the button below to verify that <strong>${cleanEmail}</strong> belongs to you. This verification link is valid for <strong>24 hours</strong>.
+            </p>
+
+            <div style="text-align: center; margin: 32px 0;">
+              <a href="${verifyUrl}" 
+                 style="background: #0f766e; color: #ffffff; padding: 14px 36px; border-radius: 10px; font-size: 16px; font-weight: 600; text-decoration: none; display: inline-block; box-shadow: 0 4px 14px rgba(15, 118, 110, 0.35);">
+                ✓ Verify Email Address
+              </a>
+            </div>
+
+            <p style="font-size: 13px; color: #6b7280; line-height: 1.5; margin-top: 30px; padding-top: 20px; border-top: 1px solid #f3f4f6;">
+              If the button doesn't work, copy and paste this link into your browser:<br>
+              <a href="${verifyUrl}" style="color: #0f766e; word-break: break-all; font-size: 12px;">${verifyUrl}</a>
+            </p>
+
+            <p style="font-size: 12px; color: #9ca3af; margin-top: 20px;">
+              If you did not request this email verification, you can safely ignore this message.
+            </p>
+          </div>
+
+          <div style="background: #f9fafb; padding: 16px; text-align: center; font-size: 12px; color: #9ca3af; border-top: 1px solid #f3f4f6;">
+            &copy; ${new Date().getFullYear()} VaultStone CRM. All rights reserved.
+          </div>
+        </div>
+      </div>
+    `;
+
+    try {
+      await this.emailsService.schedule({
+        to: cleanEmail,
+        subject: 'Verify Your Email Address - VaultStone CRM',
+        body: emailHtml,
+      });
+      this.logger.log(`Verification email link scheduled to ${cleanEmail}`);
+    } catch (err) {
+      this.logger.error(`Failed to send verification email to ${cleanEmail}:`, err);
+      throw new BadRequestException('Failed to send verification email. Please check SMTP settings.');
+    }
+
+    return { 
+      success: true, 
+      message: 'Verification link has been sent to the email address. Please click the link to verify.',
+      email: cleanEmail 
+    };
   }
 
   async verifyEmailOtp(email: string, otp: string) {
@@ -1435,9 +1479,72 @@ export class ContactsService {
     }
 
     verification.verified = true;
+    verification.verifiedAt = new Date();
     await verification.save();
 
+    await this.contactModel.updateMany(
+      { email: cleanEmail, isDeleted: { $ne: true } },
+      { $set: { emailStatus: EmailStatus.SAFE } }
+    ).exec();
+
     return { success: true, message: 'Email verified successfully' };
+  }
+
+  async confirmEmailVerification(token: string, email: string) {
+    if (!token || !email) {
+      throw new BadRequestException('Token and email are required');
+    }
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanToken = token.trim();
+
+    const verification = await this.emailVerificationModel.findOne({
+      email: cleanEmail,
+      token: cleanToken,
+    }).exec();
+
+    if (!verification) {
+      throw new BadRequestException('Invalid or expired verification link.');
+    }
+
+    if (verification.expiresAt < new Date()) {
+      throw new BadRequestException('Verification link has expired. Please request a new one.');
+    }
+
+    verification.verified = true;
+    verification.verifiedAt = new Date();
+    await verification.save();
+
+    // Update any existing contacts with this email to SAFE / Verified
+    await this.contactModel.updateMany(
+      { email: cleanEmail, isDeleted: { $ne: true } },
+      { $set: { emailStatus: EmailStatus.SAFE } }
+    ).exec();
+
+    return { success: true, message: 'Email verified successfully', email: cleanEmail };
+  }
+
+  async checkEmailVerificationStatus(email: string) {
+    if (!email) {
+      return { verified: false, email: '' };
+    }
+    const cleanEmail = email.trim().toLowerCase();
+
+    const verification = await this.emailVerificationModel.findOne({
+      email: cleanEmail,
+      verified: true,
+    }).exec();
+
+    if (verification) {
+      return { verified: true, email: cleanEmail };
+    }
+
+    const existingContact = await this.contactModel.findOne({
+      email: cleanEmail,
+      emailStatus: EmailStatus.SAFE,
+      isDeleted: { $ne: true },
+    }).exec();
+
+    return { verified: !!existingContact, email: cleanEmail };
   }
 
   async getDetailedHistory(id: string): Promise<any[]> {
