@@ -172,6 +172,16 @@ export class CreateContactDto {
   emailStatus?: EmailStatus;
 
   @ApiPropertyOptional({
+    example: false,
+    description: 'Whether the email address has been verified',
+    required: false,
+    default: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  isEmailVerified?: boolean;
+
+  @ApiPropertyOptional({
     example: 'GC170426-110807-2165',
     description: 'Unique identification registration number',
   })

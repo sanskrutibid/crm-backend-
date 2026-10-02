@@ -215,12 +215,54 @@ export class ContactsController {
   @ApiOperation({
     summary: 'Confirm email verification via token & email link (GET)',
   })
-  @ResponseMessage('Email verified successfully')
   async confirmEmailVerificationGet(
     @Query('token') token: string,
     @Query('email') email: string,
+    @Req() req: any,
+    @Res() reply: any,
   ) {
-    return this.contactsService.confirmEmailVerification(token, email);
+    const format = req.query?.format;
+    const acceptHeader = (req.headers?.accept || '').toLowerCase();
+    const isHtml =
+      format === 'html' ||
+      (format !== 'json' &&
+        (acceptHeader.includes('text/html') ||
+          !acceptHeader.includes('application/json')));
+
+    try {
+      const result = await this.contactsService.confirmEmailVerification(
+        token,
+        email,
+      );
+      if (isHtml) {
+        return reply
+          .type('text/html')
+          .send(this.contactsService.getVerificationSuccessHtml(result.email));
+      }
+      return reply.type('application/json').send({
+        success: true,
+        statusCode: 200,
+        message: result.message || 'Email verified successfully',
+        data: result,
+      });
+    } catch (err: any) {
+      if (isHtml) {
+        return reply
+          .status(200)
+          .type('text/html')
+          .send(
+            this.contactsService.getVerificationErrorHtml(
+              err.message || 'Invalid or expired verification link.',
+              email,
+            ),
+          );
+      }
+      return reply.status(err.status || 400).type('application/json').send({
+        success: false,
+        statusCode: err.status || 400,
+        message: err.message || 'Verification failed',
+      });
+    }
   }
 
   @Post('email-verification/confirm')

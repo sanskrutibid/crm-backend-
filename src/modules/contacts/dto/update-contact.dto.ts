@@ -110,6 +110,15 @@ export class UpdateContactDto {
   emailStatus?: EmailStatus;
 
   @ApiPropertyOptional({
+    example: true,
+    description: 'Updated email verification status',
+    required: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  isEmailVerified?: boolean;
+
+  @ApiPropertyOptional({
     example: 'GC170426-110807-2165',
     description: 'Updated Unique identification number',
   })

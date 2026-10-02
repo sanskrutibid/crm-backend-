@@ -74,6 +74,9 @@ export class Contact {
   @Prop({ required: true, enum: EmailStatus, default: EmailStatus.PENDING })
   emailStatus: EmailStatus;
 
+  @Prop({ type: Boolean, default: false })
+  isEmailVerified: boolean;
+
   @Prop({ trim: true, index: true })
   uniqueNumber?: string; // unique identification e.g. GC170426-110807-2165
 

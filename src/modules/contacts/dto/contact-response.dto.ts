@@ -72,6 +72,12 @@ export class ContactResponseDto {
   })
   emailStatus: EmailStatus;
 
+  @ApiProperty({
+    example: false,
+    description: 'Whether the email has been verified',
+  })
+  isEmailVerified: boolean;
+
   @ApiPropertyOptional({
     example: 'GC170426-110807-2165',
     description: 'Unique identification registration number',

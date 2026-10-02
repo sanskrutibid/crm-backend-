@@ -151,9 +151,22 @@ export class ContactsService {
 
     // Auto-verify email status if email is provided and valid
     let emailStatus = EmailStatus.PENDING;
+    let isEmailVerified = createContactDto.isEmailVerified || false;
+
     if (createContactDto.email && createContactDto.email.trim()) {
-      const checkResult = await this.checkEmailDeliverability(createContactDto.email);
-      emailStatus = checkResult.valid ? EmailStatus.SAFE : EmailStatus.UNSAFE;
+      const cleanEmail = createContactDto.email.trim().toLowerCase();
+      const existingVerification = await this.emailVerificationModel.findOne({
+        email: cleanEmail,
+        verified: true,
+      }).exec();
+
+      if (existingVerification || isEmailVerified) {
+        emailStatus = EmailStatus.SAFE;
+        isEmailVerified = true;
+      } else {
+        const checkResult = await this.checkEmailDeliverability(cleanEmail);
+        emailStatus = checkResult.valid ? EmailStatus.SAFE : EmailStatus.UNSAFE;
+      }
     } else if (createContactDto.emailStatus) {
       emailStatus = createContactDto.emailStatus;
     }
@@ -161,6 +174,7 @@ export class ContactsService {
     const newContact = new this.contactModel({
       ...createContactDto,
       emailStatus,
+      isEmailVerified,
       assignedTo,
       uniqueNumber,
       createdBy: defaultUserId,
@@ -373,8 +387,19 @@ export class ContactsService {
 
     const updateData = { ...updateContactDto };
     if (updateData.email && updateData.email.trim()) {
-      const checkResult = await this.checkEmailDeliverability(updateData.email);
-      updateData.emailStatus = checkResult.valid ? EmailStatus.SAFE : EmailStatus.UNSAFE;
+      const cleanEmail = updateData.email.trim().toLowerCase();
+      const existingVerification = await this.emailVerificationModel.findOne({
+        email: cleanEmail,
+        verified: true,
+      }).exec();
+
+      if (existingVerification || updateData.isEmailVerified) {
+        updateData.emailStatus = EmailStatus.SAFE;
+        updateData.isEmailVerified = true;
+      } else {
+        const checkResult = await this.checkEmailDeliverability(cleanEmail);
+        updateData.emailStatus = checkResult.valid ? EmailStatus.SAFE : EmailStatus.UNSAFE;
+      }
     }
 
     const updatedContact = await this.contactModel
@@ -1370,13 +1395,354 @@ export class ContactsService {
     return { success: true, count };
   }
 
+  getVerificationSuccessHtml(email: string): string {
+    const frontendUrl = process.env.FRONTEND_URL || 'https://crm.vaultstone.in';
+    const year = new Date().getFullYear();
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to VaultStone - Email Verified</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+    body {
+      background: radial-gradient(circle at top center, #0b3d2c 0%, #061e15 45%, #030d09 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      color: #e2e8f0;
+    }
+    .card {
+      background: rgba(18, 38, 29, 0.85);
+      border: 1px solid rgba(52, 211, 153, 0.25);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-radius: 20px;
+      max-width: 520px;
+      width: 100%;
+      padding: 44px 36px;
+      text-align: center;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 40px rgba(16, 185, 129, 0.15);
+      animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .brand-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34d399;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+    }
+    .icon-ring {
+      width: 88px;
+      height: 88px;
+      margin: 0 auto 24px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(5, 150, 105, 0.4) 100%);
+      border: 2px solid #34d399;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 30px rgba(52, 211, 153, 0.35);
+      position: relative;
+    }
+    .icon-ring svg {
+      width: 44px;
+      height: 44px;
+      stroke: #34d399;
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+    h1 {
+      font-size: 28px;
+      font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+    }
+    .subtitle {
+      font-size: 15px;
+      color: #94a3b8;
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+    .email-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      padding: 10px 18px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      max-width: 100%;
+    }
+    .email-chip span {
+      font-size: 14px;
+      color: #f1f5f9;
+      font-weight: 600;
+      word-break: break-all;
+    }
+    .verified-badge {
+      background: #10b981;
+      color: #022c22;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .message-box {
+      background: rgba(16, 185, 129, 0.06);
+      border-left: 3px solid #10b981;
+      padding: 14px 16px;
+      border-radius: 8px;
+      text-align: left;
+      font-size: 14px;
+      line-height: 1.6;
+      color: #cbd5e1;
+      margin-bottom: 32px;
+    }
+    .cta-btn {
+      display: inline-block;
+      width: 100%;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: #ffffff;
+      padding: 14px 28px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 700;
+      text-decoration: none;
+      box-shadow: 0 10px 25px rgba(16, 185, 129, 0.35);
+      transition: all 0.2s ease;
+    }
+    .cta-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 14px 30px rgba(16, 185, 129, 0.45);
+      filter: brightness(1.08);
+    }
+    .close-hint {
+      margin-top: 18px;
+      font-size: 12px;
+      color: #64748b;
+    }
+    .footer {
+      margin-top: 32px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 12px;
+      color: #64748b;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="brand-tag">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="6 3 18 3 22 9 12 22 2 9 6 3"></polygon></svg>
+      VaultStone CRM
+    </div>
+    
+    <div class="icon-ring">
+      <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    </div>
+
+    <h1>Welcome to VaultStone!</h1>
+    <p class="subtitle">Your email address has been verified successfully.</p>
+
+    <div class="email-chip">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+      <span>${email}</span>
+      <span class="verified-badge">VERIFIED</span>
+    </div>
+
+    <div class="message-box">
+      <strong>Verification Complete:</strong> Thank you for verifying your email. Your contact profile is authenticated in VaultStone CRM, and all records have been updated to <strong>Safe to send</strong>.
+    </div>
+
+    <a href="${frontendUrl}/dashboard" class="cta-btn">Open VaultStone CRM Dashboard &rarr;</a>
+
+    <p class="close-hint">You can safely close this browser window at any time.</p>
+
+    <div class="footer">
+      &copy; ${year} VaultStone CRM. Enterprise Customer Relationship Management.
+    </div>
+  </div>
+</body>
+</html>`;
+  }
+
+  getVerificationErrorHtml(reason: string, email?: string): string {
+    const frontendUrl = process.env.FRONTEND_URL || 'https://crm.vaultstone.in';
+    const year = new Date().getFullYear();
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verification Status - VaultStone CRM</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+    body {
+      background: radial-gradient(circle at top center, #2e1010 0%, #170808 50%, #0a0404 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      color: #e2e8f0;
+    }
+    .card {
+      background: rgba(35, 18, 18, 0.85);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      backdrop-filter: blur(16px);
+      border-radius: 20px;
+      max-width: 500px;
+      width: 100%;
+      padding: 44px 36px;
+      text-align: center;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7);
+    }
+    .brand-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #f87171;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+    }
+    .icon-ring {
+      width: 84px;
+      height: 84px;
+      margin: 0 auto 24px;
+      border-radius: 50%;
+      background: rgba(239, 68, 68, 0.15);
+      border: 2px solid #ef4444;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 30px rgba(239, 68, 68, 0.3);
+    }
+    .icon-ring svg {
+      width: 40px;
+      height: 40px;
+      stroke: #ef4444;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+    h1 {
+      font-size: 26px;
+      font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      font-size: 14px;
+      color: #fca5a5;
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+    .desc {
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 16px;
+      font-size: 14px;
+      color: #cbd5e1;
+      line-height: 1.6;
+      margin-bottom: 28px;
+      text-align: left;
+    }
+    .cta-btn {
+      display: inline-block;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+      padding: 14px 28px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+    .cta-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+    .footer {
+      margin-top: 28px;
+      font-size: 12px;
+      color: #64748b;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="brand-tag">VaultStone CRM</div>
+    <div class="icon-ring">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+    </div>
+    <h1>Verification Unsuccessful</h1>
+    <p class="subtitle">${reason}</p>
+    <div class="desc">
+      ${email ? `For address: <strong>${email}</strong><br>` : ''}
+      The link may have expired (links are valid for 24 hours) or was already used. Please return to VaultStone CRM to send a new verification link.
+    </div>
+    <a href="${frontendUrl}/contacts" class="cta-btn">&larr; Return to VaultStone CRM</a>
+    <div class="footer">&copy; ${year} VaultStone CRM.</div>
+  </div>
+</body>
+</html>`;
+  }
+
   async sendEmailOtp(email: string) {
     if (!email) {
       throw new BadRequestException('Email address is required');
     }
     const cleanEmail = email.trim().toLowerCase();
 
-    // Check deliverability - throws if invalid/dummy
+    // 1. Check if email is already verified
+    const existingVerified = await this.emailVerificationModel.findOne({
+      email: cleanEmail,
+      verified: true,
+    }).exec();
+
+    if (existingVerified) {
+      return {
+        success: true,
+        alreadyVerified: true,
+        verified: true,
+        message: 'Email address is already verified!',
+        email: cleanEmail,
+      };
+    }
+
+    // 2. Check deliverability - throws if invalid/dummy
     const checkResult = await this.checkEmailDeliverability(cleanEmail);
     if (!checkResult.valid) {
       throw new BadRequestException(checkResult.reason || 'Invalid email address');
@@ -1484,7 +1850,7 @@ export class ContactsService {
 
     await this.contactModel.updateMany(
       { email: cleanEmail, isDeleted: { $ne: true } },
-      { $set: { emailStatus: EmailStatus.SAFE } }
+      { $set: { emailStatus: EmailStatus.SAFE, isEmailVerified: true } }
     ).exec();
 
     return { success: true, message: 'Email verified successfully' };
@@ -1506,6 +1872,20 @@ export class ContactsService {
       throw new BadRequestException('Invalid or expired verification link.');
     }
 
+    if (verification.verified) {
+      await this.contactModel.updateMany(
+        { email: cleanEmail, isDeleted: { $ne: true } },
+        { $set: { emailStatus: EmailStatus.SAFE, isEmailVerified: true } }
+      ).exec();
+
+      return {
+        success: true,
+        alreadyVerified: true,
+        message: 'Email is already verified',
+        email: cleanEmail,
+      };
+    }
+
     if (verification.expiresAt < new Date()) {
       throw new BadRequestException('Verification link has expired. Please request a new one.');
     }
@@ -1514,10 +1894,10 @@ export class ContactsService {
     verification.verifiedAt = new Date();
     await verification.save();
 
-    // Update any existing contacts with this email to SAFE / Verified
+    // Update any existing contacts with this email to SAFE & verified
     await this.contactModel.updateMany(
       { email: cleanEmail, isDeleted: { $ne: true } },
-      { $set: { emailStatus: EmailStatus.SAFE } }
+      { $set: { emailStatus: EmailStatus.SAFE, isEmailVerified: true } }
     ).exec();
 
     return { success: true, message: 'Email verified successfully', email: cleanEmail };
@@ -1540,7 +1920,7 @@ export class ContactsService {
 
     const existingContact = await this.contactModel.findOne({
       email: cleanEmail,
-      emailStatus: EmailStatus.SAFE,
+      $or: [{ emailStatus: EmailStatus.SAFE }, { isEmailVerified: true }],
       isDeleted: { $ne: true },
     }).exec();
 
