@@ -72,7 +72,7 @@ export class ContactsService {
     private readonly activitiesService: ActivitiesService,
     private readonly emailsService: EmailsService,
     private readonly smsService: SmsService,
-  ) {}
+  ) { }
 
   /**
    * Generates a hyper-realistic contact unique number in the format GC[YYMMDD]-[HHMMSS]-[RAND4]
@@ -746,7 +746,7 @@ export class ContactsService {
 
     await this.activitiesService.log(
       `Merged duplicate contacts: [${duplicateNames.join(', ')}] into primary contact "${primary.firstName} ${primary.lastName || ''}`.trim() +
-        '"',
+      '"',
       ActivityType.LEAD,
       defaultUserId,
     );
@@ -1381,7 +1381,7 @@ export class ContactsService {
     if (!checkResult.valid) {
       throw new BadRequestException(checkResult.reason || 'Invalid email address');
     }
-    
+
     // Generate secure token & 6-digit OTP
     const token = crypto.randomBytes(32).toString('hex');
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -1394,7 +1394,7 @@ export class ContactsService {
       { upsert: true, new: true }
     ).exec();
 
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:4200';
+    const frontendUrl = process.env.FRONTEND_URL || 'https://crm.vaultstone.in';
     const verifyUrl = `${frontendUrl}/verify-email?token=${token}&email=${encodeURIComponent(cleanEmail)}`;
 
     const emailHtml = `
@@ -1451,10 +1451,10 @@ export class ContactsService {
       throw new BadRequestException('Failed to send verification email. Please check SMTP settings.');
     }
 
-    return { 
-      success: true, 
+    return {
+      success: true,
       message: 'Verification link has been sent to the email address. Please click the link to verify.',
-      email: cleanEmail 
+      email: cleanEmail
     };
   }
 
