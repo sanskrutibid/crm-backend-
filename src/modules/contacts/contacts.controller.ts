@@ -395,6 +395,17 @@ export class ContactsController {
     return this.contactsService.sendTermsConditions(id, termsConditionsDto);
   }
 
+  @Get('check-duplicate')
+  @ApiOperation({ summary: 'Check if email or mobile number already exists' })
+  @ResponseMessage('Duplicate check completed')
+  async checkDuplicate(
+    @Query('email') email?: string,
+    @Query('mobile') mobile?: string,
+    @Query('excludeId') excludeId?: string,
+  ) {
+    return this.contactsService.checkDuplicate(email, mobile, excludeId);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Find detailed Profile of a Contact by ID' })
   @ApiOkResponse({

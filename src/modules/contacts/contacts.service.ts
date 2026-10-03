@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
   Logger,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -145,6 +146,40 @@ export class ContactsService {
     defaultUserId?: string,
     ipAddress?: string,
   ): Promise<ContactDocument> {
+    // Validate duplicate mobile
+    const cleanMobile = createContactDto.mobile?.trim();
+    if (cleanMobile) {
+      const existingByMobile = await this.contactModel
+        .findOne({
+          mobile: cleanMobile,
+          isDeleted: { $ne: true },
+        })
+        .exec();
+
+      if (existingByMobile) {
+        throw new ConflictException(
+          `A contact with mobile number "${cleanMobile}" already exists.`
+        );
+      }
+    }
+
+    // Validate duplicate email
+    if (createContactDto.email && createContactDto.email.trim()) {
+      const cleanEmail = createContactDto.email.trim().toLowerCase();
+      const existingByEmail = await this.contactModel
+        .findOne({
+          email: cleanEmail,
+          isDeleted: { $ne: true },
+        })
+        .exec();
+
+      if (existingByEmail) {
+        throw new ConflictException(
+          `A contact with email "${cleanEmail}" already exists.`
+        );
+      }
+    }
+
     const assignedTo = createContactDto.assignedTo || defaultUserId;
     const uniqueNumber =
       createContactDto.uniqueNumber || this.generateUniqueNumber();
@@ -386,6 +421,43 @@ export class ContactsService {
     }
 
     const updateData = { ...updateContactDto };
+
+    // Validate duplicate mobile on update
+    if (updateData.mobile && updateData.mobile.trim()) {
+      const cleanMobile = updateData.mobile.trim();
+      const existingByMobile = await this.contactModel
+        .findOne({
+          _id: { $ne: id },
+          mobile: cleanMobile,
+          isDeleted: { $ne: true },
+        })
+        .exec();
+
+      if (existingByMobile) {
+        throw new ConflictException(
+          `A contact with mobile number "${cleanMobile}" already exists.`
+        );
+      }
+    }
+
+    // Validate duplicate email on update
+    if (updateData.email && updateData.email.trim()) {
+      const cleanEmail = updateData.email.trim().toLowerCase();
+      const existingByEmail = await this.contactModel
+        .findOne({
+          _id: { $ne: id },
+          email: cleanEmail,
+          isDeleted: { $ne: true },
+        })
+        .exec();
+
+      if (existingByEmail) {
+        throw new ConflictException(
+          `A contact with email "${cleanEmail}" already exists.`
+        );
+      }
+    }
+
     if (updateData.email && updateData.email.trim()) {
       const cleanEmail = updateData.email.trim().toLowerCase();
       const existingVerification = await this.emailVerificationModel.findOne({
@@ -2095,5 +2167,65 @@ export class ContactsService {
     );
 
     return { totalDuplicates };
+  }
+
+  async checkDuplicate(email?: string, mobile?: string, excludeId?: string) {
+    let mobileExists = false;
+    let emailExists = false;
+    let mobileMessage: string | null = null;
+    let emailMessage: string | null = null;
+
+    if (mobile && mobile.trim()) {
+      const cleanMobile = mobile.trim();
+      const query: any = { mobile: cleanMobile, isDeleted: { $ne: true } };
+      if (excludeId) {
+        query._id = { $ne: excludeId };
+      }
+      const existingContact = await this.contactModel
+        .findOne(query)
+        .select('firstName lastName mobile')
+        .lean()
+        .exec();
+
+      if (existingContact) {
+        mobileExists = true;
+        const name = [existingContact.firstName, existingContact.lastName]
+          .filter(Boolean)
+          .join(' ');
+        mobileMessage = name
+          ? `Mobile number is already registered with ${name}.`
+          : `Mobile number is already registered with another contact.`;
+      }
+    }
+
+    if (email && email.trim()) {
+      const cleanEmail = email.trim().toLowerCase();
+      const query: any = { email: cleanEmail, isDeleted: { $ne: true } };
+      if (excludeId) {
+        query._id = { $ne: excludeId };
+      }
+      const existingContact = await this.contactModel
+        .findOne(query)
+        .select('firstName lastName email')
+        .lean()
+        .exec();
+
+      if (existingContact) {
+        emailExists = true;
+        const name = [existingContact.firstName, existingContact.lastName]
+          .filter(Boolean)
+          .join(' ');
+        emailMessage = name
+          ? `Email address is already registered with ${name}.`
+          : `Email address is already registered with another contact.`;
+      }
+    }
+
+    return {
+      mobileExists,
+      emailExists,
+      mobileMessage,
+      emailMessage,
+    };
   }
 }
