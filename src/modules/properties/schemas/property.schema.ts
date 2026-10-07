@@ -190,6 +190,9 @@ export class Property {
   district?: string;
 
   @Prop({ required: false, trim: true })
+  taluka?: string;
+
+  @Prop({ required: false, trim: true })
   projectDeveloperName?: string;
 
   @Prop({ required: false, trim: true })

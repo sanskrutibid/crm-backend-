@@ -331,6 +331,14 @@ export class CreatePropertyDto {
   district?: string;
 
   @ApiPropertyOptional({
+    example: 'Haveli',
+    description: 'Taluka/Tehsil name',
+  })
+  @IsString()
+  @IsOptional()
+  taluka?: string;
+
+  @ApiPropertyOptional({
     example: 'Skyline Residency',
     description: 'Project or developer brand',
   })
