@@ -1,6 +1,9 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+
 import { Document, Schema as MongooseSchema } from 'mongoose';
+
 import { User } from '../../users/schemas/user.schema';
+
 import { Contact } from '../../contacts/schemas/contact.schema';
 
 export type ProjectDocument = Project & Document;
@@ -31,6 +34,7 @@ export class Project {
   // ==========================================
   // Step 1: Contact Information (Owner)
   // ==========================================
+
   @Prop({
     type: MongooseSchema.Types.ObjectId,
     ref: 'Contact',
@@ -42,6 +46,7 @@ export class Project {
   // ==========================================
   // Step 2: Basic Information
   // ==========================================
+
   @Prop({ required: true, trim: true })
   launchDate: string; // Labeled "Launch Date*" (e.g. "Select Date")
 
@@ -63,8 +68,21 @@ export class Project {
   @Prop({ trim: true })
   areaUnit?: string; // e.g. "Sq.Ft.", "Sq.Meter"
 
+  // ==========================================
+  // Property Type - Broad Category
+  // Examples: Commercial, Residential, Layout
+  // ==========================================
+
   @Prop({ trim: true })
-  type?: string; // Labeled "Type"
+  propertyType?: string; // Labeled "Property Type"
+
+  // ==========================================
+  // Project Type - Detailed Type
+  // Examples: Residential Apartment, Commercial Office/Space
+  // ==========================================
+
+  @Prop({ trim: true })
+  type?: string; // Labeled "Project Type"
 
   @Prop({ trim: true })
   totalRoom?: string; // Labeled "Total Room"
@@ -117,6 +135,7 @@ export class Project {
   // ==========================================
   // Step 3: Specifications
   // ==========================================
+
   @Prop({ trim: true })
   specification?: string; // Rich Text editor HTML / text string
 
@@ -138,6 +157,7 @@ export class Project {
   // ==========================================
   // Step 4: Location details
   // ==========================================
+
   @Prop({ trim: true })
   address?: string; // Labeled "Address"
 
@@ -165,6 +185,7 @@ export class Project {
   // ==========================================
   // Step 5: Save and Publish settings
   // ==========================================
+
   @Prop({ trim: true })
   keyword?: string; // Labeled "Keyword"
 
@@ -219,6 +240,7 @@ export class Project {
   // ==========================================
   // System fields
   // ==========================================
+
   @Prop({
     required: true,
     enum: ProjectStatus,
@@ -233,10 +255,18 @@ export class Project {
   @Prop({ type: [Object], default: [] })
   plans?: any[];
 
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: false })
+  @Prop({
+    type: MongooseSchema.Types.ObjectId,
+    ref: 'User',
+    required: false,
+  })
   createdBy?: User;
 
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: false })
+  @Prop({
+    type: MongooseSchema.Types.ObjectId,
+    ref: 'User',
+    required: false,
+  })
   updatedBy?: User;
 
   @Prop({ trim: true })
