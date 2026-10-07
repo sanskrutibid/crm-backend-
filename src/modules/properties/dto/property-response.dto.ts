@@ -204,6 +204,12 @@ export class PropertyResponseDto {
   surveyName?: string;
 
   @ApiPropertyOptional({
+    example: 'Haveli',
+    description: 'Taluka/Tehsil name',
+  })
+  taluka?: string;
+
+  @ApiPropertyOptional({
     example: 'Skyline Residency',
     description: 'Project or developer brand',
   })
