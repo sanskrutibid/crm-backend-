@@ -81,6 +81,21 @@ export class UpdateProjectDto {
   @IsOptional()
   areaUnit?: string;
 
+  // ==========================================
+  // Property Type - Broad Category  (ADDED)
+  // ==========================================
+  @ApiPropertyOptional({
+    example: 'Commercial',
+    description:
+      'Broad property category such as Commercial, Residential, or Layout',
+  })
+  @IsString()
+  @IsOptional()
+  propertyType?: string;
+
+  // ==========================================
+  // Project Type - Detailed Type
+  // ==========================================
   @ApiPropertyOptional({
     example: 'Apartment',
     description: 'Updated Project type',
