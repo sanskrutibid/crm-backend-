@@ -192,6 +192,13 @@ export class Property {
   @Prop({ required: false, trim: true })
   taluka?: string;
 
+  // ---- Agricultural property irrigation fields ----
+  @Prop({ required: false, trim: true })
+  irrigation?: string;
+
+  @Prop({ required: false, trim: true })
+  irrigationType?: string;
+
   @Prop({ required: false, trim: true })
   projectDeveloperName?: string;
 

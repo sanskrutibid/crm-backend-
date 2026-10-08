@@ -336,7 +336,23 @@ export class CreatePropertyDto {
   })
   @IsString()
   @IsOptional()
-  taluka?: string;
+  
+
+  @ApiPropertyOptional({
+    example: 'Irrigation',
+    description: 'Irrigation status (Irrigation, Non-Irrigation) for Agricultural properties',
+  })
+  @IsString()
+  @IsOptional()
+  irrigation?: string;
+
+  @ApiPropertyOptional({
+    example: 'Borewell',
+    description: 'Irrigation type (Borewell, Well, Canal, River) for Agricultural properties',
+  })
+  @IsString()
+  @IsOptional()
+  irrigationType?: string;
 
   @ApiPropertyOptional({
     example: 'Skyline Residency',
