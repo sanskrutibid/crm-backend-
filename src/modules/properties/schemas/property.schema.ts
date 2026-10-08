@@ -217,6 +217,7 @@ export class Property {
   @Prop({ required: false, trim: true })
   city?: string;
 
+
   @Prop({ required: false, trim: true })
   locality?: string;
 
