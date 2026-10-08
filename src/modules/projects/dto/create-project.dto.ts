@@ -8,9 +8,27 @@ import {
   IsNumber,
   Min,
   IsArray,
+  ValidateNested,
 } from 'class-validator';
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { ProjectVisibility, ProjectStatus } from '../schemas/project.schema';
+
+// One BHK entry with its own base price, e.g. { bhk: '2 BHK', price: 300000 }
+export class BhkConfigurationDto {
+  @ApiProperty({ example: '2 BHK', description: 'BHK / room configuration' })
+  @IsString()
+  @IsNotEmpty({ message: 'BHK is required' })
+  bhk: string;
+
+  @ApiPropertyOptional({
+    example: 300000,
+    description: 'Base price for this BHK configuration',
+  })
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  price?: number | null;
+}
 
 export class CreateProjectDto {
   // ==========================================
@@ -167,6 +185,23 @@ export class CreateProjectDto {
   @Min(0)
   @IsOptional()
   price?: number;
+
+  // ==========================================
+  // BHK Configurations (each BHK with its own base price)
+  // ==========================================
+  @ApiPropertyOptional({
+    type: [BhkConfigurationDto],
+    example: [
+      { bhk: '1 BHK', price: 200000 },
+      { bhk: '2 BHK', price: 300000 },
+    ],
+    description: 'List of BHK configurations, each with its own base price',
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => BhkConfigurationDto)
+  @IsOptional()
+  bhkConfigurations?: BhkConfigurationDto[];
 
   @ApiPropertyOptional({
     example: '2 BHK Flats',

@@ -90,6 +90,25 @@ export class Project {
   @Prop({ type: Number })
   price?: number; // Labeled "Price"
 
+  // ==========================================
+  // BHK Configurations - each BHK with its own Base Price
+  // Example: [{ bhk: '1 BHK', price: 200000 }, { bhk: '2 BHK', price: 300000 }]
+  // "totalRoom" and "price" above are still kept (joined BHK list / lowest price)
+  // so existing lists, filters and matching keep working.
+  // ==========================================
+
+  @Prop({
+    type: [
+      {
+        bhk: { type: String, trim: true, required: true },
+        price: { type: Number, default: null },
+        _id: false,
+      },
+    ],
+    default: [],
+  })
+  bhkConfigurations?: { bhk: string; price?: number | null }[];
+
   @Prop({ trim: true })
   interestedIn?: string; // Labeled "Interested In"
 
